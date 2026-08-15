@@ -1,6 +1,7 @@
 package dev.truetagger.android
 
 import android.content.ContentUris
+import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
 import android.os.Build
@@ -172,10 +173,23 @@ class AndroidAudioService(private val context: Context) {
             resolver.openOutputStream(uri, "wt")!!.use { output ->
                 cacheFile.inputStream().use { input -> input.copyTo(output) }
             }
+            syncMediaStore(uri, edits)
             TagWriteResult(true, "Tags salvas.", read(uri))
         } finally {
             cacheFile.delete()
         }
+    }
+
+    private fun syncMediaStore(uri: Uri, edits: EditableTags) {
+        if (uri.authority != MediaStore.AUTHORITY) return
+        val values = ContentValues().apply {
+            if (edits.title.isNotBlank()) put(MediaStore.Audio.Media.TITLE, edits.title.trim())
+            if (edits.artist.isNotBlank()) put(MediaStore.Audio.Media.ARTIST, edits.artist.trim())
+            if (edits.album.isNotBlank()) put(MediaStore.Audio.Media.ALBUM, edits.album.trim())
+            normalizeYear(edits.year).toIntOrNull()?.let { put(MediaStore.Audio.Media.YEAR, it) }
+        }
+        if (values.size() > 0) runCatching { resolver.update(uri, values, null, null) }
+        runCatching { resolver.notifyChange(uri, null) }
     }
 
     private fun setArtwork(tag: org.jaudiotagger.tag.Tag, bytes: ByteArray) {

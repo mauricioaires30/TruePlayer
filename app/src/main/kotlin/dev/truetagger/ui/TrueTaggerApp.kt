@@ -4,9 +4,11 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -16,6 +18,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,6 +26,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -59,6 +64,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
@@ -77,6 +83,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -156,6 +163,10 @@ fun TrueTaggerApp(
         onBackToLibrary()
     }
 
+    BackHandler(enabled = screen != AppScreen.Library) {
+        goHome()
+    }
+
     MaterialTheme(colorScheme = TrueTaggerDarkScheme) {
         Scaffold(
             modifier = modifier.fillMaxSize(),
@@ -185,6 +196,7 @@ fun TrueTaggerApp(
                     AppScreen.Editor -> CurrentTrackScreen(
                         track = selectedTrack,
                         draft = selectedTrack?.let { drafts[it.id] },
+                        settings = settings,
                         onDraftChange = { trackId, draft -> drafts[trackId] = draft },
                         onSaveEdits = { track, edits ->
                             val result = onSaveEdits(track, edits)
@@ -345,10 +357,21 @@ private fun LibraryScreen(
                 )
             }
         } else {
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(shown, key = { it.id }) { track ->
-                    LibraryTrackRow(track = track, sortMode = sortMode, onClick = { onSelectTrack(track) })
+            val listState = rememberLazyListState()
+            Box(Modifier.fillMaxWidth().weight(1f)) {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize().padding(end = 7.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(shown, key = { it.id }) { track ->
+                        LibraryTrackRow(track = track, sortMode = sortMode, onClick = { onSelectTrack(track) })
+                    }
                 }
+                VerticalLazyScrollbar(
+                    state = listState,
+                    modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(4.dp),
+                )
             }
         }
     }
@@ -455,6 +478,7 @@ private fun TrackArtworkThumbnail(track: AudioTrack, modifier: Modifier = Modifi
 private fun CurrentTrackScreen(
     track: AudioTrack?,
     draft: EditableTags?,
+    settings: AppSettings,
     onDraftChange: (String, EditableTags) -> Unit,
     onSaveEdits: suspend (AudioTrack, EditableTags) -> TagWriteResult,
 ) {
@@ -465,7 +489,11 @@ private fun CurrentTrackScreen(
         return
     }
 
-    val repo = remember { MetadataRepository() }
+    val repo = remember(settings.geniusAccessToken) {
+        MetadataRepository(
+            geniusAccessToken = settings.geniusAccessToken,
+        )
+    }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 
@@ -718,7 +746,12 @@ private fun SuggestionStrip(
             Text("Sugestões", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
             if (loading) Text("Buscando...", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        val suggestionState = rememberLazyListState()
+        LazyRow(
+            state = suggestionState,
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
             item {
                 SuggestionCard(
                     title = track.displayTitle(),
@@ -744,6 +777,10 @@ private fun SuggestionStrip(
                 )
             }
         }
+        HorizontalLazyScrollbar(
+            state = suggestionState,
+            modifier = Modifier.fillMaxWidth().height(4.dp),
+        )
     }
 }
 
@@ -946,6 +983,18 @@ private fun SettingsScreen(
         }
 
         item {
+            SettingsSectionTitle("Fontes extras")
+            SettingsCard {
+                SettingCredentialField(
+                    title = "Genius Access Token",
+                    value = settings.geniusAccessToken,
+                    secret = true,
+                    onValueChange = { onSettingsChange(settings.copy(geniusAccessToken = it)) },
+                )
+            }
+        }
+
+        item {
             SettingsSectionTitle("Aplicativo")
             SettingsCard {
                 SettingActionRow(
@@ -994,6 +1043,25 @@ private fun SettingSwitchRow(
 }
 
 @Composable
+private fun SettingCredentialField(
+    title: String,
+    value: String,
+    secret: Boolean,
+    onValueChange: (String) -> Unit,
+) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(title, fontWeight = FontWeight.SemiBold)
+        OutlinedTextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            visualTransformation = if (secret) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
+        )
+    }
+}
+
+@Composable
 private fun SettingActionRow(
     icon: @Composable () -> Unit,
     title: String,
@@ -1010,6 +1078,48 @@ private fun SettingActionRow(
             Text(title, fontWeight = FontWeight.SemiBold)
             Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
         }
+    }
+}
+
+@Composable
+private fun VerticalLazyScrollbar(state: LazyListState, modifier: Modifier = Modifier) {
+    val info by remember { derivedStateOf { state.layoutInfo } }
+    val total = info.totalItemsCount
+    val visible = info.visibleItemsInfo.size
+    if (total <= visible || total <= 0) return
+    val first = info.visibleItemsInfo.firstOrNull()?.index ?: 0
+    Canvas(modifier) {
+        val minThumb = 28.dp.toPx()
+        val thumb = maxOf(minThumb, size.height * (visible.toFloat() / total.toFloat()))
+        val maxIndex = maxOf(1, total - visible)
+        val top = (size.height - thumb) * (first.toFloat() / maxIndex.toFloat()).coerceIn(0f, 1f)
+        drawRoundRect(
+            color = Color.White.copy(alpha = 0.28f),
+            topLeft = androidx.compose.ui.geometry.Offset(0f, top),
+            size = androidx.compose.ui.geometry.Size(size.width, thumb),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width / 2f),
+        )
+    }
+}
+
+@Composable
+private fun HorizontalLazyScrollbar(state: LazyListState, modifier: Modifier = Modifier) {
+    val info by remember { derivedStateOf { state.layoutInfo } }
+    val total = info.totalItemsCount
+    val visible = info.visibleItemsInfo.size
+    if (total <= visible || total <= 0) return
+    val first = info.visibleItemsInfo.firstOrNull()?.index ?: 0
+    Canvas(modifier) {
+        val minThumb = 36.dp.toPx()
+        val thumb = maxOf(minThumb, size.width * (visible.toFloat() / total.toFloat()))
+        val maxIndex = maxOf(1, total - visible)
+        val left = (size.width - thumb) * (first.toFloat() / maxIndex.toFloat()).coerceIn(0f, 1f)
+        drawRoundRect(
+            color = Color.White.copy(alpha = 0.28f),
+            topLeft = androidx.compose.ui.geometry.Offset(left, 0f),
+            size = androidx.compose.ui.geometry.Size(thumb, size.height),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2f),
+        )
     }
 }
 

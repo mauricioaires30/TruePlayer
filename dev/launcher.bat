@@ -24,7 +24,7 @@ cls
 echo ========================================
 echo               TrueTagger
 echo ========================================
-echo Android-only project - v0.9.1
+echo Android-only project - v0.10.2
 echo.
 echo   1. Update and open TrueTagger
 echo   2. Open installed TrueTagger

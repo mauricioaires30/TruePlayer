@@ -308,6 +308,7 @@ class MainActivity : ComponentActivity() {
         autoRefreshLibrary = prefs.getBoolean(ShareContract.PREF_AUTO_REFRESH_LIBRARY, true),
         embedYoutubeThumbnail = prefs.getBoolean(ShareContract.PREF_EMBED_YOUTUBE_THUMBNAIL, true),
         autoUpdateDownloader = prefs.getBoolean(ShareContract.PREF_AUTO_UPDATE_DOWNLOADER, true),
+        geniusAccessToken = prefs.getString(ShareContract.PREF_GENIUS_ACCESS_TOKEN, "").orEmpty(),
     )
 
     private fun updateSettings(newSettings: AppSettings) {
@@ -316,6 +317,7 @@ class MainActivity : ComponentActivity() {
             .putBoolean(ShareContract.PREF_AUTO_REFRESH_LIBRARY, newSettings.autoRefreshLibrary)
             .putBoolean(ShareContract.PREF_EMBED_YOUTUBE_THUMBNAIL, newSettings.embedYoutubeThumbnail)
             .putBoolean(ShareContract.PREF_AUTO_UPDATE_DOWNLOADER, newSettings.autoUpdateDownloader)
+            .putString(ShareContract.PREF_GENIUS_ACCESS_TOKEN, newSettings.geniusAccessToken)
             .apply()
     }
 
