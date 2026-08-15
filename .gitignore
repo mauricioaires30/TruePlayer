@@ -1,0 +1,24 @@
+# Local development tools and caches
+.tools/
+.gradle-local/
+.android-home/
+
+# Build output
+app/build/
+dist/
+
+# IDE / local files
+.idea/
+*.iml
+local.properties
+
+# Secrets / signing
+.env
+*.key
+*.jks
+*.keystore
+signing.properties
+
+# OS
+.DS_Store
+Thumbs.db
