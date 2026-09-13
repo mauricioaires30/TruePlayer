@@ -30,7 +30,7 @@ class MusicPlaybackService : Service() {
         const val ACTION_REPEAT = "dev.truetagger.player.REPEAT"
         const val ACTION_STOP = "dev.truetagger.player.STOP"
         const val ACTION_PLAY_QUEUE_INDEX = "dev.truetagger.player.PLAY_QUEUE_INDEX"
-        const val ACTION_REORDER_QUEUE = "dev.truetagger.player.REORDER_QUEUE"
+        const val ACTION_REPLACE_QUEUE = "dev.truetagger.player.REPLACE_QUEUE"
         const val EXTRA_TRACK_ID = "track_id"
         const val EXTRA_TRACK_TITLE = "track_title"
         const val EXTRA_TRACK_ARTIST = "track_artist"
@@ -43,9 +43,9 @@ class MusicPlaybackService : Service() {
         const val EXTRA_QUEUE_ALBUMS = "queue_albums"
         const val EXTRA_QUEUE_DURATIONS = "queue_durations"
         const val EXTRA_INDEX = "index"
-        const val EXTRA_REORDER_IDS = "reorder_ids"
         const val EXTRA_START_SHUFFLE = "start_shuffle"
         const val EXTRA_POSITION = "position"
+        const val EXTRA_CURRENT_ID = "current_id"
         const val CHANNEL = "truetagger_player_v4"
         const val NOTIFICATION_ID = 301
 
@@ -76,12 +76,16 @@ class MusicPlaybackService : Service() {
             }
             context.startForegroundService(i)
         }
-        
-        fun reorderQueue(context: Context, orderedIds: List<String>) {
-            if (orderedIds.isEmpty()) return
+
+        fun replaceQueue(context: Context, tracks: List<AudioTrack>) {
+            if (tracks.isEmpty()) return
             val i = Intent(context, MusicPlaybackService::class.java).apply {
-                action = ACTION_REORDER_QUEUE
-                putStringArrayListExtra(EXTRA_REORDER_IDS, ArrayList(orderedIds))
+                action = ACTION_REPLACE_QUEUE
+                putStringArrayListExtra(EXTRA_QUEUE_IDS, ArrayList(tracks.map { it.id }))
+                putStringArrayListExtra(EXTRA_QUEUE_TITLES, ArrayList(tracks.map { it.displayTitle() }))
+                putStringArrayListExtra(EXTRA_QUEUE_ARTISTS, ArrayList(tracks.map { it.artist }))
+                putStringArrayListExtra(EXTRA_QUEUE_ALBUMS, ArrayList(tracks.map { it.album }))
+                putStringArrayListExtra(EXTRA_QUEUE_DURATIONS, ArrayList(tracks.map { it.durationMs.toString() }))
             }
             context.startService(i)
         }
@@ -96,6 +100,7 @@ class MusicPlaybackService : Service() {
     private var shuffle = false
     private var repeat = RepeatMode.OFF
     private var pendingPlay = false
+    private var mediaPrepared = false
     private var playerGeneration = 0L
     private var navigationLockUntilMs = 0L
     private var notificationArtwork: android.graphics.Bitmap? = null
@@ -181,11 +186,27 @@ class MusicPlaybackService : Service() {
                 }
                 loadCurrent()
             }
-            ACTION_TOGGLE -> if (player?.isPlaying == true) pause() else resume()
+            ACTION_TOGGLE -> {
+                val p = player
+                if (p == null || !mediaPrepared) {
+                    pendingPlay = !pendingPlay
+                    updateStateAndNotification()
+                } else if (runCatching { p.isPlaying }.getOrDefault(false)) {
+                    pause()
+                } else {
+                    resume()
+                }
+            }
             ACTION_NEXT -> next()
             ACTION_PREVIOUS -> previous()
             ACTION_PLAY_QUEUE_INDEX -> playQueueIndex(intent.getIntExtra(EXTRA_INDEX, -1))
-            ACTION_REORDER_QUEUE -> reorderQueue(intent.getStringArrayListExtra(EXTRA_REORDER_IDS).orEmpty())
+            ACTION_REPLACE_QUEUE -> replaceCurrentQueue(
+                intent.getStringArrayListExtra(EXTRA_QUEUE_IDS).orEmpty(),
+                intent.getStringArrayListExtra(EXTRA_QUEUE_TITLES).orEmpty(),
+                intent.getStringArrayListExtra(EXTRA_QUEUE_ARTISTS).orEmpty(),
+                intent.getStringArrayListExtra(EXTRA_QUEUE_ALBUMS).orEmpty(),
+                intent.getStringArrayListExtra(EXTRA_QUEUE_DURATIONS).orEmpty()
+            )
             ACTION_SEEK -> seek(intent.getLongExtra(EXTRA_POSITION, 0L))
             ACTION_SHUFFLE -> setShuffle(!shuffle)
             ACTION_REPEAT -> cycleRepeat()
@@ -195,21 +216,33 @@ class MusicPlaybackService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun reorderQueue(orderedIds: List<String>) {
-        if (queue.isEmpty() || orderedIds.size != queue.size) return
-        val currentIds = queue.map { it.id }
-        if (currentIds.toSet() != orderedIds.toSet()) return
-
+    private fun replaceCurrentQueue(
+        ids: List<String>,
+        titles: List<String>,
+        artists: List<String>,
+        albums: List<String>,
+        durations: List<String>
+    ) {
+        if (ids.isEmpty()) return
         val currentId = queue.getOrNull(index)?.id
-        val source = queue.associateBy { it.id }
-        queue = orderedIds.mapNotNull { source[it] }.toMutableList()
-
-        val baseSource = baseQueue.associateBy { it.id }
-        if (baseQueue.size == orderedIds.size && baseQueue.map { it.id }.toSet() == orderedIds.toSet()) {
-            baseQueue = orderedIds.mapNotNull { baseSource[it] }.toMutableList()
-        }
-
-        index = queue.indexOfFirst { it.id == currentId }.let { if (it >= 0) it else 0 }
+        val newBase = ids.mapIndexed { i, id ->
+            AudioTrack(
+                id = id,
+                displayName = titles.getOrNull(i).orEmpty(),
+                title = titles.getOrNull(i).orEmpty(),
+                artist = artists.getOrNull(i).orEmpty(),
+                album = albums.getOrNull(i).orEmpty(),
+                durationMs = durations.getOrNull(i)?.toLongOrNull() ?: 0L,
+            )
+        }.toMutableList()
+        baseQueue = newBase.toMutableList()
+        queue = if (shuffle) {
+            val current = newBase.firstOrNull { it.id == currentId }
+            val rest = newBase.filter { it.id != currentId }
+            if (current != null) mutableListOf(current).apply { addAll(rest) } else newBase.toMutableList()
+        } else newBase.toMutableList()
+        index = if (currentId != null) queue.indexOfFirst { it.id == currentId }.let { if (it >= 0) it else 0 } else 0
+        if (shuffle && queue.getOrNull(index)?.id == currentId) index = 0
         updateStateAndNotification()
     }
 
@@ -254,6 +287,10 @@ class MusicPlaybackService : Service() {
         updateStateAndNotification()
     }
 
+    private var mediaErrorRetryCount = 0
+    private var lastMediaErrorKey: String? = null
+    private var lastMediaErrorAtMs = 0L
+
     private fun loadCurrent(shouldPlay: Boolean = true) {
         val track = queue.getOrNull(index)
         if (track == null) {
@@ -262,28 +299,36 @@ class MusicPlaybackService : Service() {
         }
 
         val generation = ++playerGeneration
+        mediaErrorRetryCount = 0
         player?.setOnCompletionListener(null)
         player?.setOnErrorListener(null)
         runCatching { player?.stop() }
         player?.release()
         player = null
-        pendingPlay = false
+        pendingPlay = shouldPlay
+        mediaPrepared = false
 
-        notificationArtwork = loadNotificationArtwork(track)
-        notificationArtworkTrackId = track.id
-
+        // Não bloqueie a thread principal preparando a mídia. prepareAsync reduz o
+        // atraso perceptível ao trocar de faixa, especialmente com arquivos maiores.
         try {
-            val mediaPlayer = MediaPlayer.create(this, Uri.parse(track.id))
-                ?: throw IllegalStateException("MediaPlayer.create() retornou null")
-
+            val mediaPlayer = MediaPlayer()
             mediaPlayer.setAudioAttributes(
                 AudioAttributes.Builder()
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .setUsage(AudioAttributes.USAGE_MEDIA)
                     .build()
             )
-
-            var prepared = true
+            val sourceUri = Uri.parse(track.id)
+            runCatching {
+                mediaPlayer.setDataSource(this, sourceUri)
+            }.getOrElse { directError ->
+                // Alguns dispositivos/MediaStore providers não lidam bem com a sobrecarga
+                // Context+Uri. Tenta uma vez via FileDescriptor antes de abandonar a faixa.
+                val pfd = contentResolver.openFileDescriptor(sourceUri, "r")
+                    ?: throw directError
+                pfd.use { mediaPlayer.setDataSource(it.fileDescriptor) }
+            }
+            var prepared = false
 
             mediaPlayer.setOnPreparedListener {
                 if (generation != playerGeneration) {
@@ -291,14 +336,15 @@ class MusicPlaybackService : Service() {
                     return@setOnPreparedListener
                 }
                 prepared = true
-                pendingPlay = shouldPlay
-                if (shouldPlay) {
-                    try {
-                        mediaPlayer.start()
-                    } catch (error: Throwable) {
-                        android.util.Log.e("TrueTagger", "Falha ao iniciar reprodução: ${track.id}", error)
-                        pendingPlay = false
-                    }
+                mediaPrepared = true
+                val shouldStart = pendingPlay
+                if (shouldStart) {
+                    runCatching { mediaPlayer.start() }
+                        .onFailure {
+                            android.util.Log.e("TrueTagger", "Falha ao iniciar reprodução: ${track.id}", it)
+                            pendingPlay = false
+                        }
+                    if (shouldStart) pendingPlay = false
                 }
                 updateStateAndNotification()
             }
@@ -306,11 +352,11 @@ class MusicPlaybackService : Service() {
             mediaPlayer.setOnCompletionListener {
                 if (generation != playerGeneration || !prepared) return@setOnCompletionListener
                 if (repeat == RepeatMode.ONE) {
-                    try {
+                    runCatching {
                         mediaPlayer.seekTo(0)
                         if (shouldPlay || pendingPlay) mediaPlayer.start()
-                    } catch (error: Throwable) {
-                        android.util.Log.e("TrueTagger", "Falha ao repetir música: ${track.id}", error)
+                    }.onFailure {
+                        android.util.Log.e("TrueTagger", "Falha ao repetir música: ${track.id}", it)
                     }
                 } else {
                     next(auto = true)
@@ -318,26 +364,86 @@ class MusicPlaybackService : Service() {
             }
 
             mediaPlayer.setOnErrorListener { _, what, extra ->
-                android.util.Log.e("TrueTagger", "Erro do MediaPlayer ao reproduzir ${track.id}: what=$what extra=$extra")
+                val now = android.os.SystemClock.uptimeMillis()
+                val duplicate = lastMediaErrorKey == track.id && now - lastMediaErrorAtMs < 1000L
+                if (!duplicate) {
+                    if (what == -38) {
+                        android.util.Log.w("TrueTagger", "MediaPlayer entrou em estado inválido ao reproduzir ${track.id}; encerrando a tentativa")
+                    } else {
+                        android.util.Log.e("TrueTagger", "Erro do MediaPlayer ao reproduzir ${track.id}: what=$what extra=$extra")
+                    }
+                    lastMediaErrorKey = track.id
+                    lastMediaErrorAtMs = now
+                }
                 if (generation == playerGeneration) {
-                    pendingPlay = false
-                    updateStateAndNotification()
+                    mediaPrepared = false
+                    // -38 é INVALID_OPERATION/estado inválido; repetir imediatamente
+                    // tende a recriar o mesmo erro e deixa a troca de faixa mais pesada.
+                    if (what == -38 || mediaErrorRetryCount > 0) {
+                        mediaErrorRetryCount = 1
+                        pendingPlay = false
+                        if (player === mediaPlayer) {
+                            player = null
+                        }
+                        runCatching { mediaPlayer.reset() }
+                        runCatching { mediaPlayer.release() }
+                        updateStateAndNotification()
+                    } else {
+                        mediaErrorRetryCount = 1
+                        handler.postDelayed({
+                            if (generation == playerGeneration && queue.getOrNull(index)?.id == track.id) {
+                                loadCurrent(pendingPlay)
+                            }
+                        }, 180L)
+                    }
                 }
                 true
             }
 
             player = mediaPlayer
-            pendingPlay = shouldPlay
-            if (shouldPlay) {
-                try {
-                    // MediaPlayer.create() returns a prepared player on success.
-                    if (!mediaPlayer.isPlaying) mediaPlayer.start()
-                } catch (error: Throwable) {
-                    android.util.Log.e("TrueTagger", "Falha ao iniciar música preparada: ${track.id}", error)
-                    pendingPlay = false
+            notificationArtwork = track.artworkBytes?.takeIf { it.isNotEmpty() }?.let { raw ->
+                runCatching {
+                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+                    BitmapFactory.decodeByteArray(raw, 0, raw.size, bounds)
+                    val max = maxOf(bounds.outWidth, bounds.outHeight).coerceAtLeast(1)
+                    val sample = generateSequence(1) { it * 2 }.takeWhile { it < 8 }.lastOrNull { max / it >= 1024 } ?: 1
+                    val opts = BitmapFactory.Options().apply { inSampleSize = sample; inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888 }
+                    BitmapFactory.decodeByteArray(raw, 0, raw.size, opts)
+                }.getOrNull()
+            }
+            notificationArtworkTrackId = track.id
+
+            updateStateAndNotification()
+            try {
+                mediaPlayer.prepareAsync()
+            } catch (error: IllegalStateException) {
+                android.util.Log.w("TrueTagger", "prepareAsync falhou; tentando preparar novamente ${track.id}", error)
+                runCatching {
+                    mediaPlayer.reset()
+                    mediaPlayer.setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                            .setUsage(AudioAttributes.USAGE_MEDIA)
+                            .build()
+                    )
+                    runCatching {
+                        mediaPlayer.setDataSource(this, Uri.parse(track.id))
+                    }.getOrElse {
+                        val pfd = contentResolver.openFileDescriptor(Uri.parse(track.id), "r")
+                            ?: throw it
+                        pfd.use { mediaPlayer.setDataSource(it.fileDescriptor) }
+                    }
+                    mediaPlayer.prepareAsync()
+                }.onFailure { retryError ->
+                    android.util.Log.e("TrueTagger", "Falha ao preparar música após retry ${track.id}", retryError)
+                    if (generation == playerGeneration) {
+                        runCatching { mediaPlayer.release() }
+                        if (player === mediaPlayer) player = null
+                        pendingPlay = false
+                        updateStateAndNotification()
+                    }
                 }
             }
-            updateStateAndNotification()
         } catch (error: Throwable) {
             android.util.Log.e("TrueTagger", "Falha ao abrir música ${track.id}", error)
             player?.release()
@@ -357,8 +463,31 @@ class MusicPlaybackService : Service() {
         )
     }
 
-    private fun resume() { player?.let { if (!it.isPlaying) it.start() } }
-    private fun pause() { player?.pause() }
+    private fun resume() {
+        val p = player ?: return run { pendingPlay = true; updateStateAndNotification() }
+        if (!mediaPrepared) {
+            pendingPlay = true
+            updateStateAndNotification()
+            return
+        }
+        runCatching {
+            if (!p.isPlaying) p.start()
+        }.onFailure {
+            pendingPlay = true
+            android.util.Log.e("TrueTagger", "Falha ao iniciar reprodução: ${queue.getOrNull(index)?.id}", it)
+        }
+        updateStateAndNotification()
+    }
+    private fun pause() {
+        if (!mediaPrepared) {
+            pendingPlay = false
+            updateStateAndNotification()
+            return
+        }
+        runCatching { player?.pause() }
+        pendingPlay = false
+        updateStateAndNotification()
+    }
 
     private fun seek(pos: Long) {
         player?.seekTo(pos.coerceIn(0L, (player?.duration ?: 0).toLong()).toInt())
@@ -403,6 +532,7 @@ class MusicPlaybackService : Service() {
         runCatching { player?.stop() }
         player?.release()
         player = null
+        mediaPrepared = false
         queue.clear()
         baseQueue.clear()
         index = -1
@@ -526,11 +656,6 @@ class MusicPlaybackService : Service() {
                 }
             )
         }
-    }
-
-    override fun onTaskRemoved(rootIntent: Intent?) {
-        stopPlayback()
-        super.onTaskRemoved(rootIntent)
     }
 
     override fun onDestroy() {

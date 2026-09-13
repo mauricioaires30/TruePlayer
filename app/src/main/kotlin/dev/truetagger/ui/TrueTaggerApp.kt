@@ -36,6 +36,7 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -73,6 +74,7 @@ import dev.truetagger.model.ImportStatus
 import dev.truetagger.model.MetadataResult
 import dev.truetagger.model.TagWriteResult
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
@@ -142,7 +144,6 @@ fun CurrentTrackScreen(
         track.discNumber,
         track.discTotal,
         track.genre,
-        track.isrc,
         track.artworkBytes?.contentHashCode(),
     ) {
         if (!hasUserEdited && draft == null) {
@@ -150,11 +151,17 @@ fun CurrentTrackScreen(
         }
     }
 
-    LaunchedEffect(track.id) {
-        if (query.isNotBlank()) {
-            searching = true
-            results = broadMetadataSearch(repo, query, track)
+    LaunchedEffect(track.id, query) {
+        delay(350)
+        if (query.isBlank()) {
+            results = emptyList()
             searching = false
+        } else {
+            searching = true
+            val value = broadMetadataSearch(repo, query, track)
+            results = value
+            searching = false
+            if (value.isEmpty()) message = "Nenhum resultado encontrado."
         }
     }
 
@@ -182,7 +189,6 @@ fun CurrentTrackScreen(
                 discTotal = result.discTotal?.toString() ?: editor.discTotal,
                 year = result.year.ifBlank { editor.year },
                 genre = result.genre.ifBlank { editor.genre },
-                isrc = result.isrc.ifBlank { editor.isrc },
                 artworkBytes = if (result.artworkUrl.isNotBlank()) null else editor.artworkBytes,
                 artworkUrl = result.artworkUrl.ifBlank { editor.artworkUrl },
             )
@@ -191,24 +197,17 @@ fun CurrentTrackScreen(
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(14.dp),
+        modifier = Modifier.fillMaxSize().padding(horizontal = UiTokens.screenPadding, vertical = UiTokens.compactPadding),
+        verticalArrangement = Arrangement.spacedBy(UiTokens.sectionSpacing + UiTokens.itemSpacing),
     ) {
         item {
             SectionTitle("Buscar metadados", "A pesquisa começa pelo nome do arquivo/vídeo.")
             SearchBar(
-                query = query,
-                searching = searching,
-                onQueryChange = { query = it },
-                onSearch = {
-                    searching = true
-                    message = null
-                    scope.launch {
-                        results = broadMetadataSearch(repo, query, track)
-                        searching = false
-                        if (results.isEmpty()) message = "Nenhum resultado encontrado."
-                    }
-                },
+                value = query,
+                onValueChange = { query = it; message = null },
+                placeholder = "Nome da música ou vídeo",
+                modifier = Modifier.fillMaxWidth(),
+                trailingContent = if (searching) { { CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp) } } else null,
             )
         }
 
@@ -245,11 +244,11 @@ fun CurrentTrackScreen(
         item {
             SectionTitle("Organização do álbum")
             FormCard {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
                     Box(Modifier.weight(1f)) { EditableField("Faixa", editor.trackNumber) { updateEditor(editor.copy(trackNumber = it)) } }
                     Box(Modifier.weight(1f)) { EditableField("Total de faixas", editor.trackTotal) { updateEditor(editor.copy(trackTotal = it)) } }
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
                     Box(Modifier.weight(1f)) { EditableField("Disco", editor.discNumber) { updateEditor(editor.copy(discNumber = it)) } }
                     Box(Modifier.weight(1f)) { EditableField("Total de discos", editor.discTotal) { updateEditor(editor.copy(discTotal = it)) } }
                 }
@@ -259,11 +258,10 @@ fun CurrentTrackScreen(
         item {
             SectionTitle("Detalhes")
             FormCard {
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
                     Box(Modifier.weight(1f)) { EditableField("Ano", editor.year) { updateEditor(editor.copy(year = it)) } }
                     Box(Modifier.weight(1f)) { EditableField("Gênero", editor.genre) { updateEditor(editor.copy(genre = it)) } }
                 }
-                EditableField("ISRC", editor.isrc) { updateEditor(editor.copy(isrc = it)) }
                 if (track.durationMs > 0) {
                     Text("Duração: ${formatDuration(track.durationMs)}", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                 }
@@ -342,42 +340,6 @@ private suspend fun broadMetadataSearch(repo: MetadataRepository, raw: String, t
 }
 
 @Composable
-private fun SearchBar(query: String, searching: Boolean, onQueryChange: (String) -> Unit, onSearch: () -> Unit) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = onQueryChange,
-            modifier = Modifier.weight(1f),
-            singleLine = true,
-            leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
-            placeholder = { Text("Nome da música ou vídeo") },
-        )
-        Button(enabled = query.isNotBlank() && !searching, onClick = onSearch, shape = RoundedCornerShape(15.dp)) {
-            Text(if (searching) "..." else "Buscar")
-        }
-    }
-}
-
-@Composable
-private fun SectionTitle(title: String, subtitle: String = "") {
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        if (subtitle.isNotBlank()) Text(subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-@Composable
-private fun FormCard(content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Column(Modifier.fillMaxWidth().padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp), content = content)
-    }
-}
-
-@Composable
 private fun SuggestionStrip(
     track: AudioTrack,
     results: List<MetadataResult>,
@@ -395,7 +357,7 @@ private fun SuggestionStrip(
         LazyRow(
             state = suggestionState,
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            horizontalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing),
         ) {
             item {
                 SuggestionCard(
@@ -465,7 +427,7 @@ private fun SuggestionCard(
 private fun CurrentTrackPreviewDialog(track: AudioTrack, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
                 ArtworkBox(track.artworkBytes, "", Modifier.fillMaxWidth().height(260.dp))
                 Text(track.displayTitle(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 if (track.artist.isNotBlank()) Text(track.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -481,7 +443,7 @@ private fun CurrentTrackPreviewDialog(track: AudioTrack, onDismiss: () -> Unit) 
 private fun SuggestionPreviewDialog(result: MetadataResult, onDismiss: () -> Unit, onUse: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
         Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
                 ArtworkBox(null, result.artworkUrl, Modifier.fillMaxWidth().height(260.dp))
                 Text(result.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Text(result.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -493,7 +455,7 @@ private fun SuggestionPreviewDialog(result: MetadataResult, onDismiss: () -> Uni
                     if (result.genre.isNotBlank()) add(result.genre)
                 }.joinToString(" • ")
                 if (details.isNotBlank()) Text(details, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
                     TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Fechar") }
                     Button(onClick = onUse, modifier = Modifier.weight(1f)) { Text("Usar") }
                 }
@@ -529,7 +491,7 @@ private fun ArtworkEditor(artworkBytes: ByteArray?, artworkUrl: String, onPickAr
         shape = RoundedCornerShape(22.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
-        Column(Modifier.fillMaxWidth().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Column(Modifier.fillMaxWidth().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
             ArtworkBox(
                 artworkBytes,
                 artworkUrl,
@@ -542,11 +504,6 @@ private fun ArtworkEditor(artworkBytes: ByteArray?, artworkUrl: String, onPickAr
             }
         }
     }
-}
-
-@Composable
-private fun EditableField(label: String, value: String, onValueChange: (String) -> Unit) {
-    OutlinedTextField(value = value, onValueChange = onValueChange, modifier = Modifier.fillMaxWidth(), singleLine = true, label = { Text(label) })
 }
 
 @Composable

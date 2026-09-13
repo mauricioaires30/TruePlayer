@@ -129,6 +129,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
+        if (isFinishing) {
+            runCatching { stopService(Intent(this, MusicPlaybackService::class.java)) }
+        }
         writeContinuation?.cancel()
         mediaRefreshJob?.cancel()
         if (::mediaObserver.isInitialized) {
