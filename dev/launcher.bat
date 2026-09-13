@@ -269,11 +269,12 @@ exit /b 0
 
 :launch_app_failed
 echo.
-echo [TrueTagger] The app did not stay open. Recent Android log:
-"%ADB%" -s "%SERIAL%" logcat -d -t 160 AndroidRuntime:E ActivityTaskManager:I ActivityManager:I *:S
+echo [TrueTagger] The app did not stay open. Showing only errors from TrueTagger:
 echo.
-echo [TrueTagger] Full log saved to dev\last-logcat.txt
-"%ADB%" -s "%SERIAL%" logcat -d > "%PROJECT%\last-logcat.txt"
+"%ADB%" -s "%SERIAL%" logcat -d -v time -t 240 AndroidRuntime:E *:S
+echo.
+echo [TrueTagger] Full error log saved to dev\last-error-logcat.txt
+"%ADB%" -s "%SERIAL%" logcat -d -v time AndroidRuntime:E *:S > "%PROJECT%\last-error-logcat.txt"
 exit /b 1
 
 :wake_phone

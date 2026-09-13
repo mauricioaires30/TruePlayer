@@ -1,11 +1,8 @@
-# Local development tools and caches
-.tools/
+# Gradle / build
+.gradle/
 .gradle-local/
-.android-home/
-
-# Build output
-app/build/
-dist/
+build/
+**/build/
 
 # IDE / local files
 .idea/
@@ -22,3 +19,15 @@ signing.properties
 # OS
 .DS_Store
 Thumbs.db
+
+# Kotlin/Java
+*.hprof
+
+# APKs
+*.apk
+*.aab
+
+# Arquivos gerados
+captures/
+.externalNativeBuild/
+.cxx/

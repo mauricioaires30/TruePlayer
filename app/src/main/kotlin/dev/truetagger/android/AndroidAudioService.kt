@@ -4,6 +4,7 @@ import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
 import android.net.Uri
+import android.provider.DocumentsContract
 import android.os.Build
 import android.provider.MediaStore
 import android.provider.OpenableColumns
@@ -20,8 +21,16 @@ import java.net.URL
 class AndroidAudioService(private val context: Context) {
     private val resolver get() = context.contentResolver
 
-    fun scanLibrary(): List<AudioTrack> {
+    fun scanLibrary(treeUri: Uri?): List<AudioTrack> {
+        if (treeUri == null) return emptyList()
         val tracks = mutableListOf<AudioTrack>()
+        val rootRelativePath = runCatching {
+            DocumentsContract.getTreeDocumentId(treeUri)
+                .substringAfter(":", "")
+                .trimStart('/')
+                .let { if (it.isBlank()) "" else if (it.endsWith('/')) it else "$it/" }
+        }.getOrDefault("")
+        if (rootRelativePath.isBlank()) return emptyList()
         val collections = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             MediaStore.getExternalVolumeNames(context).map { MediaStore.Audio.Media.getContentUri(it) }
         } else {
@@ -35,17 +44,28 @@ class AndroidAudioService(private val context: Context) {
                 MediaStore.Audio.Media.TITLE,
                 MediaStore.Audio.Media.ARTIST,
                 MediaStore.Audio.Media.ALBUM,
+                MediaStore.Audio.Media.GENRE,
                 MediaStore.Audio.Media.TRACK,
                 MediaStore.Audio.Media.YEAR,
                 MediaStore.Audio.Media.DURATION,
                 MediaStore.Audio.Media.DATE_MODIFIED,
                 MediaStore.Audio.Media.SIZE,
             )
+            val selection: String
+            val selectionArgs: Array<String>?
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                selection = "${MediaStore.Audio.Media.RELATIVE_PATH} LIKE ?"
+                selectionArgs = arrayOf("$rootRelativePath%")
+            } else {
+                val absoluteRoot = "/storage/emulated/0/$rootRelativePath"
+                selection = "${MediaStore.Audio.Media.DATA} LIKE ?"
+                selectionArgs = arrayOf("$absoluteRoot%")
+            }
             resolver.query(
                 collection,
                 projection,
-                "${MediaStore.Audio.Media.IS_MUSIC} != 0",
-                null,
+                selection,
+                selectionArgs,
                 "${MediaStore.Audio.Media.TITLE} COLLATE NOCASE ASC",
             )?.use { cursor ->
                 val id = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media._ID)
@@ -53,6 +73,7 @@ class AndroidAudioService(private val context: Context) {
                 val title = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
                 val artist = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
                 val album = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
+                val genre = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.GENRE)
                 val track = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
                 val year = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR)
                 val duration = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
@@ -70,6 +91,7 @@ class AndroidAudioService(private val context: Context) {
                         title = cursor.getString(title).orEmpty(),
                         artist = cursor.getString(artist).orEmpty().takeUnless { it == "<unknown>" }.orEmpty(),
                         album = cursor.getString(album).orEmpty().takeUnless { it == "<unknown>" }.orEmpty(),
+                        genre = cursor.getString(genre).orEmpty().takeUnless { it == "<unknown>" }.orEmpty(),
                         trackNumber = trackValue,
                         year = cursor.getInt(year).takeIf { it > 0 }?.toString().orEmpty(),
                         durationMs = cursor.getLong(duration),

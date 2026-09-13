@@ -3,6 +3,7 @@ package dev.truetagger.android
 import android.Manifest
 import android.app.RecoverableSecurityException
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.database.ContentObserver
 import android.net.Uri
@@ -24,7 +25,7 @@ import dev.truetagger.model.AudioTrack
 import dev.truetagger.model.EditableTags
 import dev.truetagger.model.ImportStatus
 import dev.truetagger.model.TagWriteResult
-import dev.truetagger.ui.TrueTaggerApp
+import dev.truetagger.ui.TrueTaggerPlayerApp
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -91,13 +92,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         audioService = AndroidAudioService(this)
         downloadFolderLabel = savedDownloadTree()?.let(::folderLabel).orEmpty()
         settings = loadSettings()
         registerMediaObserver()
 
         setContent {
-            TrueTaggerApp(
+            TrueTaggerPlayerApp(
                 tracks = tracks,
                 selectedTrack = selectedTrack,
                 libraryLoading = libraryLoading,
@@ -105,9 +107,9 @@ class MainActivity : ComponentActivity() {
                 onBackToLibrary = { selectedTrack = null },
                 onRefreshLibrary = ::ensurePermissionThenRefresh,
                 onSaveEdits = ::saveEdits,
+                settings = settings,
                 downloadFolderLabel = downloadFolderLabel,
                 onChooseDownloadFolder = { folderPicker.launch(savedDownloadTree()) },
-                settings = settings,
                 onSettingsChange = ::updateSettings,
                 appVersion = runCatching { packageManager.getPackageInfo(packageName, 0).versionName.orEmpty() }.getOrDefault(""),
                 importStatus = importStatus,
@@ -203,7 +205,7 @@ class MainActivity : ComponentActivity() {
         libraryLoading = true
         appScope.launch {
             tracks = withContext(Dispatchers.IO) {
-                runCatching { audioService.scanLibrary() }.getOrDefault(emptyList())
+                runCatching { audioService.scanLibrary(savedDownloadTree()) }.getOrDefault(emptyList())
             }
             selectedTrack = selectedTrack?.let { selected ->
                 tracks.firstOrNull { it.id == selected.id }?.copy(

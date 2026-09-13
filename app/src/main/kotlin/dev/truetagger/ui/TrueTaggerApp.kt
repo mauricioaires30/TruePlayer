@@ -2,12 +2,9 @@ package dev.truetagger.ui
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.media.MediaMetadataRetriever
-import android.net.Uri
-import androidx.activity.compose.BackHandler
+import android.util.Size
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -18,7 +15,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -30,36 +26,22 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.FilterList
-import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Image
-import androidx.compose.material.icons.rounded.Info
-import androidx.compose.material.icons.rounded.MusicNote
-import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.Search
-import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
@@ -67,12 +49,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -81,13 +61,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import dev.truetagger.android.R
 import dev.truetagger.metadata.MetadataRepository
 import dev.truetagger.model.AppSettings
 import dev.truetagger.model.AudioTrack
@@ -99,22 +76,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
 
-private enum class AppScreen { Library, Editor, Settings }
-
-private enum class SortMode(val label: String) {
-    Modified("Data de modificação"),
-    Title("Título"),
-    Artist("Artista"),
-    Album("Álbum"),
-    Size("Tamanho"),
-    Duration("Duração"),
-}
-
-private val TrueTaggerDarkScheme = darkColorScheme(
+val TrueTaggerDarkScheme = darkColorScheme(
     primary = Color(0xFFA98BFF),
     onPrimary = Color(0xFF1A1035),
     secondary = Color(0xFF71DEC0),
@@ -134,348 +97,7 @@ private val TrueTaggerDarkScheme = darkColorScheme(
 )
 
 @Composable
-fun TrueTaggerApp(
-    tracks: List<AudioTrack>,
-    selectedTrack: AudioTrack?,
-    libraryLoading: Boolean,
-    onSelectTrack: (AudioTrack) -> Unit,
-    onBackToLibrary: () -> Unit,
-    onRefreshLibrary: () -> Unit,
-    onSaveEdits: suspend (AudioTrack, EditableTags) -> TagWriteResult,
-    downloadFolderLabel: String = "",
-    onChooseDownloadFolder: (() -> Unit)? = null,
-    settings: AppSettings = AppSettings(),
-    onSettingsChange: (AppSettings) -> Unit = {},
-    appVersion: String = "",
-    importStatus: ImportStatus? = null,
-    onDismissImportStatus: () -> Unit = {},
-    modifier: Modifier = Modifier,
-) {
-    var screen by rememberSaveable { mutableStateOf(AppScreen.Library) }
-    val drafts = remember { mutableStateMapOf<String, EditableTags>() }
-
-    LaunchedEffect(screen) {
-        if (screen == AppScreen.Library) onRefreshLibrary()
-    }
-
-    fun goHome() {
-        screen = AppScreen.Library
-        onBackToLibrary()
-    }
-
-    BackHandler(enabled = screen != AppScreen.Library) {
-        goHome()
-    }
-
-    MaterialTheme(colorScheme = TrueTaggerDarkScheme) {
-        Scaffold(
-            modifier = modifier.fillMaxSize(),
-            containerColor = MaterialTheme.colorScheme.background,
-            topBar = {
-                AppHeader(
-                    screen = screen,
-                    trackTitle = selectedTrack?.displayTitle().orEmpty(),
-                    onBack = ::goHome,
-                    onSettings = { screen = AppScreen.Settings },
-                )
-            },
-        ) { innerPadding ->
-            Column(Modifier.fillMaxSize().padding(innerPadding)) {
-                importStatus?.let { ImportBanner(it, onDismissImportStatus) }
-                when (screen) {
-                    AppScreen.Library -> LibraryScreen(
-                        tracks = tracks,
-                        loading = libraryLoading,
-                        onSelectTrack = {
-                            onSelectTrack(it)
-                            screen = AppScreen.Editor
-                        },
-                        onRefreshLibrary = onRefreshLibrary,
-                    )
-
-                    AppScreen.Editor -> CurrentTrackScreen(
-                        track = selectedTrack,
-                        draft = selectedTrack?.let { drafts[it.id] },
-                        settings = settings,
-                        onDraftChange = { trackId, draft -> drafts[trackId] = draft },
-                        onSaveEdits = { track, edits ->
-                            val result = onSaveEdits(track, edits)
-                            if (result.success) {
-                                drafts[track.id] = result.updatedTrack?.toEditableTags() ?: edits
-                            }
-                            result
-                        },
-                    )
-
-                    AppScreen.Settings -> SettingsScreen(
-                        downloadFolderLabel = downloadFolderLabel,
-                        onChooseDownloadFolder = onChooseDownloadFolder,
-                        settings = settings,
-                        onSettingsChange = onSettingsChange,
-                        appVersion = appVersion,
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun AppHeader(
-    screen: AppScreen,
-    trackTitle: String,
-    onBack: () -> Unit,
-    onSettings: () -> Unit,
-) {
-    Surface(color = MaterialTheme.colorScheme.surface) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-        ) {
-            if (screen != AppScreen.Library) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.Rounded.ArrowBack, contentDescription = "Voltar")
-                }
-            } else {
-                Image(
-                    painter = painterResource(R.drawable.truetagger_icon),
-                    contentDescription = null,
-                    modifier = Modifier.size(34.dp).clip(RoundedCornerShape(10.dp)),
-                )
-            }
-
-            Column(Modifier.weight(1f)) {
-                Text(
-                    when (screen) {
-                        AppScreen.Library -> "TrueTagger"
-                        AppScreen.Editor -> "Editar música"
-                        AppScreen.Settings -> "Configurações"
-                    },
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                )
-                if (screen == AppScreen.Editor && trackTitle.isNotBlank()) {
-                    Text(
-                        trackTitle,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        style = MaterialTheme.typography.bodySmall,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
-            }
-
-            if (screen == AppScreen.Library) {
-                IconButton(onClick = onSettings) {
-                    Icon(Icons.Rounded.Settings, contentDescription = "Configurações")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun LibraryScreen(
-    tracks: List<AudioTrack>,
-    loading: Boolean,
-    onSelectTrack: (AudioTrack) -> Unit,
-    onRefreshLibrary: () -> Unit,
-) {
-    var search by rememberSaveable { mutableStateOf("") }
-    var sortMode by rememberSaveable { mutableStateOf(SortMode.Modified) }
-    var ascending by rememberSaveable { mutableStateOf(false) }
-
-    val shown = remember(tracks, search, sortMode, ascending) {
-        val filtered = if (search.isBlank()) tracks else tracks.filter { track ->
-            sequenceOf(track.title, track.artist, track.album, track.displayName)
-                .any { it.contains(search, ignoreCase = true) }
-        }
-        filtered.sortedWith { a, b ->
-            val result = when (sortMode) {
-                SortMode.Modified -> a.modifiedAtSeconds.compareTo(b.modifiedAtSeconds)
-                SortMode.Title -> a.displayTitle().compareTo(b.displayTitle(), ignoreCase = true)
-                SortMode.Artist -> a.artist.ifBlank { a.displayTitle() }.compareTo(b.artist.ifBlank { b.displayTitle() }, ignoreCase = true)
-                SortMode.Album -> a.album.ifBlank { a.displayTitle() }.compareTo(b.album.ifBlank { b.displayTitle() }, ignoreCase = true)
-                SortMode.Size -> a.sizeBytes.compareTo(b.sizeBytes)
-                SortMode.Duration -> a.durationMs.compareTo(b.durationMs)
-            }
-            if (ascending) result else -result
-        }
-    }
-
-    Column(
-        Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Column(Modifier.weight(1f)) {
-                Text("Biblioteca", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text(
-                    "${sortMode.label} • ${if (ascending) "mais antigos primeiro" else "mais recentes primeiro"}",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            CompactSortMenu(sortMode, ascending) { mode ->
-                if (mode == sortMode) ascending = !ascending
-                else {
-                    sortMode = mode
-                    ascending = mode != SortMode.Modified
-                }
-            }
-        }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = search,
-                onValueChange = { search = it },
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-                leadingIcon = { Icon(Icons.Rounded.Search, contentDescription = null) },
-                placeholder = { Text("Pesquisar músicas...") },
-            )
-            IconButton(
-                onClick = onRefreshLibrary,
-                enabled = !loading,
-                modifier = Modifier.size(50.dp).clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surface),
-            ) {
-                Icon(Icons.Rounded.Refresh, contentDescription = "Atualizar")
-            }
-        }
-
-        if (loading && tracks.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth(0.55f))
-            }
-        } else if (shown.isEmpty()) {
-            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    if (tracks.isEmpty()) "Nenhuma música encontrada" else "Nenhum resultado encontrado",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        } else {
-            val listState = rememberLazyListState()
-            Box(Modifier.fillMaxWidth().weight(1f)) {
-                LazyColumn(
-                    state = listState,
-                    modifier = Modifier.fillMaxSize().padding(end = 7.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(shown, key = { it.id }) { track ->
-                        LibraryTrackRow(track = track, sortMode = sortMode, onClick = { onSelectTrack(track) })
-                    }
-                }
-                VerticalLazyScrollbar(
-                    state = listState,
-                    modifier = Modifier.align(Alignment.CenterEnd).fillMaxHeight().width(4.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun CompactSortMenu(sortMode: SortMode, ascending: Boolean, onSelect: (SortMode) -> Unit) {
-    var expanded by remember { mutableStateOf(false) }
-    Box {
-        IconButton(
-            onClick = { expanded = true },
-            modifier = Modifier.size(44.dp).clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
-        ) {
-            Icon(Icons.Rounded.FilterList, contentDescription = "Ordenar")
-        }
-        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-            SortMode.entries.forEach { mode ->
-                val selected = mode == sortMode
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            buildString {
-                                if (selected) append(if (ascending) "↑ " else "↓ ")
-                                append(mode.label)
-                            },
-                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                        )
-                    },
-                    onClick = {
-                        onSelect(mode)
-                        expanded = false
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LibraryTrackRow(track: AudioTrack, sortMode: SortMode, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Row(
-            Modifier.fillMaxWidth().padding(11.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            TrackArtworkThumbnail(track = track, modifier = Modifier.size(54.dp))
-            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                Text(track.displayTitle(), fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                if (track.artist.isNotBlank()) {
-                    Text(track.artist, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-                if (track.album.isNotBlank()) {
-                    Text(track.album, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.labelSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(3.dp)) {
-                val top = when (sortMode) {
-                    SortMode.Modified -> formatModifiedDate(track.modifiedAtSeconds)
-                    SortMode.Size -> formatFileSize(track.sizeBytes)
-                    else -> ""
-                }
-                if (top.isNotBlank()) Text(top, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (track.durationMs > 0) Text(formatDuration(track.durationMs), style = MaterialTheme.typography.labelMedium)
-            }
-        }
-    }
-}
-
-@Composable
-private fun TrackArtworkThumbnail(track: AudioTrack, modifier: Modifier = Modifier) {
-    val context = LocalContext.current
-    val bitmap by produceState<Bitmap?>(initialValue = null, track.id, track.artworkBytes?.contentHashCode()) {
-        value = withContext(Dispatchers.IO) {
-            val bytes = track.artworkBytes ?: runCatching {
-                val retriever = MediaMetadataRetriever()
-                try {
-                    retriever.setDataSource(context, Uri.parse(track.id))
-                    retriever.embeddedPicture
-                } finally {
-                    runCatching { retriever.release() }
-                }
-            }.getOrNull()
-            bytes?.let { runCatching { BitmapFactory.decodeByteArray(it, 0, it.size) }.getOrNull() }
-        }
-    }
-    Box(
-        modifier = modifier.clip(RoundedCornerShape(14.dp)).background(MaterialTheme.colorScheme.surfaceVariant),
-        contentAlignment = Alignment.Center,
-    ) {
-        if (bitmap != null) {
-            Image(bitmap!!.asImageBitmap(), contentDescription = null, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
-        } else {
-            Icon(Icons.Rounded.MusicNote, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-        }
-    }
-}
-
-@Composable
-private fun CurrentTrackScreen(
+fun CurrentTrackScreen(
     track: AudioTrack?,
     draft: EditableTags?,
     settings: AppSettings,
@@ -531,13 +153,7 @@ private fun CurrentTrackScreen(
     LaunchedEffect(track.id) {
         if (query.isNotBlank()) {
             searching = true
-            val primary = repo.search(query)
-            results = if (primary.isNotEmpty()) {
-                primary
-            } else {
-                val fallback = listOf(track.artist, track.title).filter(String::isNotBlank).joinToString(" ")
-                if (fallback.isNotBlank() && !fallback.equals(query, ignoreCase = true)) repo.search(fallback) else emptyList()
-            }
+            results = broadMetadataSearch(repo, query, track)
             searching = false
         }
     }
@@ -588,7 +204,7 @@ private fun CurrentTrackScreen(
                     searching = true
                     message = null
                     scope.launch {
-                        results = repo.search(query)
+                        results = broadMetadataSearch(repo, query, track)
                         searching = false
                         if (results.isEmpty()) message = "Nenhum resultado encontrado."
                     }
@@ -694,6 +310,35 @@ private fun CurrentTrackScreen(
             },
         )
     }
+}
+
+
+private fun cleanMetadataQuery(raw: String): String {
+    var q = raw
+    val removable = listOf(
+        "official visualizer", "official visualization", "official video",
+        "official audio", "official music video", "music video",
+        "lyric video", "lyrics video", "lyrics", "visualizer",
+        "audio oficial", "vídeo oficial", "video oficial"
+    )
+    removable.forEach { q = q.replace(Regex("\\b${Regex.escape(it)}\\b", RegexOption.IGNORE_CASE), " ") }
+    q = q.replace(Regex("\\[[^\\]]*(official|visualizer|lyrics|audio|video)[^\\]]*\\]", RegexOption.IGNORE_CASE), " ")
+    q = q.replace(Regex("\\([^)]*(official|visualizer|lyrics|audio|video)[^)]*\\)", RegexOption.IGNORE_CASE), " ")
+    return q.replace(Regex("\\s+"), " ").trim()
+}
+
+private suspend fun broadMetadataSearch(repo: MetadataRepository, raw: String, track: AudioTrack): List<MetadataResult> {
+    val cleaned = cleanMetadataQuery(raw)
+    val candidates = linkedSetOf<String>()
+    listOf(
+        cleaned,
+        track.cleanDisplayTitle().let(::cleanMetadataQuery),
+        listOf(track.title, track.artist).filter { it.isNotBlank() }.joinToString(" "),
+        listOf(track.artist, track.title, track.album).filter { it.isNotBlank() }.joinToString(" ")
+    ).forEach { q -> if (q.isNotBlank()) candidates += q }
+
+    val all = candidates.flatMap { runCatching { repo.search(it) }.getOrDefault(emptyList()) }
+    return all.distinctBy { "${it.source}:${it.sourceId}" }.take(24)
 }
 
 @Composable
@@ -858,7 +503,7 @@ private fun SuggestionPreviewDialog(result: MetadataResult, onDismiss: () -> Uni
 }
 
 @Composable
-private fun ArtworkBox(bytes: ByteArray?, url: String, modifier: Modifier = Modifier) {
+fun ArtworkBox(bytes: ByteArray?, url: String, modifier: Modifier = Modifier) {
     val bitmap by produceState<Bitmap?>(initialValue = null, bytes?.contentHashCode(), url) {
         value = withContext(Dispatchers.IO) {
             when {
@@ -905,7 +550,7 @@ private fun EditableField(label: String, value: String, onValueChange: (String) 
 }
 
 @Composable
-private fun ImportBanner(status: ImportStatus, onDismiss: () -> Unit) {
+fun ImportBanner(status: ImportStatus, onDismiss: () -> Unit) {
     val title = when {
         status.failed -> "Falha no download"
         status.completed -> "Download iniciado"
@@ -926,179 +571,6 @@ private fun ImportBanner(status: ImportStatus, onDismiss: () -> Unit) {
                 LinearProgressIndicator(progress = { progress.coerceIn(0, 100) / 100f }, modifier = Modifier.fillMaxWidth())
             }
         }
-    }
-}
-
-@Composable
-private fun SettingsScreen(
-    downloadFolderLabel: String,
-    onChooseDownloadFolder: (() -> Unit)?,
-    settings: AppSettings,
-    onSettingsChange: (AppSettings) -> Unit,
-    appVersion: String,
-) {
-    LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-    ) {
-        item {
-            SettingsSectionTitle("Biblioteca")
-            SettingsCard {
-                SettingSwitchRow(
-                    icon = { Icon(Icons.Rounded.Refresh, contentDescription = null) },
-                    title = "Atualização automática",
-                    subtitle = "Detectar novas músicas sem precisar atualizar manualmente",
-                    checked = settings.autoRefreshLibrary,
-                    onCheckedChange = { onSettingsChange(settings.copy(autoRefreshLibrary = it)) },
-                )
-            }
-        }
-
-        item {
-            SettingsSectionTitle("Downloads")
-            SettingsCard {
-                SettingActionRow(
-                    icon = { Icon(Icons.Rounded.Folder, contentDescription = null) },
-                    title = "Pasta de download",
-                    subtitle = downloadFolderLabel.ifBlank { "Nenhuma pasta escolhida" },
-                    onClick = { onChooseDownloadFolder?.invoke() },
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-                SettingSwitchRow(
-                    icon = { Icon(Icons.Rounded.Image, contentDescription = null) },
-                    title = "Usar thumbnail como capa",
-                    subtitle = "Incorporar a imagem do vídeo no MP3 baixado",
-                    checked = settings.embedYoutubeThumbnail,
-                    onCheckedChange = { onSettingsChange(settings.copy(embedYoutubeThumbnail = it)) },
-                )
-                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
-                SettingSwitchRow(
-                    icon = { Icon(Icons.Rounded.Refresh, contentDescription = null) },
-                    title = "Atualizar downloader",
-                    subtitle = "Manter a compatibilidade com mudanças do YouTube",
-                    checked = settings.autoUpdateDownloader,
-                    onCheckedChange = { onSettingsChange(settings.copy(autoUpdateDownloader = it)) },
-                )
-            }
-        }
-
-        item {
-            SettingsSectionTitle("Fontes extras")
-            SettingsCard {
-                SettingCredentialField(
-                    title = "Genius Access Token",
-                    value = settings.geniusAccessToken,
-                    secret = true,
-                    onValueChange = { onSettingsChange(settings.copy(geniusAccessToken = it)) },
-                )
-            }
-        }
-
-        item {
-            SettingsSectionTitle("Aplicativo")
-            SettingsCard {
-                SettingActionRow(
-                    icon = { Icon(Icons.Rounded.Info, contentDescription = null) },
-                    title = "TrueTagger",
-                    subtitle = if (appVersion.isBlank()) "Versão atual" else "Versão $appVersion",
-                    onClick = {},
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SettingsSectionTitle(text: String) {
-    Text(text, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
-}
-
-@Composable
-private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Column(Modifier.fillMaxWidth(), content = content)
-    }
-}
-
-@Composable
-private fun SettingSwitchRow(
-    icon: @Composable () -> Unit,
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Row(Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) { icon() }
-        Column(Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-        }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
-    }
-}
-
-@Composable
-private fun SettingCredentialField(
-    title: String,
-    value: String,
-    secret: Boolean,
-    onValueChange: (String) -> Unit,
-) {
-    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Text(title, fontWeight = FontWeight.SemiBold)
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            visualTransformation = if (secret) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
-        )
-    }
-}
-
-@Composable
-private fun SettingActionRow(
-    icon: @Composable () -> Unit,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit,
-) {
-    Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        Box(Modifier.size(38.dp).clip(RoundedCornerShape(12.dp)).background(MaterialTheme.colorScheme.primaryContainer), contentAlignment = Alignment.Center) { icon() }
-        Column(Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.SemiBold)
-            Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-        }
-    }
-}
-
-@Composable
-private fun VerticalLazyScrollbar(state: LazyListState, modifier: Modifier = Modifier) {
-    val info by remember { derivedStateOf { state.layoutInfo } }
-    val total = info.totalItemsCount
-    val visible = info.visibleItemsInfo.size
-    if (total <= visible || total <= 0) return
-    val first = info.visibleItemsInfo.firstOrNull()?.index ?: 0
-    Canvas(modifier) {
-        val minThumb = 28.dp.toPx()
-        val thumb = maxOf(minThumb, size.height * (visible.toFloat() / total.toFloat()))
-        val maxIndex = maxOf(1, total - visible)
-        val top = (size.height - thumb) * (first.toFloat() / maxIndex.toFloat()).coerceIn(0f, 1f)
-        drawRoundRect(
-            color = Color.White.copy(alpha = 0.28f),
-            topLeft = androidx.compose.ui.geometry.Offset(0f, top),
-            size = androidx.compose.ui.geometry.Size(size.width, thumb),
-            cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width / 2f),
-        )
     }
 }
 
@@ -1145,17 +617,6 @@ private fun AudioTrack.cleanDisplayTitle(): String = displayName
     .replace(Regex("\\s*\\[[^]]+]$"), "")
     .trim()
     .ifBlank { "Sem título" }
-
-private fun formatModifiedDate(seconds: Long): String {
-    if (seconds <= 0) return ""
-    return SimpleDateFormat("dd/MM/yy", Locale.getDefault()).format(Date(seconds * 1000L))
-}
-
-private fun formatFileSize(bytes: Long): String {
-    if (bytes <= 0) return ""
-    val mb = bytes / (1024.0 * 1024.0)
-    return if (mb >= 1.0) String.format(Locale.getDefault(), "%.1f MB", mb) else "${bytes / 1024} KB"
-}
 
 private fun formatDuration(ms: Long): String {
     val seconds = ms / 1000
