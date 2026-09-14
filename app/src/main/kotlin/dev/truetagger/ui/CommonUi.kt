@@ -20,42 +20,63 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.vector.ImageVector
 
 internal object UiTokens {
-    val screenPadding = 14.dp
+    // Geometria única do app. A ordem e a posição relativa dos componentes são mantidas;
+    // apenas margens, tamanhos e espaçamentos são normalizados.
+    val screenPadding = 18.dp
     val compactPadding = 10.dp
-    val searchHeight = 56.dp
-    // Geometry shared by every list-based screen. Do not tune per-screen.
-    val scrollbarWidth = 9.dp
-    val scrollbarTouchWidth = 38.dp
-    val scrollbarThumbHeight = 180.dp
-    val scrollbarReserve = 38.dp
-    val screenHorizontalPadding = 12.dp
-    val screenVerticalPadding = 8.dp
-    val pageHorizontal = screenHorizontalPadding
-    val pageVertical = screenVerticalPadding
+    val searchHeight = 52.dp
+    val scrollbarWidth = 5.dp
+    val scrollbarTouchWidth = 28.dp
+    val scrollbarThumbHeight = 112.dp
+    val scrollbarReserve = 28.dp
+    val screenHorizontalPadding = 18.dp
+    val screenVerticalPadding = 10.dp
+    val pageHorizontal = 18.dp
+    val pageVertical = 10.dp
     val standardToolbarPadding = 0.dp
     val standardListTopSpacing = 6.dp
-    val selectionRowHeight = 42.dp
+    val selectionRowHeight = 44.dp
     val listHeaderGap = 6.dp
-    val songListEndPadding = scrollbarReserve
-    val songListSpacing = 4.dp
-    val songListBottomPadding = 16.dp
-    val jumpEndPadding = 8.dp
-    val jumpBottomPadding = 8.dp
-    val scrollbarInset = 2.dp
-    val headerPadding = 4.dp
+    val songListEndPadding = 28.dp
+    val songListSpacing = 5.dp
+    val songListBottomPadding = 8.dp
+    val jumpEndPadding = 6.dp
+    val jumpBottomPadding = 6.dp
+    val scrollbarInset = 1.dp
+    val headerPadding = 0.dp
     val toolbarGap = 8.dp
     val titleSpacing = 6.dp
     val sectionSpacing = 8.dp
-    val itemSpacing = 4.dp
+    val itemSpacing = 3.dp
     val cardRadius = 12.dp
-    val cardPadding = 14.dp
-    val cardItemHorizontalPadding = 10.dp
-    val reorderControlsWidth = 44.dp
-    val formFieldSpacing = 10.dp
-    val songItemRadius = 8.dp
-    val songItemPadding = 4.dp
-    val songItemArtworkSize = 50.dp
-    val songItemSpacing = 2.dp
+    val cardPadding = 10.dp
+    val cardItemHorizontalPadding = 8.dp
+    val reorderControlsWidth = 40.dp
+    val formFieldSpacing = 8.dp
+    val songItemRadius = 10.dp
+    val songItemPadding = 5.dp
+    val songItemArtworkSize = 48.dp
+    val songItemSpacing = 4.dp
+    val compactRowHeight = 64.dp
+    val albumCardHeight = 300.dp
+    val albumArtworkHeight = 152.dp
+    val bottomBarHeight = 64.dp
+    // Botões e controles interativos mantêm sua geometria original.
+    val controlHeight = 48.dp
+    val toolbarIconButtonSize = 44.dp
+    val primaryIconSize = 22.dp
+    val smallIconSize = 20.dp
+    val mostPlayedRowHeight = 80.dp
+    val songItemHeight = 64.dp
+    val detailArtworkSize = 200.dp
+    val miniPlayerHeight = 88.dp
+    val miniPlayerArtworkSize = 48.dp
+    val rankWidth = 24.dp
+    val dialogPadding = 16.dp
+    val dialogArtworkSize = 240.dp
+    val editorArtworkSize = 210.dp
+    val suggestionCardWidth = 148.dp
+    val suggestionArtworkHeight = 124.dp
 }
 
 
@@ -72,7 +93,7 @@ internal fun CompactBottomBar(
     onSelected: (Int) -> Unit,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth().height(68.dp),
+        modifier = Modifier.fillMaxWidth().height(UiTokens.bottomBarHeight),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 2.dp,
     ) {
@@ -83,21 +104,21 @@ internal fun CompactBottomBar(
                         .weight(1f)
                         .fillMaxHeight()
                         .clickable { onSelected(index) }
-                        .padding(horizontal = 1.dp, vertical = 5.dp),
+                        .padding(horizontal = 1.dp, vertical = 4.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Icon(
                         imageVector = item.icon,
                         contentDescription = item.label,
-                        modifier = Modifier.size(19.dp),
+                        modifier = Modifier.size(18.dp),
                         tint = if (index == selectedIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(
                         item.label,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        fontSize = 8.sp,
+                        fontSize = 9.sp,
                         fontWeight = if (index == selectedIndex) FontWeight.SemiBold else FontWeight.Normal,
                         color = if (index == selectedIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -146,7 +167,7 @@ internal fun SelectionToolbar(
     actions: @Composable RowScope.() -> Unit = {},
 ) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        modifier = Modifier.fillMaxWidth().height(UiTokens.controlHeight),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
@@ -200,7 +221,7 @@ internal fun SectionTitle(
     subtitle: String = "",
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(3.dp)) {
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         if (subtitle.isNotBlank()) {
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = secondaryTextColor)
@@ -223,7 +244,8 @@ internal fun SearchBar(
         modifier = modifier.fillMaxWidth().height(UiTokens.searchHeight),
         enabled = enabled,
         singleLine = true,
-        placeholder = { Text(placeholder) },
+        textStyle = MaterialTheme.typography.bodyLarge,
+        placeholder = { Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         trailingIcon = trailingContent,
     )
 }
@@ -235,7 +257,7 @@ internal fun FormCard(
 ) {
     Card(
         modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(UiTokens.cardRadius),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
         Column(
@@ -265,3 +287,5 @@ internal fun EditableField(
 internal fun Modifier.screenPadding() = padding(UiTokens.screenPadding)
 internal fun Modifier.listSpace() = padding(end = UiTokens.scrollbarReserve)
 internal fun Modifier.songListSpace() = padding(end = UiTokens.songListEndPadding)
+
+internal fun Modifier.standardSongList(): Modifier = padding(end = UiTokens.scrollbarReserve)

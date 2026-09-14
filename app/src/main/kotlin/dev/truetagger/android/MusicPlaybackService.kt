@@ -11,11 +11,15 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.media.MediaPlayer
 import android.media.AudioAttributes
+import android.media.audiofx.LoudnessEnhancer
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
+import android.os.ParcelFileDescriptor
+import kotlin.math.roundToInt
+import kotlin.math.pow
 import android.provider.Settings
 import dev.truetagger.model.AudioTrack
 
@@ -31,42 +35,59 @@ class MusicPlaybackService : Service() {
         const val ACTION_STOP = "dev.truetagger.player.STOP"
         const val ACTION_PLAY_QUEUE_INDEX = "dev.truetagger.player.PLAY_QUEUE_INDEX"
         const val ACTION_REPLACE_QUEUE = "dev.truetagger.player.REPLACE_QUEUE"
+        const val ACTION_SET_VOLUME_NORMALIZATION = "dev.truetagger.player.SET_VOLUME_NORMALIZATION"
+        const val ACTION_RESTORE_LAST = "dev.truetagger.player.RESTORE_LAST"
+        const val ACTION_RECONCILE_DELETED_TRACKS = "dev.truetagger.player.RECONCILE_DELETED_TRACKS"
         const val EXTRA_TRACK_ID = "track_id"
         const val EXTRA_TRACK_TITLE = "track_title"
         const val EXTRA_TRACK_ARTIST = "track_artist"
         const val EXTRA_TRACK_ALBUM = "track_album"
         const val EXTRA_TRACK_DURATION = "track_duration"
         const val EXTRA_TRACK_ARTWORK = "track_artwork"
-        const val EXTRA_QUEUE_IDS = "queue_ids"
-        const val EXTRA_QUEUE_TITLES = "queue_titles"
-        const val EXTRA_QUEUE_ARTISTS = "queue_artists"
-        const val EXTRA_QUEUE_ALBUMS = "queue_albums"
-        const val EXTRA_QUEUE_DURATIONS = "queue_durations"
         const val EXTRA_INDEX = "index"
         const val EXTRA_START_SHUFFLE = "start_shuffle"
         const val EXTRA_POSITION = "position"
         const val EXTRA_CURRENT_ID = "current_id"
+        const val EXTRA_ENABLED = "enabled"
+        const val EXTRA_SOURCE_TYPE = "source_type"
+        const val EXTRA_SOURCE_NAME = "source_name"
+        const val EXTRA_DELETED_TRACK_IDS = "deleted_track_ids"
+        const val SOURCE_LIBRARY = "LIBRARY"
+        const val SOURCE_PLAYLIST = "PLAYLIST"
+        const val SOURCE_ALBUM = "ALBUM"
         const val CHANNEL = "truetagger_player_v4"
         const val NOTIFICATION_ID = 301
+        const val PREFS_LAST = "truetagger_last_playback"
 
-        fun play(context: Context, track: AudioTrack, queue: List<AudioTrack>, index: Int, startShuffle: Boolean = false) {
-            val i = Intent(context, MusicPlaybackService::class.java).apply {
-                action = ACTION_PLAY
-                putExtra(EXTRA_TRACK_ID, track.id)
-                putExtra(EXTRA_TRACK_TITLE, track.displayTitle())
-                putExtra(EXTRA_TRACK_ARTIST, track.artist)
-                putExtra(EXTRA_TRACK_ALBUM, track.album)
-                putExtra(EXTRA_TRACK_DURATION, track.durationMs)
-                track.artworkBytes?.let { putExtra(EXTRA_TRACK_ARTWORK, it) }
-                putStringArrayListExtra(EXTRA_QUEUE_IDS, ArrayList(queue.map { it.id }))
-                putStringArrayListExtra(EXTRA_QUEUE_TITLES, ArrayList(queue.map { it.displayTitle() }))
-                putStringArrayListExtra(EXTRA_QUEUE_ARTISTS, ArrayList(queue.map { it.artist }))
-                putStringArrayListExtra(EXTRA_QUEUE_ALBUMS, ArrayList(queue.map { it.album }))
-                putStringArrayListExtra(EXTRA_QUEUE_DURATIONS, ArrayList(queue.map { it.durationMs.toString() }))
-                putExtra(EXTRA_INDEX, index)
-                putExtra(EXTRA_START_SHUFFLE, startShuffle)
-            }
-            context.startForegroundService(i)
+        fun play(context: Context, track: AudioTrack, queue: List<AudioTrack>, index: Int, startShuffle: Boolean = false, sourceType: String = SOURCE_LIBRARY, sourceName: String = "") {
+            val safeIndex = index.coerceIn(queue.indices)
+            PlaybackRequests.set(
+                PlaybackRequest(
+                    track = queue[safeIndex],
+                    queue = queue.toList(),
+                    index = safeIndex,
+                    shuffle = startShuffle,
+                    sourceType = sourceType,
+                    sourceName = sourceName,
+                )
+            )
+            context.startForegroundService(Intent(context, MusicPlaybackService::class.java).setAction(ACTION_PLAY))
+        }
+
+        fun restoreLastPlayback(context: Context, track: AudioTrack, sourceQueue: List<AudioTrack>, index: Int, sourceType: String, sourceName: String, positionMs: Long) {
+            if (sourceQueue.isEmpty()) return
+            val safeIndex = index.coerceIn(sourceQueue.indices)
+            PlaybackRequests.set(
+                PlaybackRequest(
+                    track = track,
+                    queue = sourceQueue.toList(),
+                    index = safeIndex,
+                    sourceType = sourceType,
+                    sourceName = sourceName,
+                    restorePositionMs = positionMs.coerceAtLeast(0L),
+                )
+            )
+            context.startService(Intent(context, MusicPlaybackService::class.java).setAction(ACTION_RESTORE_LAST))
         }
 
         fun command(context: Context, action: String, position: Long? = null) {
@@ -78,14 +99,25 @@ class MusicPlaybackService : Service() {
         }
 
         fun replaceQueue(context: Context, tracks: List<AudioTrack>) {
-            if (tracks.isEmpty()) return
+            PlaybackRequests.set(PlaybackRequest(track = tracks.firstOrNull() ?: return, queue = tracks.toList(), index = 0))
+            context.startService(Intent(context, MusicPlaybackService::class.java).setAction(ACTION_REPLACE_QUEUE))
+        }
+
+        fun reconcileDeletedTracks(context: Context, trackIds: Collection<String>) {
+            val ids = trackIds.filter { it.isNotBlank() }.distinct()
+            if (ids.isEmpty()) return
+            context.startService(
+                Intent(context, MusicPlaybackService::class.java).apply {
+                    action = ACTION_RECONCILE_DELETED_TRACKS
+                    putStringArrayListExtra(EXTRA_DELETED_TRACK_IDS, ArrayList(ids))
+                }
+            )
+        }
+
+        fun setVolumeNormalization(context: Context, enabled: Boolean) {
             val i = Intent(context, MusicPlaybackService::class.java).apply {
-                action = ACTION_REPLACE_QUEUE
-                putStringArrayListExtra(EXTRA_QUEUE_IDS, ArrayList(tracks.map { it.id }))
-                putStringArrayListExtra(EXTRA_QUEUE_TITLES, ArrayList(tracks.map { it.displayTitle() }))
-                putStringArrayListExtra(EXTRA_QUEUE_ARTISTS, ArrayList(tracks.map { it.artist }))
-                putStringArrayListExtra(EXTRA_QUEUE_ALBUMS, ArrayList(tracks.map { it.album }))
-                putStringArrayListExtra(EXTRA_QUEUE_DURATIONS, ArrayList(tracks.map { it.durationMs.toString() }))
+                action = ACTION_SET_VOLUME_NORMALIZATION
+                putExtra(EXTRA_ENABLED, enabled)
             }
             context.startService(i)
         }
@@ -99,13 +131,20 @@ class MusicPlaybackService : Service() {
     private var index = -1
     private var shuffle = false
     private var repeat = RepeatMode.OFF
+    private var playbackSourceType = SOURCE_LIBRARY
+    private var playbackSourceName = ""
     private var pendingPlay = false
     private var mediaPrepared = false
+    private var mediaSourcePfd: ParcelFileDescriptor? = null
     private var playerGeneration = 0L
     private var navigationLockUntilMs = 0L
     private var notificationArtwork: android.graphics.Bitmap? = null
     private var notificationArtworkTrackId: String? = null
     private var notificationLastUpdateMs = 0L
+    private var loudnessEnhancer: LoudnessEnhancer? = null
+    private var normalizationRampGeneration = 0L
+    private var restoringLastPlayback = false
+    private var playCountRecordedGeneration = -1L
 
     private val progressRunnable = object : Runnable {
         override fun run() {
@@ -120,7 +159,7 @@ class MusicPlaybackService : Service() {
         super.onCreate()
         handler = android.os.Handler(mainLooper)
         createChannel()
-        session = MediaSession(this, "TrueTagger").apply {
+        session = MediaSession(this, "TruePlayer").apply {
             setPlaybackToLocal(AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).setUsage(AudioAttributes.USAGE_MEDIA).build())
             setSessionActivity(PendingIntent.getActivity(
                 this@MusicPlaybackService, 1, Intent(this@MusicPlaybackService, MainActivity::class.java),
@@ -148,49 +187,51 @@ class MusicPlaybackService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_PLAY -> {
-                val ids = intent.getStringArrayListExtra(EXTRA_QUEUE_IDS).orEmpty()
-                if (ids.isEmpty()) {
-                    android.util.Log.e("TrueTagger", "Não foi possível reproduzir: fila de músicas vazia")
+                val request = PlaybackRequests.take()
+                if (request == null || request.queue.isEmpty()) {
+                    android.util.Log.e("TruePlayer", "Não foi possível reproduzir: comando sem fila em memória")
+                } else {
+                    playbackSourceType = request.sourceType.ifBlank { SOURCE_LIBRARY }
+                    playbackSourceName = request.sourceName
+                    baseQueue = request.queue.distinctBy { it.id }.toMutableList()
+                    if (baseQueue.isEmpty()) return START_NOT_STICKY
+                    shuffle = request.shuffle
+                    val requestedIndex = request.index.coerceIn(baseQueue.indices)
+                    val currentId = request.track.id.ifBlank { baseQueue[requestedIndex].id }
+                    val rebuilt = rebuildQueueFromSavedModes(baseQueue, currentId, shuffle)
+                    queue = rebuilt.first
+                    index = rebuilt.second
+                    loadCurrent(shouldPlay = true)
                 }
-                val titles = intent.getStringArrayListExtra(EXTRA_QUEUE_TITLES).orEmpty()
-                val artists = intent.getStringArrayListExtra(EXTRA_QUEUE_ARTISTS).orEmpty()
-                val albums = intent.getStringArrayListExtra(EXTRA_QUEUE_ALBUMS).orEmpty()
-                val durations = intent.getStringArrayListExtra(EXTRA_QUEUE_DURATIONS)?.mapNotNull { it.toLongOrNull() }.orEmpty()
-                val hadPreviousQueue = queue.isNotEmpty()
-                queue = ids.mapIndexed { i, id ->
-                    AudioTrack(
-                        id = id,
-                        displayName = titles.getOrNull(i).orEmpty(),
-                        title = titles.getOrNull(i).orEmpty(),
-                        artist = artists.getOrNull(i).orEmpty(),
-                        album = albums.getOrNull(i).orEmpty(),
-                        durationMs = durations.getOrNull(i) ?: 0L,
-                    )
-                }.toMutableList()
-                index = intent.getIntExtra(EXTRA_INDEX, 0).coerceIn(0, (queue.size - 1).coerceAtLeast(0))
-                intent.getByteArrayExtra(EXTRA_TRACK_ARTWORK)?.let { bytes ->
-                    queue.getOrNull(index)?.let { current -> queue[index] = current.copy(artworkBytes = bytes) }
+            }
+            ACTION_RESTORE_LAST -> {
+                val request = PlaybackRequests.take()
+                if (request != null && request.queue.isNotEmpty()) {
+                    playbackSourceType = request.sourceType.ifBlank { SOURCE_LIBRARY }
+                    playbackSourceName = request.sourceName
+                    val prefs = getSharedPreferences(PREFS_LAST, MODE_PRIVATE)
+                    shuffle = prefs.getBoolean("shuffle", false)
+                    repeat = if (prefs.getBoolean("repeat_one", false)) RepeatMode.ONE else RepeatMode.OFF
+                    baseQueue = request.queue.toMutableList()
+                    val currentId = request.track.id.ifBlank { baseQueue.getOrNull(request.index)?.id }
+                    val rebuilt = rebuildQueueFromSavedModes(baseQueue, currentId, shuffle)
+                    queue = rebuilt.first
+                    index = rebuilt.second
+                    loadCurrent(shouldPlay = false, startPositionMs = request.restorePositionMs ?: 0L)
+                } else {
+                    restoreSavedPlaybackState()
                 }
-                baseQueue = queue.toMutableList()
-                // Ao escolher uma nova música, preserve o estado atual de aleatório/repetição.
-                // O estado inicial só é definido quando o serviço ainda não tinha uma fila.
-                val requestedShuffle = intent.getBooleanExtra(EXTRA_START_SHUFFLE, false)
-                if (!hadPreviousQueue) shuffle = requestedShuffle
-                if (shuffle && queue.size > 1) {
-                    val current = queue.getOrNull(index)
-                    val rest = baseQueue.filterIndexed { i, _ -> i != index }.shuffled()
-                    if (current != null) {
-                        queue = mutableListOf(current).apply { addAll(rest) }
-                        index = 0
-                    }
-                }
-                loadCurrent()
             }
             ACTION_TOGGLE -> {
+                if (restoringLastPlayback) return START_STICKY
                 val p = player
                 if (p == null || !mediaPrepared) {
-                    pendingPlay = !pendingPlay
-                    updateStateAndNotification()
+                    if (queue.isEmpty()) {
+                        restoreSavedPlaybackState(shouldPlay = true)
+                    } else {
+                        pendingPlay = true
+                        updateStateAndNotification()
+                    }
                 } else if (runCatching { p.isPlaying }.getOrDefault(false)) {
                     pause()
                 } else {
@@ -200,13 +241,27 @@ class MusicPlaybackService : Service() {
             ACTION_NEXT -> next()
             ACTION_PREVIOUS -> previous()
             ACTION_PLAY_QUEUE_INDEX -> playQueueIndex(intent.getIntExtra(EXTRA_INDEX, -1))
-            ACTION_REPLACE_QUEUE -> replaceCurrentQueue(
-                intent.getStringArrayListExtra(EXTRA_QUEUE_IDS).orEmpty(),
-                intent.getStringArrayListExtra(EXTRA_QUEUE_TITLES).orEmpty(),
-                intent.getStringArrayListExtra(EXTRA_QUEUE_ARTISTS).orEmpty(),
-                intent.getStringArrayListExtra(EXTRA_QUEUE_ALBUMS).orEmpty(),
-                intent.getStringArrayListExtra(EXTRA_QUEUE_DURATIONS).orEmpty()
-            )
+            ACTION_SET_VOLUME_NORMALIZATION -> {
+                val enabled = intent.getBooleanExtra(EXTRA_ENABLED, false)
+                VolumeNormalizer.setEnabled(this, enabled)
+                if (enabled) {
+                    val current = player
+                    val track = queue.getOrNull(index)
+                    if (current != null && track != null && mediaPrepared) {
+                        applyVolumeNormalization(current, track, playerGeneration)
+                    }
+                } else {
+                    clearVolumeNormalization()
+                }
+                updateStateAndNotification()
+            }
+            ACTION_REPLACE_QUEUE -> {
+                val request = PlaybackRequests.take()
+                if (request != null) replaceCurrentQueue(request.queue)
+            }
+            ACTION_RECONCILE_DELETED_TRACKS -> {
+                reconcileDeletedTracks(intent.getStringArrayListExtra(EXTRA_DELETED_TRACK_IDS).orEmpty().toSet())
+            }
             ACTION_SEEK -> seek(intent.getLongExtra(EXTRA_POSITION, 0L))
             ACTION_SHUFFLE -> setShuffle(!shuffle)
             ACTION_REPEAT -> cycleRepeat()
@@ -216,33 +271,78 @@ class MusicPlaybackService : Service() {
         return START_NOT_STICKY
     }
 
-    private fun replaceCurrentQueue(
-        ids: List<String>,
-        titles: List<String>,
-        artists: List<String>,
-        albums: List<String>,
-        durations: List<String>
-    ) {
-        if (ids.isEmpty()) return
+    private fun replaceCurrentQueue(newBase: List<AudioTrack>) {
         val currentId = queue.getOrNull(index)?.id
-        val newBase = ids.mapIndexed { i, id ->
-            AudioTrack(
-                id = id,
-                displayName = titles.getOrNull(i).orEmpty(),
-                title = titles.getOrNull(i).orEmpty(),
-                artist = artists.getOrNull(i).orEmpty(),
-                album = albums.getOrNull(i).orEmpty(),
-                durationMs = durations.getOrNull(i)?.toLongOrNull() ?: 0L,
-            )
-        }.toMutableList()
-        baseQueue = newBase.toMutableList()
+        val normalizedBase = newBase.distinctBy { it.id }
+        if (normalizedBase.isEmpty()) {
+            releaseCurrentPlayer()
+            queue.clear()
+            baseQueue.clear()
+            index = -1
+            pendingPlay = false
+            updateStateAndNotification()
+            return
+        }
+
+        val currentStillExists = currentId != null && normalizedBase.any { it.id == currentId }
+        baseQueue = normalizedBase.toMutableList()
         queue = if (shuffle) {
-            val current = newBase.firstOrNull { it.id == currentId }
-            val rest = newBase.filter { it.id != currentId }
-            if (current != null) mutableListOf(current).apply { addAll(rest) } else newBase.toMutableList()
-        } else newBase.toMutableList()
-        index = if (currentId != null) queue.indexOfFirst { it.id == currentId }.let { if (it >= 0) it else 0 } else 0
-        if (shuffle && queue.getOrNull(index)?.id == currentId) index = 0
+            val current = currentId?.let { id -> normalizedBase.firstOrNull { it.id == id } }
+            val rest = normalizedBase.filter { it.id != currentId }.shuffled()
+            if (current != null) mutableListOf(current).apply { addAll(rest) } else normalizedBase.toMutableList()
+        } else {
+            normalizedBase.toMutableList()
+        }
+
+        index = if (currentStillExists) queue.indexOfFirst { it.id == currentId }.coerceAtLeast(0) else 0
+        if (shuffle && currentStillExists) index = 0
+
+        if (!currentStillExists && player != null && queue.isNotEmpty()) {
+            val wasPlaying = pendingPlay || runCatching { player?.isPlaying == true }.getOrDefault(false)
+            loadCurrent(wasPlaying)
+        } else {
+            updateStateAndNotification()
+        }
+    }
+
+    private fun reconcileDeletedTracks(deletedIds: Set<String>) {
+        if (deletedIds.isEmpty()) return
+
+        val oldQueue = queue.toList()
+        val oldIndex = index
+        val currentId = oldQueue.getOrNull(oldIndex)?.id
+        val currentWasDeleted = currentId != null && currentId in deletedIds
+        val wasPlaying = pendingPlay || runCatching { player?.isPlaying == true }.getOrDefault(false)
+
+        val cleanedBase = baseQueue.filterNot { it.id in deletedIds }
+        val cleanedQueue = oldQueue.filterNot { it.id in deletedIds }
+
+        if (cleanedQueue.isEmpty() || cleanedBase.isEmpty()) {
+            stopPlayback()
+            return
+        }
+
+        baseQueue = cleanedBase.toMutableList()
+        queue = cleanedQueue.toMutableList()
+
+        if (currentWasDeleted) {
+            // Quando a faixa atual some do aparelho, continua na próxima faixa
+            // da ordem de reprodução. Se não houver uma, volta para a primeira.
+            index = if (cleanedQueue.isNotEmpty()) {
+                oldIndex.coerceAtMost(cleanedQueue.lastIndex)
+            } else {
+                0
+            }
+            loadCurrent(shouldPlay = wasPlaying)
+            return
+        }
+
+        val removedBeforeCurrent = if (oldIndex >= 0) {
+            oldQueue.take(oldIndex).count { it.id in deletedIds }
+        } else {
+            0
+        }
+        index = (oldIndex - removedBeforeCurrent).coerceIn(0, cleanedQueue.lastIndex)
         updateStateAndNotification()
     }
 
@@ -250,8 +350,8 @@ class MusicPlaybackService : Service() {
         if (targetIndex !in queue.indices) return
         val now = android.os.SystemClock.uptimeMillis()
         if (now < navigationLockUntilMs) return
-        navigationLockUntilMs = now + 250L
-        val wasPlaying = runCatching { player?.isPlaying == true }.getOrDefault(false)
+        navigationLockUntilMs = now + 150L
+        val wasPlaying = runCatching { pendingPlay || player?.isPlaying == true }.getOrDefault(pendingPlay)
         if (repeat == RepeatMode.ONE && queue.getOrNull(index)?.id != queue[targetIndex].id) {
             updateStateAndNotification()
             return
@@ -291,72 +391,175 @@ class MusicPlaybackService : Service() {
     private var lastMediaErrorKey: String? = null
     private var lastMediaErrorAtMs = 0L
 
-    private fun loadCurrent(shouldPlay: Boolean = true) {
+    private fun clearVolumeNormalization() {
+        runCatching { loudnessEnhancer?.enabled = false }
+        runCatching { loudnessEnhancer?.release() }
+        loudnessEnhancer = null
+        runCatching { player?.setVolume(1f, 1f) }
+    }
+
+    private fun applyVolumeNormalization(mediaPlayer: MediaPlayer, track: AudioTrack, generation: Long) {
+        clearVolumeNormalization()
+        if (!VolumeNormalizer.isEnabled(this)) return
+
+        val cacheKey = "gain_" + track.id.hashCode().toUInt().toString(16)
+        val prefs = getSharedPreferences("truetagger_volume_normalization_cache_v2", MODE_PRIVATE)
+        val cached = if (prefs.contains(cacheKey)) prefs.getFloat(cacheKey, 0f) else null
+
+        // Start every new track at the neutral 80% baseline. The normalization
+        // target is then reached gradually so the beginning of the song never
+        // gets a sudden volume jump/drop while the gain is being applied.
+        val normalizedOutputLevel = VolumeNormalizer.getOutputLevel(this).coerceIn(0.50f, 1.00f)
+        runCatching { mediaPlayer.setVolume(normalizedOutputLevel, normalizedOutputLevel) }
+        clearVolumeEnhancerOnly()
+
+        fun rampToGain(gainDb: Float) {
+            if (generation != playerGeneration || player !== mediaPlayer) return
+
+            val rampGeneration = ++normalizationRampGeneration
+            val clampedGain = gainDb.coerceIn(-10f, 10f)
+            val steps = 20
+            val stepDelayMs = 50L
+            val baseline = normalizedOutputLevel
+
+            val effect = if (clampedGain > 0f) {
+                runCatching { LoudnessEnhancer(mediaPlayer.audioSessionId) }.getOrNull()?.also { created ->
+                    loudnessEnhancer = created
+                    runCatching {
+                        created.setTargetGain(0)
+                        created.enabled = true
+                    }.onFailure {
+                        runCatching { created.release() }
+                        if (loudnessEnhancer === created) loudnessEnhancer = null
+                    }
+                }
+            } else null
+
+            var step = 0
+            val runnable = object : Runnable {
+                override fun run() {
+                    if (generation != playerGeneration || player !== mediaPlayer || rampGeneration != normalizationRampGeneration) return
+                    step++
+                    val fraction = (step / steps.toFloat()).coerceIn(0f, 1f)
+                    if (clampedGain < 0f) {
+                        val targetLinear = (baseline * 10.0.pow((clampedGain / 20.0).toDouble()).toFloat())
+                            .coerceIn(0.05f, baseline)
+                        val currentLinear = baseline + (targetLinear - baseline) * fraction
+                        runCatching { mediaPlayer.setVolume(currentLinear, currentLinear) }
+                    } else if (effect != null) {
+                        val targetMilliDb = (clampedGain * 100f).roundToInt()
+                        val currentMilliDb = (targetMilliDb * fraction).roundToInt()
+                        runCatching { effect.setTargetGain(currentMilliDb) }
+                    }
+                    if (step < steps) handler.postDelayed(this, stepDelayMs)
+                }
+            }
+            handler.post(runnable)
+        }
+
+        if (cached != null) {
+            rampToGain(cached)
+            return
+        }
+
+        VolumeNormalizer.analyzeGainAsync(this, Uri.parse(track.id)) { gainDb ->
+            prefs.edit().putFloat(cacheKey, gainDb).apply()
+            rampToGain(gainDb)
+        }
+    }
+
+    private fun prewarmVolumeNormalization(track: AudioTrack) {
+        val cacheKey = "gain_" + track.id.hashCode().toUInt().toString(16)
+        val prefs = getSharedPreferences("truetagger_volume_normalization_cache_v2", MODE_PRIVATE)
+        if (prefs.contains(cacheKey)) return
+        VolumeNormalizer.analyzeGainAsync(this, Uri.parse(track.id)) { gainDb ->
+            prefs.edit().putFloat(cacheKey, gainDb).apply()
+        }
+    }
+
+    private fun clearVolumeEnhancerOnly() {
+        runCatching { loudnessEnhancer?.enabled = false }
+        runCatching { loudnessEnhancer?.release() }
+        loudnessEnhancer = null
+    }
+
+    private fun recordPlayCount(trackId: String) {
+        if (trackId.isBlank()) return
+        PlayStatsState.record(this, trackId)
+        AppEvents.bump()
+    }
+
+    private fun releaseCurrentPlayer() {
+        mediaPrepared = false
+        player?.setOnCompletionListener(null)
+        player?.setOnErrorListener(null)
+        runCatching { player?.stop() }
+        runCatching { player?.release() }
+        player = null
+        runCatching { mediaSourcePfd?.close() }
+        mediaSourcePfd = null
+    }
+
+    private fun loadCurrent(shouldPlay: Boolean = true, startPositionMs: Long = 0L) {
         val track = queue.getOrNull(index)
         if (track == null) {
-            android.util.Log.e("TrueTagger", "Não foi possível reproduzir: índice $index inválido para fila de ${queue.size} músicas")
+            android.util.Log.e("TruePlayer", "Não foi possível reproduzir: índice $index inválido para fila de ${queue.size} músicas")
             return
         }
 
         val generation = ++playerGeneration
-        mediaErrorRetryCount = 0
-        player?.setOnCompletionListener(null)
-        player?.setOnErrorListener(null)
-        runCatching { player?.stop() }
-        player?.release()
-        player = null
         pendingPlay = shouldPlay
         mediaPrepared = false
+        releaseCurrentPlayer()
+        clearVolumeNormalization()
 
-        // Não bloqueie a thread principal preparando a mídia. prepareAsync reduz o
-        // atraso perceptível ao trocar de faixa, especialmente com arquivos maiores.
+        notificationArtwork = loadNotificationArtwork(track)
+        notificationArtworkTrackId = track.id
+        playCountRecordedGeneration = -1L
+
+        if (VolumeNormalizer.isEnabled(this)) {
+            queue.getOrNull(index + 1)?.let(::prewarmVolumeNormalization)
+        }
+
         try {
-            val mediaPlayer = MediaPlayer()
-            mediaPlayer.setAudioAttributes(
-                AudioAttributes.Builder()
-                    .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                    .setUsage(AudioAttributes.USAGE_MEDIA)
-                    .build()
-            )
-            val sourceUri = Uri.parse(track.id)
-            runCatching {
-                mediaPlayer.setDataSource(this, sourceUri)
-            }.getOrElse { directError ->
-                // Alguns dispositivos/MediaStore providers não lidam bem com a sobrecarga
-                // Context+Uri. Tenta uma vez via FileDescriptor antes de abandonar a faixa.
-                val pfd = contentResolver.openFileDescriptor(sourceUri, "r")
-                    ?: throw directError
-                pfd.use { mediaPlayer.setDataSource(it.fileDescriptor) }
-            }
-            var prepared = false
+            // MediaPlayer.create() já devolve o player PREPARADO. Usamos a variante
+            // que recebe AudioAttributes para que os atributos sejam definidos antes
+            // da preparação, evitando INVALID_OPERATION (-38).
+            val audioAttributes = AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .build()
 
-            mediaPlayer.setOnPreparedListener {
-                if (generation != playerGeneration) {
-                    runCatching { mediaPlayer.release() }
-                    return@setOnPreparedListener
-                }
-                prepared = true
-                mediaPrepared = true
-                val shouldStart = pendingPlay
-                if (shouldStart) {
-                    runCatching { mediaPlayer.start() }
-                        .onFailure {
-                            android.util.Log.e("TrueTagger", "Falha ao iniciar reprodução: ${track.id}", it)
-                            pendingPlay = false
-                        }
-                    if (shouldStart) pendingPlay = false
-                }
-                updateStateAndNotification()
+            val mediaPlayer = MediaPlayer.create(
+                this,
+                Uri.parse(track.id),
+                null,
+                audioAttributes,
+                0,
+            ) ?: throw IllegalStateException("MediaPlayer.create() retornou null para ${track.id}")
+
+            if (generation != playerGeneration) {
+                runCatching { mediaPlayer.release() }
+                return
             }
+
+            player = mediaPlayer
+            mediaPrepared = true
 
             mediaPlayer.setOnCompletionListener {
-                if (generation != playerGeneration || !prepared) return@setOnCompletionListener
+                if (generation != playerGeneration || player !== mediaPlayer) return@setOnCompletionListener
                 if (repeat == RepeatMode.ONE) {
                     runCatching {
                         mediaPlayer.seekTo(0)
-                        if (shouldPlay || pendingPlay) mediaPlayer.start()
+                        if (pendingPlay) {
+                            mediaPlayer.start()
+                            if (playCountRecordedGeneration != generation) {
+                                recordPlayCount(track.id)
+                                playCountRecordedGeneration = generation
+                            }
+                        }
                     }.onFailure {
-                        android.util.Log.e("TrueTagger", "Falha ao repetir música: ${track.id}", it)
+                        android.util.Log.e("TruePlayer", "Falha ao repetir música: ${track.id}", it)
                     }
                 } else {
                     next(auto = true)
@@ -364,103 +567,44 @@ class MusicPlaybackService : Service() {
             }
 
             mediaPlayer.setOnErrorListener { _, what, extra ->
-                val now = android.os.SystemClock.uptimeMillis()
-                val duplicate = lastMediaErrorKey == track.id && now - lastMediaErrorAtMs < 1000L
-                if (!duplicate) {
-                    if (what == -38) {
-                        android.util.Log.w("TrueTagger", "MediaPlayer entrou em estado inválido ao reproduzir ${track.id}; encerrando a tentativa")
-                    } else {
-                        android.util.Log.e("TrueTagger", "Erro do MediaPlayer ao reproduzir ${track.id}: what=$what extra=$extra")
-                    }
-                    lastMediaErrorKey = track.id
-                    lastMediaErrorAtMs = now
-                }
-                if (generation == playerGeneration) {
-                    mediaPrepared = false
-                    // -38 é INVALID_OPERATION/estado inválido; repetir imediatamente
-                    // tende a recriar o mesmo erro e deixa a troca de faixa mais pesada.
-                    if (what == -38 || mediaErrorRetryCount > 0) {
-                        mediaErrorRetryCount = 1
-                        pendingPlay = false
-                        if (player === mediaPlayer) {
-                            player = null
-                        }
-                        runCatching { mediaPlayer.reset() }
-                        runCatching { mediaPlayer.release() }
-                        updateStateAndNotification()
-                    } else {
-                        mediaErrorRetryCount = 1
-                        handler.postDelayed({
-                            if (generation == playerGeneration && queue.getOrNull(index)?.id == track.id) {
-                                loadCurrent(pendingPlay)
-                            }
-                        }, 180L)
-                    }
-                }
+                if (generation != playerGeneration || player !== mediaPlayer) return@setOnErrorListener true
+                android.util.Log.e("TruePlayer", "Erro do MediaPlayer ao reproduzir ${track.id}: what=$what extra=$extra")
+                pendingPlay = false
+                mediaPrepared = false
+                runCatching { mediaPlayer.reset() }
+                runCatching { mediaPlayer.release() }
+                player = null
+                updateStateAndNotification()
                 true
             }
 
-            player = mediaPlayer
-            notificationArtwork = track.artworkBytes?.takeIf { it.isNotEmpty() }?.let { raw ->
-                runCatching {
-                    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                    BitmapFactory.decodeByteArray(raw, 0, raw.size, bounds)
-                    val max = maxOf(bounds.outWidth, bounds.outHeight).coerceAtLeast(1)
-                    val sample = generateSequence(1) { it * 2 }.takeWhile { it < 8 }.lastOrNull { max / it >= 1024 } ?: 1
-                    val opts = BitmapFactory.Options().apply { inSampleSize = sample; inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888 }
-                    BitmapFactory.decodeByteArray(raw, 0, raw.size, opts)
-                }.getOrNull()
+            val safePosition = startPositionMs.coerceIn(
+                0L,
+                (mediaPlayer.duration.toLong() - 500L).coerceAtLeast(0L)
+            )
+            if (safePosition > 0L) {
+                mediaPlayer.seekTo(safePosition.toInt())
             }
-            notificationArtworkTrackId = track.id
 
-            updateStateAndNotification()
-            try {
-                mediaPlayer.prepareAsync()
-            } catch (error: IllegalStateException) {
-                android.util.Log.w("TrueTagger", "prepareAsync falhou; tentando preparar novamente ${track.id}", error)
-                runCatching {
-                    mediaPlayer.reset()
-                    mediaPlayer.setAudioAttributes(
-                        AudioAttributes.Builder()
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .build()
-                    )
-                    runCatching {
-                        mediaPlayer.setDataSource(this, Uri.parse(track.id))
-                    }.getOrElse {
-                        val pfd = contentResolver.openFileDescriptor(Uri.parse(track.id), "r")
-                            ?: throw it
-                        pfd.use { mediaPlayer.setDataSource(it.fileDescriptor) }
-                    }
-                    mediaPlayer.prepareAsync()
-                }.onFailure { retryError ->
-                    android.util.Log.e("TrueTagger", "Falha ao preparar música após retry ${track.id}", retryError)
-                    if (generation == playerGeneration) {
-                        runCatching { mediaPlayer.release() }
-                        if (player === mediaPlayer) player = null
-                        pendingPlay = false
-                        updateStateAndNotification()
-                    }
+            applyVolumeNormalization(mediaPlayer, track, generation)
+
+            if (shouldPlay) {
+                mediaPlayer.start()
+                if (playCountRecordedGeneration != generation) {
+                    recordPlayCount(track.id)
+                    playCountRecordedGeneration = generation
                 }
             }
-        } catch (error: Throwable) {
-            android.util.Log.e("TrueTagger", "Falha ao abrir música ${track.id}", error)
-            player?.release()
-            player = null
-            pendingPlay = false
-            if (generation == playerGeneration) updateStateAndNotification()
-        }
 
-        session.setMetadata(
-            android.media.MediaMetadata.Builder()
-                .putString(android.media.MediaMetadata.METADATA_KEY_TITLE, track.displayTitle())
-                .putString(android.media.MediaMetadata.METADATA_KEY_ARTIST, track.artist)
-                .putString(android.media.MediaMetadata.METADATA_KEY_ALBUM, track.album)
-                .putLong(android.media.MediaMetadata.METADATA_KEY_DURATION, track.durationMs)
-                .apply { notificationArtwork?.let { putBitmap(android.media.MediaMetadata.METADATA_KEY_ALBUM_ART, it) } }
-                .build()
-        )
+            updateStateAndNotification()
+        } catch (error: Throwable) {
+            if (generation != playerGeneration) return
+            pendingPlay = false
+            mediaPrepared = false
+            player = null
+            android.util.Log.e("TruePlayer", "Falha ao preparar/iniciar música ${track.id}", error)
+            updateStateAndNotification()
+        }
     }
 
     private fun resume() {
@@ -471,10 +615,17 @@ class MusicPlaybackService : Service() {
             return
         }
         runCatching {
-            if (!p.isPlaying) p.start()
+            if (!p.isPlaying) {
+                p.start()
+                val track = queue.getOrNull(index)
+                if (track != null && playCountRecordedGeneration != playerGeneration) {
+                    recordPlayCount(track.id)
+                    playCountRecordedGeneration = playerGeneration
+                }
+            }
         }.onFailure {
             pendingPlay = true
-            android.util.Log.e("TrueTagger", "Falha ao iniciar reprodução: ${queue.getOrNull(index)?.id}", it)
+            android.util.Log.e("TruePlayer", "Falha ao iniciar reprodução: ${queue.getOrNull(index)?.id}", it)
         }
         updateStateAndNotification()
     }
@@ -490,7 +641,13 @@ class MusicPlaybackService : Service() {
     }
 
     private fun seek(pos: Long) {
-        player?.seekTo(pos.coerceIn(0L, (player?.duration ?: 0).toLong()).toInt())
+        val p = player
+        if (p == null || !mediaPrepared) return
+        runCatching {
+            p.seekTo(pos.coerceIn(0L, p.duration.toLong()).toInt())
+        }.onFailure {
+            android.util.Log.e("TruePlayer", "Falha ao buscar posição da música", it)
+        }
         updateStateAndNotification()
     }
 
@@ -499,7 +656,7 @@ class MusicPlaybackService : Service() {
         if (!auto) {
             val now = android.os.SystemClock.uptimeMillis()
             if (now < navigationLockUntilMs) return
-            navigationLockUntilMs = now + 450L
+            navigationLockUntilMs = now + 150L
         }
         val wasPlaying = runCatching { player?.isPlaying == true }.getOrDefault(false)
         if (repeat == RepeatMode.ONE) {
@@ -514,8 +671,20 @@ class MusicPlaybackService : Service() {
         if (queue.isEmpty()) return
         val now = android.os.SystemClock.uptimeMillis()
         if (now < navigationLockUntilMs) return
-        navigationLockUntilMs = now + 450L
-        val wasPlaying = runCatching { player?.isPlaying == true }.getOrDefault(false)
+        navigationLockUntilMs = now + 150L
+
+        val currentPosition = runCatching { player?.currentPosition?.toLong() ?: 0L }.getOrDefault(0L)
+        val wasPlaying = runCatching { pendingPlay || player?.isPlaying == true }.getOrDefault(pendingPlay)
+
+        // Comportamento padrão de players de música: se já passou de ~3 s,
+        // o botão anterior apenas reinicia a música atual; só depois volta
+        // para a faixa anterior.
+        if (currentPosition > 3_000L) {
+            runCatching { player?.seekTo(0) }
+            updateStateAndNotification()
+            return
+        }
+
         if (repeat == RepeatMode.ONE) {
             loadCurrent(wasPlaying)
             return
@@ -537,10 +706,76 @@ class MusicPlaybackService : Service() {
         baseQueue.clear()
         index = -1
         pendingPlay = false
+        mediaPrepared = false
         session.isActive = false
         PlayerState.snapshot = PlayerSnapshot()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
+    }
+
+    private fun rebuildQueueFromSavedModes(sourceQueue: List<AudioTrack>, currentId: String?, savedShuffle: Boolean): Pair<MutableList<AudioTrack>, Int> {
+        // A fila-base é sempre preservada na ordem recebida. Ela nunca é
+        // embaralhada nem sobrescrita pelo modo shuffle.
+        val orderedBase = sourceQueue.distinctBy { it.id }.toList()
+        if (orderedBase.isEmpty()) return mutableListOf<AudioTrack>() to -1
+
+        val currentIndex = currentId?.let { id ->
+            orderedBase.indexOfFirst { it.id == id }
+        }?.takeIf { it >= 0 } ?: 0
+
+        // Sem shuffle: restaura exatamente a ordem original da fonte.
+        if (!savedShuffle || orderedBase.size <= 1) {
+            return orderedBase.toMutableList() to currentIndex
+        }
+
+        // Com shuffle: mantém a música atual em primeiro e só embaralha o
+        // restante. Isso permite reconstruir uma fila válida sem persisti-la.
+        val current = orderedBase[currentIndex]
+        val rest = orderedBase.filterIndexed { i, _ -> i != currentIndex }.shuffled()
+        return mutableListOf<AudioTrack>().apply {
+            add(current)
+            addAll(rest)
+        } to 0
+    }
+
+    private fun restoreSavedPlaybackState(shouldPlay: Boolean = false) {
+        val prefs = getSharedPreferences(PREFS_LAST, MODE_PRIVATE)
+        val trackId = prefs.getString("track_id", "").orEmpty()
+        if (trackId.isBlank()) return
+        val track = AudioTrack(
+            id = trackId,
+            displayName = prefs.getString("track_title", "").orEmpty(),
+            title = prefs.getString("track_title", "").orEmpty(),
+            artist = prefs.getString("track_artist", "").orEmpty(),
+            album = prefs.getString("track_album", "").orEmpty(),
+            durationMs = prefs.getLong("track_duration", 0L),
+        )
+        shuffle = prefs.getBoolean("shuffle", false)
+        repeat = if (prefs.getBoolean("repeat_one", false)) RepeatMode.ONE else RepeatMode.OFF
+        playbackSourceType = prefs.getString("source_type", SOURCE_LIBRARY).orEmpty().ifBlank { SOURCE_LIBRARY }
+        playbackSourceName = prefs.getString("source_name", "").orEmpty()
+        baseQueue = mutableListOf(track)
+        val rebuilt = rebuildQueueFromSavedModes(baseQueue, track.id, shuffle)
+        queue = rebuilt.first
+        index = rebuilt.second
+        loadCurrent(shouldPlay = shouldPlay, startPositionMs = prefs.getLong("position_ms", 0L))
+    }
+
+    private fun persistPlaybackState() {
+        val track = queue.getOrNull(index) ?: return
+        val position = runCatching { player?.currentPosition?.toLong() ?: 0L }.getOrDefault(0L)
+        getSharedPreferences(PREFS_LAST, MODE_PRIVATE).edit()
+            .putString("track_id", track.id)
+            .putString("track_title", track.displayTitle())
+            .putString("track_artist", track.artist)
+            .putString("track_album", track.album)
+            .putLong("track_duration", track.durationMs)
+            .putBoolean("shuffle", shuffle)
+            .putBoolean("repeat_one", repeat == RepeatMode.ONE)
+            .putString("source_type", playbackSourceType)
+            .putString("source_name", playbackSourceName)
+            .putLong("position_ms", position.coerceAtLeast(0L))
+            .apply()
     }
 
     private fun updateStateAndNotification() {
@@ -555,6 +790,8 @@ class MusicPlaybackService : Service() {
             p?.duration?.toLong()?.takeIf { it > 0 } ?: duration
         }.getOrDefault(duration)
         PlayerState.snapshot = PlayerSnapshot(track, queue.toList(), index, playing, position, safeDuration, shuffle, repeat)
+        AppEvents.bump()
+        if (track != null) persistPlaybackState()
 
         val state = if (playing) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED
         val actions = PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or
@@ -628,20 +865,40 @@ class MusicPlaybackService : Service() {
     }
 
     private fun loadNotificationArtwork(track: AudioTrack): android.graphics.Bitmap? {
+        // Always use the real embedded cover first. Then fall back to MediaStore.
         val raw = track.artworkBytes
-        if (raw != null && raw.isNotEmpty()) {
-            return runCatching {
+        val source = if (raw != null && raw.isNotEmpty()) {
+            runCatching {
                 val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
                 BitmapFactory.decodeByteArray(raw, 0, raw.size, bounds)
                 val max = maxOf(bounds.outWidth, bounds.outHeight).coerceAtLeast(1)
-                val sample = generateSequence(1) { it * 2 }.takeWhile { it < 8 }.lastOrNull { max / it >= 1024 } ?: 1
-                val opts = BitmapFactory.Options().apply { inSampleSize = sample; inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888 }
+                val sample = generateSequence(1) { it * 2 }
+                    .takeWhile { it < 16 }
+                    .lastOrNull { max / it >= 512 } ?: 1
+                val opts = BitmapFactory.Options().apply {
+                    inSampleSize = sample
+                    inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888
+                }
                 BitmapFactory.decodeByteArray(raw, 0, raw.size, opts)
             }.getOrNull()
-        }
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            runCatching { contentResolver.loadThumbnail(Uri.parse(track.id), android.util.Size(1024, 1024), null) }.getOrNull()
         } else null
+
+        val fallback = source ?: if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            runCatching {
+                contentResolver.loadThumbnail(Uri.parse(track.id), android.util.Size(512, 512), null)
+            }.getOrNull()
+        } else null
+
+        // Notification large icons look much better when the artwork is a clean square.
+        return fallback?.let { bitmap ->
+            val side = minOf(bitmap.width, bitmap.height)
+            if (side <= 0) return@let bitmap
+            val left = (bitmap.width - side) / 2
+            val top = (bitmap.height - side) / 2
+            runCatching {
+                android.graphics.Bitmap.createBitmap(bitmap, left, top, side, side)
+            }.getOrElse { bitmap }
+        }
     }
 
     private fun createChannel() {
@@ -649,7 +906,7 @@ class MusicPlaybackService : Service() {
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(
                 NotificationChannel(CHANNEL, "Música", NotificationManager.IMPORTANCE_LOW).apply {
-                    description = "Player de música do TrueTagger"
+                    description = "Player de música do TruePlayer"
                     setSound(null, null)
                     enableVibration(false)
                     setShowBadge(false)
@@ -659,13 +916,11 @@ class MusicPlaybackService : Service() {
     }
 
     override fun onDestroy() {
+        persistPlaybackState()
         handler.removeCallbacks(progressRunnable)
         ++playerGeneration
-        player?.setOnCompletionListener(null)
-        player?.setOnErrorListener(null)
-        runCatching { player?.stop() }
-        player?.release()
-        player = null
+        clearVolumeNormalization()
+        releaseCurrentPlayer()
         session.isActive = false
         session.release()
         super.onDestroy()

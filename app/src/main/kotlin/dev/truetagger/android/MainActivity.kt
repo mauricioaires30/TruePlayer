@@ -53,6 +53,7 @@ class MainActivity : ComponentActivity() {
     private var shouldCloseAfterFolderPick = false
     private var writeContinuation: CancellableContinuation<Boolean>? = null
     private var mediaRefreshJob: Job? = null
+    private var lastLibraryTrackIds: Set<String>? = null
     private lateinit var mediaObserver: ContentObserver
 
     private val permissionsLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -207,9 +208,17 @@ class MainActivity : ComponentActivity() {
         if (!hasAudioPermission()) return
         libraryLoading = true
         appScope.launch {
-            tracks = withContext(Dispatchers.IO) {
+            val refreshedTracks = withContext(Dispatchers.IO) {
                 runCatching { audioService.scanLibrary(savedDownloadTree()) }.getOrDefault(emptyList())
             }
+            val refreshedIds = refreshedTracks.asSequence().map { it.id }.toSet()
+            val removedIds = lastLibraryTrackIds?.minus(refreshedIds).orEmpty()
+            lastLibraryTrackIds = refreshedIds
+            tracks = refreshedTracks
+            if (removedIds.isNotEmpty()) {
+                MusicPlaybackService.reconcileDeletedTracks(this@MainActivity, removedIds)
+            }
+            AppEvents.bump()
             selectedTrack = selectedTrack?.let { selected ->
                 tracks.firstOrNull { it.id == selected.id }?.copy(
                     albumArtist = selected.albumArtist,
@@ -259,6 +268,7 @@ class MainActivity : ComponentActivity() {
                     )
                     selectedTrack = updated
                     tracks = tracks.map { current -> if (current.id == updated.id) updated else current }
+                    AppEvents.bump()
                 }
             }
         } catch (error: RecoverableSecurityException) {

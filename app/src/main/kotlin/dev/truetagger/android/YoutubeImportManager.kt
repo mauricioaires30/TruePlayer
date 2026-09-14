@@ -19,6 +19,7 @@ import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.images.ArtworkFactory
 import java.io.File
 import java.net.URL
+import java.util.Locale
 
 class YoutubeImportManager(private val context: Context) {
     suspend fun downloadAudio(
@@ -32,7 +33,7 @@ class YoutubeImportManager(private val context: Context) {
 
         updateEngineIfNeeded(url, onStatus)
         var videoInfo = fetchVideoInfo(url, onStatus)
-        val initialTitle = videoInfo?.title.orEmpty()
+        val initialTitle = cleanFeaturingText(videoInfo?.title.orEmpty())
         if (initialTitle.isNotBlank()) {
             onStatus(ImportStatus(url, "Preparando áudio...", 0, mediaTitle = initialTitle))
         }
@@ -47,7 +48,7 @@ class YoutubeImportManager(private val context: Context) {
                 url,
                 "Atualizando compatibilidade com o YouTube...",
                 0,
-                mediaTitle = videoInfo?.title.orEmpty(),
+                mediaTitle = cleanFeaturingText(videoInfo?.title.orEmpty()),
             )
         )
         runCatching {
@@ -67,7 +68,7 @@ class YoutubeImportManager(private val context: Context) {
                     url = url,
                     message = "Informações encontradas.",
                     progress = 0,
-                    mediaTitle = info.title.orEmpty(),
+                    mediaTitle = cleanFeaturingText(info.title.orEmpty()),
                 )
             )
         }
@@ -85,7 +86,7 @@ class YoutubeImportManager(private val context: Context) {
             deleteRecursively()
             mkdirs()
         }
-        val mediaTitle = videoInfo?.title.orEmpty()
+        val mediaTitle = cleanFeaturingText(videoInfo?.title.orEmpty())
 
         val request = YoutubeDLRequest(url).apply {
             addOption("--no-playlist")
@@ -124,10 +125,11 @@ class YoutubeImportManager(private val context: Context) {
             runCatching { applyVideoInfo(output, videoInfo) }
         }
 
+        val cleanOutput = cleanedOutputFile(output, mediaTitle)
         onStatus(ImportStatus(url, "Salvando arquivo...", 100, mediaTitle = mediaTitle))
-        copyIntoTree(output, destinationTree)
-        scanPrimaryTreeFile(destinationTree, output.name)
-        val finalName = output.name
+        copyIntoTree(cleanOutput, destinationTree)
+        scanPrimaryTreeFile(destinationTree, cleanOutput.name)
+        val finalName = cleanOutput.name
         output.delete()
         workDir.deleteRecursively()
         return finalName
@@ -143,7 +145,7 @@ class YoutubeImportManager(private val context: Context) {
             tag.setField(key, value.trim())
         }
 
-        set(FieldKey.TITLE, info.title)
+        set(FieldKey.TITLE, cleanFeaturingText(info.title.orEmpty()))
         set(FieldKey.ARTIST, info.uploader)
         set(FieldKey.ALBUM_ARTIST, info.uploader)
         set(FieldKey.YEAR, info.uploadDate?.take(4))
@@ -171,6 +173,30 @@ class YoutubeImportManager(private val context: Context) {
         }
 
         audio.commit()
+    }
+
+    private fun cleanedOutputFile(source: File, title: String): File {
+        val baseTitle = sanitizeFileName(cleanFeaturingText(title).ifBlank { source.nameWithoutExtension })
+        val target = File(source.parentFile, "$baseTitle.mp3")
+        if (target.absolutePath == source.absolutePath) return source
+        if (target.exists()) target.delete()
+        return if (source.renameTo(target)) target else source
+    }
+
+    private fun sanitizeFileName(value: String): String {
+        val cleaned = value
+            .replace(Regex("[\\/:*?\"<>|]"), "_")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+            .trim('.')
+        return cleaned.ifBlank { "audio" }
+    }
+
+    private fun cleanFeaturingText(value: String): String {
+        var result = value
+        val featuring = Regex("(?i)\\s*\\(\\s*(?:ft|feat|featuring)\\.?\\s+[^)]*\\)", RegexOption.MULTILINE)
+        repeat(3) { result = result.replace(featuring, " ") }
+        return result.replace(Regex("\\s+"), " ").trim()
     }
 
     private fun updateEngineIfNeeded(url: String, onStatus: (ImportStatus) -> Unit) {

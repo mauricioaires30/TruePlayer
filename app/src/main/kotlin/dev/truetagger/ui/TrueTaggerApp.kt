@@ -79,22 +79,22 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
 
-val TrueTaggerDarkScheme = darkColorScheme(
-    primary = Color(0xFFA98BFF),
-    onPrimary = Color(0xFF1A1035),
-    secondary = Color(0xFF71DEC0),
-    onSecondary = Color(0xFF092D24),
-    tertiary = Color(0xFFFFC17B),
-    background = Color(0xFF090A10),
-    onBackground = Color(0xFFF5F2FF),
-    surface = Color(0xFF11131C),
-    onSurface = Color(0xFFF5F2FF),
-    surfaceVariant = Color(0xFF1B1E2A),
-    onSurfaceVariant = Color(0xFFB9BDCF),
-    primaryContainer = Color(0xFF2A1E49),
-    onPrimaryContainer = Color(0xFFE8DDFF),
-    secondaryContainer = Color(0xFF173E35),
-    onSecondaryContainer = Color(0xFFBEF5E7),
+val TruePlayerDarkScheme = darkColorScheme(
+    primary = Color(0xFFC77DFF),
+    onPrimary = Color(0xFF1B0928),
+    secondary = Color(0xFF9B4DFF),
+    onSecondary = Color(0xFF170622),
+    tertiary = Color(0xFFE0A3FF),
+    background = Color(0xFF050307),
+    onBackground = Color(0xFFF7F0FF),
+    surface = Color(0xFF0D0812),
+    onSurface = Color(0xFFF7F0FF),
+    surfaceVariant = Color(0xFF171020),
+    onSurfaceVariant = Color(0xFFBDB1C8),
+    primaryContainer = Color(0xFF3A155B),
+    onPrimaryContainer = Color(0xFFF3DFFF),
+    secondaryContainer = Color(0xFF2B123D),
+    onSecondaryContainer = Color(0xFFF0D8FF),
     errorContainer = Color(0xFF5B2028),
 )
 
@@ -206,7 +206,6 @@ fun CurrentTrackScreen(
                 value = query,
                 onValueChange = { query = it; message = null },
                 placeholder = "Nome da música ou vídeo",
-                modifier = Modifier.fillMaxWidth(),
                 trailingContent = if (searching) { { CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp) } } else null,
             )
         }
@@ -327,16 +326,98 @@ private fun cleanMetadataQuery(raw: String): String {
 
 private suspend fun broadMetadataSearch(repo: MetadataRepository, raw: String, track: AudioTrack): List<MetadataResult> {
     val cleaned = cleanMetadataQuery(raw)
+    val title = cleanMetadataQuery(track.title.ifBlank { track.cleanDisplayTitle() })
+    val artist = cleanMetadataQuery(track.artist)
+    val album = cleanMetadataQuery(track.album)
     val candidates = linkedSetOf<String>()
+
+    // Prioriza buscas com título + artista, mas também tenta cada parte isoladamente.
     listOf(
+        listOf(cleaned, artist).filter { it.isNotBlank() }.distinct().joinToString(" "),
+        listOf(title, artist).filter { it.isNotBlank() }.distinct().joinToString(" "),
         cleaned,
-        track.cleanDisplayTitle().let(::cleanMetadataQuery),
-        listOf(track.title, track.artist).filter { it.isNotBlank() }.joinToString(" "),
-        listOf(track.artist, track.title, track.album).filter { it.isNotBlank() }.joinToString(" ")
+        title,
+        listOf(artist, title).filter { it.isNotBlank() }.distinct().joinToString(" "),
+        listOf(title, album).filter { it.isNotBlank() }.distinct().joinToString(" ")
     ).forEach { q -> if (q.isNotBlank()) candidates += q }
 
-    val all = candidates.flatMap { runCatching { repo.search(it) }.getOrDefault(emptyList()) }
-    return all.distinctBy { "${it.source}:${it.sourceId}" }.take(24)
+    val all = candidates.flatMap { query ->
+        runCatching { repo.search(query) }.getOrDefault(emptyList())
+    }
+
+    val unique = all.distinctBy { "${it.source}:${it.sourceId}" }
+    if (unique.isEmpty()) return emptyList()
+
+    return unique
+        .map { it to metadataMatchScore(cleaned, title, artist, album, it) }
+        .sortedByDescending { it.second }
+        .take(24)
+        .map { it.first }
+}
+
+private fun normalizeSearchText(value: String): String =
+    java.text.Normalizer.normalize(value, java.text.Normalizer.Form.NFD)
+        .replace(Regex("\\p{M}+"), "")
+        .lowercase()
+        .replace(Regex("[^a-z0-9]+"), " ")
+        .trim()
+        .replace(Regex("\\s+"), " ")
+
+private fun metadataMatchScore(
+    query: String,
+    expectedTitle: String,
+    expectedArtist: String,
+    expectedAlbum: String,
+    result: MetadataResult,
+): Int {
+    val q = normalizeSearchText(query)
+    val title = normalizeSearchText(result.title)
+    val artist = normalizeSearchText(result.artist)
+    val album = normalizeSearchText(result.album)
+
+    var score = 0
+    score += textSimilarity(expectedTitle, title) * 60
+    score += textSimilarity(expectedArtist, artist) * 30
+    score += textSimilarity(expectedAlbum, album) * 10
+    score += textSimilarity(q, listOf(title, artist, album).filter { it.isNotBlank() }.joinToString(" ")) * 25
+    if (q.isNotBlank() && (title.contains(q) || q.contains(title))) score += 40
+    if (expectedTitle.isNotBlank() && (title.contains(expectedTitle) || expectedTitle.contains(title))) score += 50
+    if (expectedArtist.isNotBlank() && (artist.contains(expectedArtist) || expectedArtist.contains(artist))) score += 35
+    return score
+}
+
+private fun textSimilarity(a: String, b: String): Int {
+    if (a.isBlank() || b.isBlank()) return 0
+    if (a == b) return 100
+    val aTokens = a.split(' ').filter { it.length >= 2 }.toSet()
+    val bTokens = b.split(' ').filter { it.length >= 2 }.toSet()
+    val overlap = if (aTokens.isEmpty()) 0 else (aTokens.intersect(bTokens).size * 100) / aTokens.size
+    val distance = levenshtein(a, b)
+    val edit = 100 - ((distance * 100) / maxOf(a.length, b.length))
+    return maxOf(overlap, edit.coerceAtLeast(0))
+}
+
+private fun levenshtein(a: String, b: String): Int {
+    if (a == b) return 0
+    if (a.isEmpty()) return b.length
+    if (b.isEmpty()) return a.length
+    var prev = IntArray(b.length + 1) { it }
+    var curr = IntArray(b.length + 1)
+    for (i in a.indices) {
+        curr[0] = i + 1
+        for (j in b.indices) {
+            val cost = if (a[i] == b[j]) 0 else 1
+            curr[j + 1] = minOf(
+                curr[j] + 1,
+                prev[j + 1] + 1,
+                prev[j] + cost,
+            )
+        }
+        val tmp = prev
+        prev = curr
+        curr = tmp
+    }
+    return prev[b.length]
 }
 
 @Composable
@@ -348,7 +429,7 @@ private fun SuggestionStrip(
     onOpenResult: (MetadataResult) -> Unit,
     onUseResult: (MetadataResult) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(UiTokens.sectionSpacing)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Sugestões", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
             if (loading) Text("Buscando...", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
@@ -403,12 +484,12 @@ private fun SuggestionCard(
     onUse: (() -> Unit)?,
 ) {
     Card(
-        modifier = Modifier.width(154.dp).clickable(onClick = onOpen),
-        shape = RoundedCornerShape(18.dp),
+        modifier = Modifier.width(UiTokens.suggestionCardWidth).clickable(onClick = onOpen),
+        shape = RoundedCornerShape(UiTokens.cardRadius),
         colors = CardDefaults.cardColors(containerColor = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface),
     ) {
-        Column(Modifier.padding(9.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-            ArtworkBox(artworkBytes, artworkUrl, Modifier.fillMaxWidth().height(130.dp))
+        Column(Modifier.padding(UiTokens.cardPadding), verticalArrangement = Arrangement.spacedBy(UiTokens.itemSpacing + 2.dp)) {
+            ArtworkBox(artworkBytes, artworkUrl, Modifier.fillMaxWidth().height(UiTokens.suggestionArtworkHeight))
             Text(title, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -426,9 +507,9 @@ private fun SuggestionCard(
 @Composable
 private fun CurrentTrackPreviewDialog(track: AudioTrack, onDismiss: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
-        Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
-                ArtworkBox(track.artworkBytes, "", Modifier.fillMaxWidth().height(260.dp))
+        Card(shape = RoundedCornerShape(UiTokens.cardRadius), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.fillMaxWidth().padding(UiTokens.dialogPadding), verticalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
+                ArtworkBox(track.artworkBytes, "", Modifier.fillMaxWidth().height(UiTokens.dialogArtworkSize))
                 Text(track.displayTitle(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 if (track.artist.isNotBlank()) Text(track.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (track.album.isNotBlank()) Text(track.album, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -442,9 +523,9 @@ private fun CurrentTrackPreviewDialog(track: AudioTrack, onDismiss: () -> Unit) 
 @Composable
 private fun SuggestionPreviewDialog(result: MetadataResult, onDismiss: () -> Unit, onUse: () -> Unit) {
     Dialog(onDismissRequest = onDismiss) {
-        Card(shape = RoundedCornerShape(24.dp), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
-            Column(Modifier.fillMaxWidth().padding(18.dp), verticalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
-                ArtworkBox(null, result.artworkUrl, Modifier.fillMaxWidth().height(260.dp))
+        Card(shape = RoundedCornerShape(UiTokens.cardRadius), colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
+            Column(Modifier.fillMaxWidth().padding(UiTokens.dialogPadding), verticalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
+                ArtworkBox(null, result.artworkUrl, Modifier.fillMaxWidth().height(UiTokens.dialogArtworkSize))
                 Text(result.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Text(result.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (result.album.isNotBlank()) Text(result.album, color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -475,7 +556,7 @@ fun ArtworkBox(bytes: ByteArray?, url: String, modifier: Modifier = Modifier) {
             }
         }
     }
-    Box(modifier.clip(RoundedCornerShape(16.dp)).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
+    Box(modifier.clip(RoundedCornerShape(UiTokens.cardRadius)).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
         if (bitmap != null) {
             Image(bitmap!!.asImageBitmap(), contentDescription = "Capa", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         } else {
@@ -488,14 +569,14 @@ fun ArtworkBox(bytes: ByteArray?, url: String, modifier: Modifier = Modifier) {
 private fun ArtworkEditor(artworkBytes: ByteArray?, artworkUrl: String, onPickArtwork: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(22.dp),
+        shape = RoundedCornerShape(UiTokens.cardRadius),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
     ) {
-        Column(Modifier.fillMaxWidth().padding(14.dp), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
+        Column(Modifier.fillMaxWidth().padding(UiTokens.cardPadding), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
             ArtworkBox(
                 artworkBytes,
                 artworkUrl,
-                Modifier.size(230.dp).clickable(onClick = onPickArtwork),
+                Modifier.size(UiTokens.editorArtworkSize).clickable(onClick = onPickArtwork),
             )
             TextButton(onClick = onPickArtwork) {
                 Icon(Icons.Rounded.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -515,7 +596,7 @@ fun ImportBanner(status: ImportStatus, onDismiss: () -> Unit) {
         else -> "Download"
     }
     Surface(color = if (status.failed) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp), verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.screenHorizontalPadding, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(UiTokens.itemSpacing + 1.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(title, fontWeight = FontWeight.Bold)

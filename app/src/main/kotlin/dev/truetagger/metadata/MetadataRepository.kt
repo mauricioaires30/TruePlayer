@@ -18,9 +18,26 @@ class MetadataRepository(
     }
 
     suspend fun search(query: String): List<MetadataResult> {
-        val primary = searchProviders(primaryProviders, query)
+        val cleanedQuery = removeParenthesizedText(query)
+        if (cleanedQuery.isBlank()) return emptyList()
+
+        val primary = searchProviders(primaryProviders, cleanedQuery)
         if (primary.isNotEmpty()) return dedupe(primary)
-        return dedupe(searchProviders(fallbackProviders, query))
+        return dedupe(searchProviders(fallbackProviders, cleanedQuery))
+    }
+
+    private fun removeParenthesizedText(value: String): String {
+        if (value.isBlank()) return ""
+        val out = StringBuilder(value.length)
+        var depth = 0
+        for (ch in value) {
+            when (ch) {
+                '(' -> depth++
+                ')' -> if (depth > 0) depth--
+                else -> if (depth == 0) out.append(ch)
+            }
+        }
+        return out.toString().replace(Regex("\\s+"), " ").trim()
     }
 
     private suspend fun searchProviders(providers: List<MetadataProvider>, query: String): List<MetadataResult> {

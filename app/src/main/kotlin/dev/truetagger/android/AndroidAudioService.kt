@@ -98,6 +98,7 @@ class AndroidAudioService(private val context: Context) {
                         modifiedAtSeconds = cursor.getLong(modified),
                         sizeBytes = cursor.getLong(size),
                         location = collection.authority.orEmpty(),
+                        artworkBytes = null,
                     )
                 }
             }

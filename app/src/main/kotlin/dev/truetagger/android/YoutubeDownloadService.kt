@@ -15,98 +15,120 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.channels.Channel
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.launch
 import java.io.File
 
 class YoutubeDownloadService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var importer: YoutubeImportManager
+    private val downloadChannel = Channel<DownloadTask>(Channel.UNLIMITED)
+    private val queuedDownloads = AtomicInteger(0)
 
     override fun onCreate() {
         super.onCreate()
         importer = YoutubeImportManager(this)
         ensureNotificationChannel()
+        serviceScope.launch {
+            for (task in downloadChannel) {
+                queuedDownloads.decrementAndGet()
+                processDownload(task)
+                finishBatchIfIdle()
+            }
+        }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val url = intent?.getStringExtra(ShareContract.EXTRA_SHARED_URL)
-        if (url.isNullOrBlank()) {
+        val url = intent?.getStringExtra(ShareContract.EXTRA_SHARED_URL).orEmpty().trim()
+        if (url.isBlank()) {
             stopSelf(startId)
             return START_NOT_STICKY
         }
 
-        var videoTitle = ""
-
-        startForeground(
-            ShareContract.NOTIFICATION_ID,
-            buildNotification(
-                title = "Preparando download",
-                text = "Lendo informações do vídeo...",
-                indeterminate = true,
-            ),
-        )
-
-        serviceScope.launch {
-            val tree = getSharedPreferences(ShareContract.PREFS, MODE_PRIVATE)
-                .getString(ShareContract.PREF_DOWNLOAD_TREE, null)
-                ?.let(Uri::parse)
-
-            if (tree == null) {
-                finishWithNotification(
-                    "Escolha uma pasta",
-                    "Abra o TrueTagger para configurar a pasta de download.",
-                    failed = true,
-                )
-                stopSelf(startId)
-                return@launch
-            }
-
-            runCatching {
-                importer.downloadAudio(url, tree) { status ->
-                    if (status.mediaTitle.isNotBlank()) videoTitle = status.mediaTitle
-                    val progress = status.progress?.coerceIn(0, 100)
-                    val notificationTitle = when {
-                        videoTitle.isNotBlank() && progress != null && progress > 0 -> "$videoTitle • $progress%"
-                        videoTitle.isNotBlank() -> videoTitle
-                        progress != null && progress > 0 -> "Baixando música • $progress%"
-                        else -> "Preparando download"
-                    }
-                    startForeground(
-                        ShareContract.NOTIFICATION_ID,
-                        buildNotification(
-                            title = notificationTitle,
-                            text = status.message.ifBlank { "Processando vídeo..." },
-                            progress = progress,
-                            indeterminate = progress == null || progress == 0,
-                        ),
-                    )
-                }
-            }.onSuccess { fileName ->
-                clearLastError()
-                finishWithNotification(
-                    title = "Download concluído",
-                    text = videoTitle.ifBlank { fileName },
-                    completed = true,
-                )
-            }.onFailure { error ->
-                saveLastError(error)
-                finishWithNotification(
-                    title = "Falha no download",
-                    text = if (videoTitle.isBlank()) {
-                        "Não foi possível baixar este vídeo."
-                    } else {
-                        "Não foi possível baixar: $videoTitle"
-                    },
-                    failed = true,
-                )
-            }
-            stopSelf(startId)
-        }
-
+        queuedDownloads.incrementAndGet()
+        downloadChannel.trySend(DownloadTask(url))
         return START_NOT_STICKY
     }
 
+    private fun finishBatchIfIdle() {
+        if (queuedDownloads.get() != 0) return
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
+        } else {
+            @Suppress("DEPRECATION")
+            runCatching { stopForeground(true) }
+        }
+    }
+
+    private suspend fun processDownload(task: DownloadTask) {
+        val url = task.url
+        var videoTitle = ""
+        val queuedAfterCurrent = queuedDownloads.get()
+
+        runCatching {
+            startForeground(
+                ShareContract.NOTIFICATION_ID,
+                buildNotification(
+                    title = "Preparando download",
+                    text = if (queuedAfterCurrent > 0) {
+                        "Lendo informações do vídeo... • $queuedAfterCurrent na fila"
+                    } else {
+                        "Lendo informações do vídeo..."
+                    },
+                    indeterminate = true,
+                ),
+            )
+
+            val tree = getSharedPreferences(ShareContract.PREFS, MODE_PRIVATE)
+                .getString(ShareContract.PREF_DOWNLOAD_TREE, null)
+                ?.let(Uri::parse)
+                ?: error("Escolha uma pasta de download no TrueTagger antes de baixar.")
+
+            importer.downloadAudio(url, tree) { status ->
+                if (status.mediaTitle.isNotBlank()) videoTitle = status.mediaTitle
+                val progress = status.progress?.coerceIn(0, 100)
+                val queued = queuedDownloads.get()
+                val queueText = if (queued > 0) " • $queued na fila" else ""
+                val notificationTitle = when {
+                    videoTitle.isNotBlank() && progress != null && progress > 0 -> "$videoTitle • $progress%"
+                    videoTitle.isNotBlank() -> videoTitle
+                    progress != null && progress > 0 -> "Baixando música • $progress%"
+                    else -> "Preparando download"
+                }
+                startForeground(
+                    ShareContract.NOTIFICATION_ID,
+                    buildNotification(
+                        title = notificationTitle,
+                        text = status.message.ifBlank { "Processando vídeo..." } + queueText,
+                        progress = progress,
+                        indeterminate = progress == null || progress == 0,
+                    ),
+                )
+            }
+        }.onSuccess { fileName ->
+            clearLastError()
+            finishWithNotification(
+                title = "Download concluído",
+                text = videoTitle.ifBlank { fileName },
+                completed = true,
+            )
+        }.onFailure { error ->
+            saveLastError(error)
+            finishWithNotification(
+                title = "Falha no download",
+                text = if (videoTitle.isBlank()) {
+                    "Não foi possível baixar este vídeo."
+                } else {
+                    "Não foi possível baixar: $videoTitle"
+                },
+                failed = true,
+            )
+        }
+    }
+
     override fun onDestroy() {
+        downloadChannel.close()
         serviceScope.cancel()
         super.onDestroy()
     }
@@ -120,10 +142,10 @@ class YoutubeDownloadService : Service() {
         failed: Boolean = false,
     ) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
+            runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
         } else {
             @Suppress("DEPRECATION")
-            stopForeground(true)
+            runCatching { stopForeground(true) }
         }
         notificationManager().notify(
             ShareContract.NOTIFICATION_RESULT_ID,
@@ -205,13 +227,21 @@ class YoutubeDownloadService : Service() {
         runCatching { File(filesDir, "last-download-error.txt").delete() }
     }
 
+    private data class DownloadTask(val url: String)
+
     companion object {
         fun start(context: Context, url: String) {
+            val cleanUrl = url.trim()
+            if (cleanUrl.isBlank()) return
             val intent = Intent(context, YoutubeDownloadService::class.java).apply {
                 action = ShareContract.ACTION_START_DOWNLOAD
-                putExtra(ShareContract.EXTRA_SHARED_URL, url)
+                putExtra(ShareContract.EXTRA_SHARED_URL, cleanUrl)
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent) else context.startService(intent)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                context.startForegroundService(intent)
+            } else {
+                context.startService(intent)
+            }
         }
     }
 }

@@ -1,0 +1,87 @@
+===== TruePlayer - Log completo =====
+Projeto: C:\Users\mauri\Documents\TrueTagger\dev
+Modulo app: C:\Users\mauri\Documents\TrueTagger\app
+Inicio: 14/09/2026 10:59:42,16
+
+openjdk version "21.0.8" 2025-07-15 LTS
+OpenJDK Runtime Environment Microsoft-11933218 (build 21.0.8+9-LTS)
+OpenJDK 64-Bit Server VM Microsoft-11933218 (build 21.0.8+9-LTS, mixed mode, sharing)
+
+------------------------------------------------------------
+Gradle 8.13
+------------------------------------------------------------
+
+Build time:    2025-02-25 09:22:14 UTC
+Revision:      073314332697ba45c16c0a0ce1891fa6794179ff
+
+Kotlin:        2.0.21
+Groovy:        3.0.22
+Ant:           Apache Ant(TM) version 1.10.15 compiled on August 25 2024
+Launcher JVM:  21.0.8 (Microsoft 21.0.8+9-LTS)
+Daemon JVM:    C:\Users\mauri\.truetagger\tools\jdk (no JDK specified, using current Java home)
+OS:            Windows 11 10.0 amd64
+
+> Task :app:preBuild UP-TO-DATE
+> Task :app:preDebugBuild UP-TO-DATE
+> Task :app:mergeDebugNativeDebugMetadata NO-SOURCE
+> Task :app:checkKotlinGradlePluginConfigurationErrors SKIPPED
+> Task :app:checkDebugAarMetadata UP-TO-DATE
+> Task :app:processDebugNavigationResources UP-TO-DATE
+> Task :app:compileDebugNavigationResources UP-TO-DATE
+> Task :app:generateDebugResValues UP-TO-DATE
+> Task :app:mapDebugSourceSetPaths UP-TO-DATE
+> Task :app:generateDebugResources UP-TO-DATE
+> Task :app:mergeDebugResources UP-TO-DATE
+> Task :app:packageDebugResources UP-TO-DATE
+> Task :app:parseDebugLocalResources UP-TO-DATE
+> Task :app:createDebugCompatibleScreenManifests UP-TO-DATE
+> Task :app:extractDeepLinksDebug UP-TO-DATE
+> Task :app:processDebugMainManifest UP-TO-DATE
+> Task :app:processDebugManifest UP-TO-DATE
+> Task :app:processDebugManifestForPackage UP-TO-DATE
+> Task :app:processDebugResources UP-TO-DATE
+> Task :app:javaPreCompileDebug UP-TO-DATE
+> Task :app:mergeDebugShaders UP-TO-DATE
+> Task :app:compileDebugShaders NO-SOURCE
+> Task :app:generateDebugAssets UP-TO-DATE
+> Task :app:mergeDebugAssets UP-TO-DATE
+> Task :app:compressDebugAssets UP-TO-DATE
+> Task :app:desugarDebugFileDependencies UP-TO-DATE
+> Task :app:checkDebugDuplicateClasses UP-TO-DATE
+> Task :app:mergeExtDexDebug UP-TO-DATE
+> Task :app:mergeLibDexDebug UP-TO-DATE
+> Task :app:mergeDebugJniLibFolders UP-TO-DATE
+> Task :app:mergeDebugNativeLibs UP-TO-DATE
+> Task :app:stripDebugDebugSymbols UP-TO-DATE
+> Task :app:validateSigningDebug UP-TO-DATE
+> Task :app:writeDebugAppMetadata UP-TO-DATE
+> Task :app:writeDebugSigningConfigVersions UP-TO-DATE
+
+> Task :app:compileDebugKotlin
+w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:681:72 'val Icons.Rounded.QueueMusic: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.QueueMusic.
+w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:685:74 'val Icons.Rounded.QueueMusic: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.QueueMusic.
+w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:936:68 'val Icons.Rounded.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.ArrowBack.
+w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:957:104 'val Icons.Rounded.QueueMusic: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.QueueMusic.
+w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:980:63 'val Icons.Rounded.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.ArrowBack.
+w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:1106:80 Unnecessary non-null assertion (!!) on a non-null receiver of type 'IntentSender'.
+w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:1262:148 'val Icons.Rounded.PlaylistAdd: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.PlaylistAdd.
+w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:1394:44 'val Icons.Rounded.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.ArrowBack.
+w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:1485:106 Unnecessary safe call on a non-null receiver of type 'Pair<AudioTrack, Long>'.
+w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:1493:89 Unnecessary safe call on a non-null receiver of type 'Triple<String, String, Long>'.
+w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:2229:40 'val Icons.Rounded.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.ArrowBack.
+
+> Task :app:compileDebugJavaWithJavac NO-SOURCE
+> Task :app:dexBuilderDebug
+> Task :app:mergeDebugGlobalSynthetics UP-TO-DATE
+> Task :app:processDebugJavaRes UP-TO-DATE
+> Task :app:mergeDebugJavaResource UP-TO-DATE
+> Task :app:mergeProjectDexDebug
+
+> Task :app:packageDebug
+PackagingOptions.jniLibs.useLegacyPackaging should be set to true because android:extractNativeLibs is set to "true" in AndroidManifest.xml.
+
+> Task :app:createDebugApkListingFileRedirect UP-TO-DATE
+> Task :app:assembleDebug
+
+BUILD SUCCESSFUL in 17s
+37 actionable tasks: 4 executed, 33 up-to-date
