@@ -16,15 +16,12 @@ import android.media.MediaPlayer
 import android.media.AudioAttributes
 import android.media.AudioDeviceInfo
 import android.media.AudioManager
-import android.media.audiofx.LoudnessEnhancer
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
 import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import android.os.ParcelFileDescriptor
-import kotlin.math.roundToInt
-import kotlin.math.pow
 import android.provider.Settings
 import dev.truetagger.model.AudioTrack
 
@@ -41,7 +38,6 @@ class MusicPlaybackService : Service() {
         const val ACTION_HIDE_NOTIFICATION = "dev.truetagger.player.HIDE_NOTIFICATION"
         const val ACTION_PLAY_QUEUE_INDEX = "dev.truetagger.player.PLAY_QUEUE_INDEX"
         const val ACTION_REPLACE_QUEUE = "dev.truetagger.player.REPLACE_QUEUE"
-        const val ACTION_SET_VOLUME_NORMALIZATION = "dev.truetagger.player.SET_VOLUME_NORMALIZATION"
         const val ACTION_RESTORE_LAST = "dev.truetagger.player.RESTORE_LAST"
         const val ACTION_RECONCILE_DELETED_TRACKS = "dev.truetagger.player.RECONCILE_DELETED_TRACKS"
         const val ACTION_RELEASE_FILE_HANDLES = "dev.truetagger.player.RELEASE_FILE_HANDLES"
@@ -153,13 +149,7 @@ class MusicPlaybackService : Service() {
             }
         }
 
-        fun setVolumeNormalization(context: Context, enabled: Boolean) {
-            val i = Intent(context, MusicPlaybackService::class.java).apply {
-                action = ACTION_SET_VOLUME_NORMALIZATION
-                putExtra(EXTRA_ENABLED, enabled)
-            }
-            context.startService(i)
-        }
+
     }
 
     private var player: MediaPlayer? = null
@@ -233,8 +223,6 @@ class MusicPlaybackService : Service() {
     private var notificationSuppressed = false
     private var sessionMetadataTrackId: String? = null
     private var sessionMetadataDurationMs = -1L
-    private var loudnessEnhancer: LoudnessEnhancer? = null
-    private var normalizationRampGeneration = 0L
     private var restoringLastPlayback = false
     private var playCountRecordedGeneration = -1L
 
@@ -357,20 +345,6 @@ class MusicPlaybackService : Service() {
             ACTION_NEXT -> next()
             ACTION_PREVIOUS -> previous()
             ACTION_PLAY_QUEUE_INDEX -> playQueueIndex(intent.getIntExtra(EXTRA_INDEX, -1))
-            ACTION_SET_VOLUME_NORMALIZATION -> {
-                val enabled = intent.getBooleanExtra(EXTRA_ENABLED, false)
-                VolumeNormalizer.setEnabled(this, enabled)
-                if (enabled) {
-                    val current = player
-                    val track = queue.getOrNull(index)
-                    if (current != null && track != null && mediaPrepared) {
-                        applyVolumeNormalization(current, track, playerGeneration)
-                    }
-                } else {
-                    clearVolumeNormalization()
-                }
-                updateStateAndNotification()
-            }
             ACTION_REPLACE_QUEUE -> {
                 val request = PlaybackRequests.take()
                 if (request != null) replaceCurrentQueue(request.queue)
@@ -529,87 +503,9 @@ class MusicPlaybackService : Service() {
         detachedPositionMs = runCatching {
             if (mediaPrepared) current.currentPosition.toLong().coerceAtLeast(0L) else 0L
         }.getOrDefault(0L)
-        clearVolumeNormalization()
         releaseCurrentPlayer()
         pendingPlay = false
         updateStateAndNotification()
-    }
-
-    private fun clearVolumeNormalization() {
-        runCatching { loudnessEnhancer?.enabled = false }
-        runCatching { loudnessEnhancer?.release() }
-        loudnessEnhancer = null
-        runCatching { player?.setVolume(1f, 1f) }
-    }
-
-    private fun applyVolumeNormalization(
-        mediaPlayer: MediaPlayer,
-        track: AudioTrack,
-        generation: Long,
-        onReady: () -> Unit = {},
-    ) {
-        clearVolumeNormalization()
-        if (!VolumeNormalizer.isEnabled(this)) {
-            onReady()
-            return
-        }
-
-        val cacheKey = "gain_" + track.id.hashCode().toUInt().toString(16)
-        val prefs = getSharedPreferences("truetagger_volume_normalization_cache_v4", MODE_PRIVATE)
-        val cached = if (prefs.contains(cacheKey)) prefs.getFloat(cacheKey, 0f) else null
-        val outputLevel = VolumeNormalizer.getOutputLevel(this).coerceIn(0.50f, 1.00f)
-
-        fun finish(gainDb: Float) {
-            if (generation != playerGeneration || player !== mediaPlayer) return
-            val clampedGain = gainDb.coerceIn(-10f, 10f)
-            runCatching { mediaPlayer.setVolume(outputLevel, outputLevel) }
-            if (clampedGain > 0f) {
-                val effect = runCatching { LoudnessEnhancer(mediaPlayer.audioSessionId) }.getOrNull()
-                if (effect != null) {
-                    loudnessEnhancer = effect
-                    runCatching {
-                        effect.setTargetGain((clampedGain * 100f).roundToInt())
-                        effect.enabled = true
-                    }.onFailure {
-                        runCatching { effect.release() }
-                        if (loudnessEnhancer === effect) loudnessEnhancer = null
-                    }
-                }
-            } else {
-                val linear = (outputLevel * 10.0.pow((clampedGain / 20.0).toDouble()).toFloat())
-                    .coerceIn(0.05f, outputLevel)
-                runCatching { mediaPlayer.setVolume(linear, linear) }
-            }
-            onReady()
-        }
-
-        if (cached != null) {
-            finish(cached)
-            return
-        }
-
-        // Não inicia a música antes de conhecer o ganho da faixa inteira.
-        // Isso evita a queda/subida audível no meio da música enquanto a análise termina.
-        VolumeNormalizer.analyzeGainAsync(this, Uri.parse(track.id)) { gainDb ->
-            if (generation != playerGeneration || player !== mediaPlayer) return@analyzeGainAsync
-            prefs.edit().putFloat(cacheKey, gainDb).apply()
-            finish(gainDb)
-        }
-    }
-
-    private fun prewarmVolumeNormalization(track: AudioTrack) {
-        val cacheKey = "gain_" + track.id.hashCode().toUInt().toString(16)
-        val prefs = getSharedPreferences("truetagger_volume_normalization_cache_v4", MODE_PRIVATE)
-        if (prefs.contains(cacheKey)) return
-        VolumeNormalizer.analyzeGainAsync(this, Uri.parse(track.id)) { gainDb ->
-            prefs.edit().putFloat(cacheKey, gainDb).apply()
-        }
-    }
-
-    private fun clearVolumeEnhancerOnly() {
-        runCatching { loudnessEnhancer?.enabled = false }
-        runCatching { loudnessEnhancer?.release() }
-        loudnessEnhancer = null
     }
 
     private fun recordPlayCount(trackId: String) {
@@ -642,7 +538,6 @@ class MusicPlaybackService : Service() {
         detachedPositionMs = -1L
         cancelIdleRelease()
         releaseCurrentPlayer()
-        clearVolumeNormalization()
 
         notificationArtwork = loadNotificationArtwork(track)
         notificationArtworkTrackId = track.id
@@ -650,9 +545,6 @@ class MusicPlaybackService : Service() {
         sessionMetadataDurationMs = -1L
         playCountRecordedGeneration = -1L
 
-        if (VolumeNormalizer.isEnabled(this)) {
-            queue.getOrNull(index + 1)?.let(::prewarmVolumeNormalization)
-        }
 
         try {
             // MediaPlayer.create() já devolve o player PREPARADO. Usamos a variante
@@ -740,9 +632,7 @@ class MusicPlaybackService : Service() {
                 }
             }
 
-            applyVolumeNormalization(mediaPlayer, track, generation) {
-                startWhenReady()
-            }
+            startWhenReady()
 
             if (!shouldPlay) {
                 updateStateAndNotification()
@@ -877,7 +767,6 @@ class MusicPlaybackService : Service() {
         ++playerGeneration
         handler.removeCallbacks(progressRunnable)
         cancelIdleRelease()
-        clearVolumeNormalization()
         // releaseCurrentPlayer() também fecha o ParcelFileDescriptor, que antes
         // ficava aberto aqui e segurava o arquivo mesmo após parar.
         releaseCurrentPlayer()
@@ -1160,13 +1049,8 @@ class MusicPlaybackService : Service() {
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
-        // App fechado pelo usuário: se nada está tocando, não faz sentido manter
-        // um arquivo aberto dentro da pasta de músicas.
-        val active = runCatching { player?.isPlaying == true }.getOrDefault(false)
-        if (!active) {
-            cancelIdleRelease()
-            detachPlayerKeepingPosition()
-        }
+        // Ao fechar o app pela lista de recentes, encerra também a reprodução.
+        stopPlayback()
         super.onTaskRemoved(rootIntent)
     }
 
@@ -1176,7 +1060,6 @@ class MusicPlaybackService : Service() {
         handler.removeCallbacks(progressRunnable)
         cancelIdleRelease()
         ++playerGeneration
-        clearVolumeNormalization()
         releaseCurrentPlayer()
         session.isActive = false
         session.release()

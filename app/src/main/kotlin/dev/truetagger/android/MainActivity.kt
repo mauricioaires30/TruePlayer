@@ -145,7 +145,7 @@ class MainActivity : ComponentActivity() {
             runCatching { contentResolver.unregisterContentObserver(mediaObserver) }
         }
         if (isFinishing) {
-            runCatching { MusicPlaybackService.hideNotification(this) }
+            runCatching { MusicPlaybackService.command(this, MusicPlaybackService.ACTION_STOP) }
         }
         appScope.cancel()
         super.onDestroy()

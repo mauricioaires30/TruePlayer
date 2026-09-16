@@ -73,7 +73,6 @@ import dev.truetagger.android.R
 import dev.truetagger.android.PlayerSnapshot
 import dev.truetagger.android.PlayerState
 import dev.truetagger.android.RepeatMode
-import dev.truetagger.android.VolumeNormalizer
 import dev.truetagger.model.AppSettings
 import dev.truetagger.model.AudioTrack
 import dev.truetagger.android.AppEvents
@@ -2557,33 +2556,6 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
             ) {
                 item { SettingSwitch("Atualizar biblioteca automaticamente", settings.autoRefreshLibrary) { onChange(settings.copy(autoRefreshLibrary = it)) } }
                 item { SettingSwitch("Incorporar thumbnail do YouTube", settings.embedYoutubeThumbnail) { onChange(settings.copy(embedYoutubeThumbnail = it)) } }
-                item {
-                    var volumeNormalization by remember { mutableStateOf(VolumeNormalizer.isEnabled(context)) }
-                    var normalizationLevel by remember { mutableFloatStateOf(VolumeNormalizer.getOutputLevel(context)) }
-                    Column(Modifier.fillMaxWidth()) {
-                        SettingSwitch("Normalização de volume", volumeNormalization) { enabled ->
-                            volumeNormalization = enabled
-                            VolumeNormalizer.setEnabled(context, enabled)
-                            MusicPlaybackService.setVolumeNormalization(context, enabled)
-                        }
-                        if (volumeNormalization) {
-                            Spacer(Modifier.height(UiTokens.itemSpacing))
-                            Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.cardItemHorizontalPadding)) {
-                                Text("Nível da normalização: ${kotlin.math.round(normalizationLevel * 100).toInt()}%", fontWeight = FontWeight.SemiBold)
-                                Slider(
-                                    value = normalizationLevel,
-                                    onValueChange = { normalizationLevel = it },
-                                    onValueChangeFinished = {
-                                        VolumeNormalizer.setOutputLevel(context, normalizationLevel)
-                                    },
-                                    valueRange = 0.50f..1.00f,
-                                    steps = 9,
-                                )
-                                Text("Controla o nível máximo usado pela normalização suave.", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
-                            }
-                        }
-                    }
-                }
                 item { SettingSwitch("Atualizar downloader automaticamente", settings.autoUpdateDownloader) { onChange(settings.copy(autoUpdateDownloader = it)) } }
                 item {
                     Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.space2)) {
