@@ -1,14 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.TrueTagger" parent="android:style/Theme.Material.Light.NoActionBar">
-        <item name="android:fontFamily">sans</item>
+    <!--
+        Antes o tema herdava de Theme.Material.Light: a janela começava branca e
+        piscava antes do Compose desenhar o fundo escuro. Agora o windowBackground
+        já é a cor de fundo real do app (#050307), e as barras de sistema usam a
+        mesma cor em vez do #111318 antigo, que destoava do restante.
+    -->
+    <style name="Theme.TrueTagger" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:windowBackground">#050307</item>
+        <item name="android:colorBackground">#050307</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:statusBarColor">#111318</item>
-        <item name="android:navigationBarColor">#111318</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:statusBarColor">#050307</item>
+        <item name="android:navigationBarColor">#050307</item>
         <item name="android:windowActionModeOverlay">true</item>
     </style>
     <style name="Theme.TrueTagger.Share" parent="@style/Theme.TrueTagger">
         <item name="android:windowIsTranslucent">true</item>
         <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 </resources>

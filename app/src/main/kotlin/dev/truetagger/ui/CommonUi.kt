@@ -1,17 +1,24 @@
 package dev.truetagger.ui
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CheckBox
 import androidx.compose.material.icons.rounded.CheckBoxOutlineBlank
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -19,67 +26,99 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.vector.ImageVector
 
+/**
+ * Geometria única do app.
+ *
+ * Todos os valores derivam de uma grade de 4dp. A ordem e a posição relativa dos
+ * componentes continuam exatamente as mesmas; apenas margens, alturas e
+ * espaçamentos foram normalizados para que todas as telas usem a mesma métrica.
+ *
+ * Os nomes antigos foram mantidos (mesmo quando redundantes) para não quebrar
+ * nenhuma chamada existente — mas agora apontam todos para a mesma escala.
+ */
 internal object UiTokens {
-    // Geometria única do app. A ordem e a posição relativa dos componentes são mantidas;
-    // apenas margens, tamanhos e espaçamentos são normalizados.
-    val screenPadding = 18.dp
-    val compactPadding = 10.dp
-    val searchHeight = 52.dp
+    // ---- Grade base -------------------------------------------------------
+    val space1 = 4.dp
+    val space2 = 8.dp
+    val space3 = 12.dp
+    val space4 = 16.dp
+    val space5 = 20.dp
+    val space6 = 24.dp
+
+    // ---- Margens de tela (iguais em TODAS as telas) -----------------------
+    val screenHorizontalPadding = space4      // 16
+    val screenVerticalPadding = space2        // 8
+    val screenPadding = space4                // 16
+    val pageHorizontal = space4               // 16
+    val pageVertical = space2                 // 8
+    val compactPadding = space3               // 12
+    val headerPadding = 0.dp
+    val standardToolbarPadding = 0.dp
+
+    // ---- Espaçamentos internos -------------------------------------------
+    val itemSpacing = space1                  // 4
+    val toolbarGap = space2                   // 8
+    val sectionSpacing = 10.dp
+    val titleSpacing = space2                 // 8
+    val listHeaderGap = 6.dp
+    val standardListTopSpacing = 6.dp
+    val formFieldSpacing = 10.dp
+    val songListSpacing = 6.dp
+    val songListBottomPadding = 10.dp
+
+    // ---- Barra de rolagem -------------------------------------------------
     val scrollbarWidth = 5.dp
     val scrollbarTouchWidth = 28.dp
     val scrollbarThumbHeight = 112.dp
-    val scrollbarReserve = 28.dp
-    val screenHorizontalPadding = 18.dp
-    val screenVerticalPadding = 10.dp
-    val pageHorizontal = 18.dp
-    val pageVertical = 10.dp
-    val standardToolbarPadding = 0.dp
-    val standardListTopSpacing = 6.dp
-    val selectionRowHeight = 44.dp
-    val listHeaderGap = 6.dp
-    val songListEndPadding = 28.dp
-    val songListSpacing = 5.dp
-    val songListBottomPadding = 8.dp
-    val jumpEndPadding = 6.dp
-    val jumpBottomPadding = 6.dp
-    val scrollbarInset = 1.dp
-    val headerPadding = 0.dp
-    val toolbarGap = 8.dp
-    val titleSpacing = 6.dp
-    val sectionSpacing = 8.dp
-    val itemSpacing = 3.dp
-    val cardRadius = 12.dp
+    val scrollbarReserve = space6             // 24
+    val songListEndPadding = space6           // 24 (mesmo valor da reserva)
+    val scrollbarInset = space1               // 4
+    val jumpEndPadding = space2               // 8
+    val jumpBottomPadding = space2            // 8
+
+    // ---- Cartões e linhas -------------------------------------------------
+    val cardRadius = space3                   // 12
     val cardPadding = 10.dp
-    val cardItemHorizontalPadding = 8.dp
-    val reorderControlsWidth = 40.dp
-    val formFieldSpacing = 8.dp
-    val songItemRadius = 10.dp
-    val songItemPadding = 5.dp
-    val songItemArtworkSize = 48.dp
-    val songItemSpacing = 4.dp
-    val compactRowHeight = 64.dp
-    val albumCardHeight = 300.dp
-    val albumArtworkHeight = 152.dp
-    val bottomBarHeight = 64.dp
-    // Botões e controles interativos mantêm sua geometria original.
-    val controlHeight = 48.dp
-    val toolbarIconButtonSize = 44.dp
-    val primaryIconSize = 22.dp
-    val smallIconSize = 20.dp
-    val mostPlayedRowHeight = 80.dp
-    val songItemHeight = 64.dp
-    val detailArtworkSize = 200.dp
-    val miniPlayerHeight = 88.dp
-    val miniPlayerArtworkSize = 48.dp
-    val rankWidth = 24.dp
-    val dialogPadding = 16.dp
-    val dialogArtworkSize = 240.dp
-    val editorArtworkSize = 210.dp
-    val suggestionCardWidth = 148.dp
-    val suggestionArtworkHeight = 124.dp
+    val cardItemHorizontalPadding = 10.dp
+    val songItemRadius = space3               // 12
+    val songItemPadding = 6.dp
+    val songItemSpacing = 2.dp
+    val songItemArtworkSize = 44.dp
+    val songItemHeight = 56.dp
+    val compactRowHeight = 56.dp
+    val mostPlayedRowHeight = 60.dp
+    val rankWidth = 22.dp
+    val reorderControlsWidth = 32.dp
+
+    // ---- Controles --------------------------------------------------------
+    val controlHeight = 44.dp
+    val searchHeight = 46.dp
+    val selectionRowHeight = 44.dp
+    val toolbarIconButtonSize = 38.dp
+    val iconButtonSize = 40.dp
+    val smallIconButtonSize = 32.dp
+    val primaryIconSize = 20.dp
+    val smallIconSize = 18.dp
+    val buttonContentPadding = 10.dp
+    val buttonRadius = space3                 // 12
+
+    // ---- Barras e player --------------------------------------------------
+    val bottomBarHeight = 58.dp
+    val bottomBarIconSize = 20.dp
+    val bottomBarLabelSize = 10.sp
+    val miniPlayerHeight = 78.dp
+    val miniPlayerArtworkSize = 44.dp
+
+    // ---- Telas específicas ------------------------------------------------
+    val albumCardHeight = 296.dp // não usado: o card agora tem altura natural
+    val albumArtworkHeight = 168.dp
+    val detailArtworkSize = 164.dp
+    val dialogPadding = space4                // 16
+    val dialogArtworkSize = 220.dp
+    val editorArtworkSize = 180.dp
+    val suggestionCardWidth = 140.dp
+    val suggestionArtworkHeight = 116.dp
 }
-
-
 
 internal data class BottomNavSpec(
     val label: String,
@@ -93,41 +132,48 @@ internal fun CompactBottomBar(
     onSelected: (Int) -> Unit,
 ) {
     Surface(
-        modifier = Modifier.fillMaxWidth().height(UiTokens.bottomBarHeight),
+        modifier = Modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
         tonalElevation = 2.dp,
     ) {
-        Row(Modifier.fillMaxSize()) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .height(UiTokens.bottomBarHeight),
+        ) {
             items.forEachIndexed { index, item ->
+                val selected = index == selectedIndex
+                val tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                 Column(
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight()
                         .clickable { onSelected(index) }
-                        .padding(horizontal = 1.dp, vertical = 4.dp),
+                        .padding(horizontal = 2.dp, vertical = UiTokens.space2),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Icon(
                         imageVector = item.icon,
                         contentDescription = item.label,
-                        modifier = Modifier.size(18.dp),
-                        tint = if (index == selectedIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(UiTokens.bottomBarIconSize),
+                        tint = tint,
                     )
+                    Spacer(Modifier.height(3.dp))
                     Text(
                         item.label,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        fontSize = 9.sp,
-                        fontWeight = if (index == selectedIndex) FontWeight.SemiBold else FontWeight.Normal,
-                        color = if (index == selectedIndex) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = UiTokens.bottomBarLabelSize,
+                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                        color = tint,
                     )
                 }
             }
         }
     }
 }
-
 
 @Composable
 internal fun StandardScreenColumn(
@@ -155,6 +201,119 @@ internal fun StandardPage(modifier: Modifier = Modifier, content: @Composable Co
     )
 }
 
+/** Título de tela — mesma tipografia e mesma altura em todas as abas. */
+@Composable
+internal fun ScreenTitle(
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.Bold,
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        modifier = modifier,
+    )
+}
+
+/**
+ * Cabeçalho padrão de tela: [voltar] título [ações].
+ * Mantém sempre a mesma altura, independente de haver botão de voltar.
+ */
+@Composable
+internal fun ScreenHeaderRow(
+    title: String,
+    modifier: Modifier = Modifier,
+    onBack: (() -> Unit)? = null,
+    actions: @Composable RowScope.() -> Unit = {},
+) {
+    Row(
+        modifier = modifier.fillMaxWidth().heightIn(min = UiTokens.iconButtonSize),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (onBack != null) {
+            IconButton(onClick = onBack, modifier = Modifier.size(UiTokens.iconButtonSize)) {
+                Icon(Icons.Rounded.ArrowBack, "Voltar", modifier = Modifier.size(UiTokens.primaryIconSize))
+            }
+            Spacer(Modifier.width(UiTokens.space1))
+        }
+        ScreenTitle(title, Modifier.weight(1f))
+        actions()
+    }
+}
+
+/**
+ * Linha-cartão usada por playlists, artistas, gêneros e afins.
+ * Antes esse bloco estava duplicado em quatro telas com paddings diferentes;
+ * agora todas passam por aqui e ficam idênticas.
+ */
+@Composable
+internal fun ListCardRow(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    minHeight: Dp = UiTokens.compactRowHeight,
+    content: @Composable RowScope.() -> Unit,
+) {
+    Row(
+        modifier
+            .fillMaxWidth()
+            .heightIn(min = minHeight)
+            .clip(RoundedCornerShape(UiTokens.songItemRadius))
+            .border(
+                BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                RoundedCornerShape(UiTokens.songItemRadius),
+            )
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.34f))
+            .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
+            .padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.songItemPadding),
+        verticalAlignment = Alignment.CenterVertically,
+        content = content,
+    )
+}
+
+/** Par de botões de ação de largura igual (Tocar / Aleatório, Criar / Importar, ...). */
+@Composable
+internal fun ActionButtonRow(
+    modifier: Modifier = Modifier,
+    content: @Composable RowScope.() -> Unit,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(UiTokens.toolbarGap),
+        verticalAlignment = Alignment.CenterVertically,
+        content = content,
+    )
+}
+
+/** Botão de ação padrão do app: mesma altura, mesmo raio, mesmo espaçamento interno. */
+@Composable
+internal fun ActionButton(
+    text: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    contentColor: androidx.compose.ui.graphics.Color? = null,
+) {
+    OutlinedButton(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier.height(UiTokens.controlHeight),
+        shape = RoundedCornerShape(UiTokens.buttonRadius),
+        contentPadding = PaddingValues(horizontal = UiTokens.buttonContentPadding, vertical = 0.dp),
+        colors = if (contentColor != null) {
+            ButtonDefaults.outlinedButtonColors(contentColor = contentColor)
+        } else {
+            ButtonDefaults.outlinedButtonColors()
+        },
+    ) {
+        Icon(icon, null, modifier = Modifier.size(UiTokens.smallIconSize))
+        Spacer(Modifier.width(UiTokens.space2))
+        Text(text, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+    }
+}
+
 internal fun Modifier.standardListSpace(): Modifier =
     padding(end = UiTokens.scrollbarReserve)
 
@@ -169,13 +328,17 @@ internal fun SelectionToolbar(
     Row(
         modifier = Modifier.fillMaxWidth().height(UiTokens.controlHeight),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(UiTokens.toolbarGap),
     ) {
-        IconButton(onClick = onCancel) { Icon(Icons.Rounded.Close, "Cancelar seleção") }
+        IconButton(onClick = onCancel, modifier = Modifier.size(UiTokens.iconButtonSize)) {
+            Icon(Icons.Rounded.Close, "Cancelar seleção", modifier = Modifier.size(UiTokens.primaryIconSize))
+        }
         Text(
             "$selectedCount selecionada(s)",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f),
         )
         TextButton(onClick = onToggleAll) {
@@ -202,11 +365,12 @@ internal fun SelectionToggle(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(Modifier.width(4.dp))
-        IconButton(onClick = onToggle, modifier = Modifier.size(36.dp)) {
+        Spacer(Modifier.width(UiTokens.space1))
+        IconButton(onClick = onToggle, modifier = Modifier.size(UiTokens.smallIconButtonSize)) {
             Icon(
                 imageVector = if (active) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
                 contentDescription = if (active) "Encerrar seleção" else "Selecionar",
+                modifier = Modifier.size(UiTokens.primaryIconSize),
             )
         }
     }
@@ -221,7 +385,7 @@ internal fun SectionTitle(
     subtitle: String = "",
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(UiTokens.space1)) {
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         if (subtitle.isNotBlank()) {
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = secondaryTextColor)
@@ -229,6 +393,14 @@ internal fun SectionTitle(
     }
 }
 
+/**
+ * Barra de pesquisa.
+ *
+ * Antes era um OutlinedTextField com altura fixa: o Material reserva 56dp para
+ * esse componente e forçar menos que isso cortava as descidas das letras (g, p,
+ * ç). Aqui o campo é montado à mão, então a altura é realmente nossa e o texto
+ * fica sempre centralizado e inteiro.
+ */
 @Composable
 internal fun SearchBar(
     value: String,
@@ -238,16 +410,51 @@ internal fun SearchBar(
     enabled: Boolean = true,
     trailingContent: (@Composable (() -> Unit))? = null,
 ) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = modifier.fillMaxWidth().height(UiTokens.searchHeight),
-        enabled = enabled,
-        singleLine = true,
-        textStyle = MaterialTheme.typography.bodyLarge,
-        placeholder = { Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-        trailingIcon = trailingContent,
-    )
+    val shape = RoundedCornerShape(UiTokens.buttonRadius)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(UiTokens.searchHeight)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.34f))
+            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), shape)
+            .padding(horizontal = UiTokens.space3),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            Icons.Rounded.Search,
+            contentDescription = null,
+            modifier = Modifier.size(UiTokens.smallIconSize),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.width(UiTokens.space2))
+        Box(Modifier.weight(1f), contentAlignment = Alignment.CenterStart) {
+            if (value.isEmpty()) {
+                Text(
+                    placeholder,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            BasicTextField(
+                value = value,
+                onValueChange = onValueChange,
+                enabled = enabled,
+                singleLine = true,
+                textStyle = MaterialTheme.typography.bodyMedium.copy(
+                    color = MaterialTheme.colorScheme.onSurface,
+                ),
+                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (trailingContent != null) {
+            Spacer(Modifier.width(UiTokens.space2))
+            trailingContent()
+        }
+    }
 }
 
 @Composable
@@ -280,6 +487,7 @@ internal fun EditableField(
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
         singleLine = true,
+        shape = RoundedCornerShape(UiTokens.buttonRadius),
         label = { Text(label) },
     )
 }

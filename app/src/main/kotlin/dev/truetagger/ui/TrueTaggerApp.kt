@@ -550,8 +550,23 @@ fun ArtworkBox(bytes: ByteArray?, url: String, modifier: Modifier = Modifier) {
     val bitmap by produceState<Bitmap?>(initialValue = null, bytes?.contentHashCode(), url) {
         value = withContext(Dispatchers.IO) {
             when {
-                bytes != null -> runCatching { BitmapFactory.decodeByteArray(bytes, 0, bytes.size) }.getOrNull()
-                url.isNotBlank() -> runCatching { URL(url).openStream().use { BitmapFactory.decodeStream(it) } }.getOrNull()
+                bytes != null -> runCatching { decodeSampledArtwork(bytes, 768) }.getOrNull()
+                url.isNotBlank() -> runCatching {
+                    // Sem timeout, uma capa lenta prendia a thread de IO
+                    // indefinidamente — e a imagem crua podia vir com 3000px.
+                    val connection = (java.net.URL(url).openConnection() as java.net.HttpURLConnection).apply {
+                        connectTimeout = 4000
+                        readTimeout = 6000
+                        requestMethod = "GET"
+                        setRequestProperty("User-Agent", "TruePlayer/1.0")
+                    }
+                    try {
+                        val raw = connection.inputStream.use { it.readBytes() }
+                        if (raw.isEmpty()) null else decodeSampledArtwork(raw, 768)
+                    } finally {
+                        connection.disconnect()
+                    }
+                }.getOrNull()
                 else -> null
             }
         }
@@ -563,6 +578,20 @@ fun ArtworkBox(bytes: ByteArray?, url: String, modifier: Modifier = Modifier) {
             Icon(Icons.Rounded.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
+}
+
+/** Decodifica a capa já reduzida ao tamanho que será realmente exibido. */
+private fun decodeSampledArtwork(raw: ByteArray, maxDimension: Int): Bitmap? {
+    val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+    BitmapFactory.decodeByteArray(raw, 0, raw.size, bounds)
+    val max = maxOf(bounds.outWidth, bounds.outHeight).coerceAtLeast(1)
+    var sample = 1
+    while (max / sample > maxDimension) sample *= 2
+    val options = BitmapFactory.Options().apply {
+        inSampleSize = sample
+        inPreferredConfig = Bitmap.Config.RGB_565
+    }
+    return BitmapFactory.decodeByteArray(raw, 0, raw.size, options)
 }
 
 @Composable

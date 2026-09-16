@@ -54,7 +54,14 @@ class MainActivity : ComponentActivity() {
     private var writeContinuation: CancellableContinuation<Boolean>? = null
     private var mediaRefreshJob: Job? = null
     private var lastLibraryTrackIds: Set<String>? = null
+    private var lastRefreshAtMs = 0L
+    private var refreshInFlight = false
     private lateinit var mediaObserver: ContentObserver
+
+    private companion object {
+        /** Intervalo mínimo entre varreduras completas do MediaStore. */
+        const val MIN_REFRESH_INTERVAL_MS = 1_500L
+    }
 
     private val permissionsLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         refreshLibrary()
@@ -97,6 +104,7 @@ class MainActivity : ComponentActivity() {
         audioService = AndroidAudioService(this)
         downloadFolderLabel = savedDownloadTree()?.let(::folderLabel).orEmpty()
         settings = loadSettings()
+        releaseStalePermissions()
         registerMediaObserver()
 
         setContent {
@@ -111,6 +119,7 @@ class MainActivity : ComponentActivity() {
                 settings = settings,
                 downloadFolderLabel = downloadFolderLabel,
                 onChooseDownloadFolder = { folderPicker.launch(savedDownloadTree()) },
+                onReleaseDownloadFolder = ::releaseDownloadFolder,
                 onSettingsChange = ::updateSettings,
                 appVersion = runCatching { packageManager.getPackageInfo(packageName, 0).versionName.orEmpty() }.getOrDefault(""),
                 importStatus = importStatus,
@@ -130,13 +139,13 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        if (isFinishing) {
-            runCatching { stopService(Intent(this, MusicPlaybackService::class.java)) }
-        }
         writeContinuation?.cancel()
         mediaRefreshJob?.cancel()
         if (::mediaObserver.isInitialized) {
             runCatching { contentResolver.unregisterContentObserver(mediaObserver) }
+        }
+        if (isFinishing) {
+            runCatching { MusicPlaybackService.hideNotification(this) }
         }
         appScope.cancel()
         super.onDestroy()
@@ -144,7 +153,15 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (::audioService.isInitialized && hasAudioPermission()) refreshLibrary()
+        // Antes o app varria o MediaStore inteiro a cada volta para a tela,
+        // inclusive ao sair de um diálogo. Agora só revarre se passou tempo
+        // suficiente desde a última varredura.
+        val now = android.os.SystemClock.elapsedRealtime()
+        if (::audioService.isInitialized && hasAudioPermission() &&
+            now - lastRefreshAtMs >= MIN_REFRESH_INTERVAL_MS
+        ) {
+            refreshLibrary()
+        }
     }
 
     private fun registerMediaObserver() {
@@ -205,7 +222,9 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun refreshLibrary() {
-        if (!hasAudioPermission()) return
+        if (!hasAudioPermission() || refreshInFlight) return
+        refreshInFlight = true
+        lastRefreshAtMs = android.os.SystemClock.elapsedRealtime()
         libraryLoading = true
         appScope.launch {
             val refreshedTracks = withContext(Dispatchers.IO) {
@@ -230,7 +249,9 @@ class MainActivity : ComponentActivity() {
                     artworkBytes = selected.artworkBytes,
                 ) ?: selected
             }
+            lastRefreshAtMs = android.os.SystemClock.elapsedRealtime()
             libraryLoading = false
+            refreshInFlight = false
         }
     }
 
@@ -337,6 +358,50 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun savedDownloadTree(): Uri? = prefs.getString(ShareContract.PREF_DOWNLOAD_TREE, null)?.let(Uri::parse)
+
+    /**
+     * Devolve a pasta ao sistema.
+     *
+     * Duas coisas prendem a pasta: o descritor de arquivo que o player mantém
+     * aberto na faixa atual e a permissão persistente concedida via SAF.
+     * Soltamos as duas — depois disso a pasta pode ser renomeada ou excluída
+     * normalmente pelo gerenciador de arquivos.
+     */
+    private fun releaseDownloadFolder() {
+        MusicPlaybackService.releaseFileHandles(this)
+        savedDownloadTree()?.let { uri ->
+            runCatching {
+                contentResolver.releasePersistableUriPermission(
+                    uri,
+                    Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                )
+            }
+        }
+        prefs.edit().remove(ShareContract.PREF_DOWNLOAD_TREE).apply()
+        downloadFolderLabel = ""
+        tracks = emptyList()
+        lastLibraryTrackIds = null
+    }
+
+    /**
+     * Permissões persistentes de pastas que não são mais a pasta de download
+     * ficariam presas para sempre. Soltamos as órfãs a cada abertura.
+     */
+    private fun releaseStalePermissions() {
+        val current = prefs.getString(ShareContract.PREF_DOWNLOAD_TREE, null)
+        runCatching {
+            contentResolver.persistedUriPermissions
+                .filter { it.uri.toString() != current }
+                .forEach { permission ->
+                    runCatching {
+                        contentResolver.releasePersistableUriPermission(
+                            permission.uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+                        )
+                    }
+                }
+        }
+    }
 
     private fun folderLabel(uri: Uri): String = runCatching {
         DocumentsContract.getTreeDocumentId(uri)

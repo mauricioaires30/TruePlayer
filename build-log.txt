@@ -1,7 +1,7 @@
 ===== TruePlayer - Log completo =====
-Projeto: C:\Users\mauri\Documents\TrueTagger\dev
-Modulo app: C:\Users\mauri\Documents\TrueTagger\app
-Inicio: 14/09/2026 10:59:42,16
+Projeto: C:\Users\mauri\Documents\TruePlayer\dev
+Modulo app: C:\Users\mauri\Documents\TruePlayer\app
+Inicio: 16/09/2026 11:19:34,97
 
 openjdk version "21.0.8" 2025-07-15 LTS
 OpenJDK Runtime Environment Microsoft-11933218 (build 21.0.8+9-LTS)
@@ -58,17 +58,16 @@ OS:            Windows 11 10.0 amd64
 > Task :app:writeDebugSigningConfigVersions UP-TO-DATE
 
 > Task :app:compileDebugKotlin
-w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:681:72 'val Icons.Rounded.QueueMusic: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.QueueMusic.
-w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:685:74 'val Icons.Rounded.QueueMusic: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.QueueMusic.
-w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:936:68 'val Icons.Rounded.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.ArrowBack.
-w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:957:104 'val Icons.Rounded.QueueMusic: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.QueueMusic.
-w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:980:63 'val Icons.Rounded.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.ArrowBack.
-w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:1106:80 Unnecessary non-null assertion (!!) on a non-null receiver of type 'IntentSender'.
-w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:1262:148 'val Icons.Rounded.PlaylistAdd: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.PlaylistAdd.
-w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:1394:44 'val Icons.Rounded.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.ArrowBack.
-w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:1485:106 Unnecessary safe call on a non-null receiver of type 'Pair<AudioTrack, Long>'.
-w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:1493:89 Unnecessary safe call on a non-null receiver of type 'Triple<String, String, Long>'.
-w: file:///C:/Users/mauri/Documents/TrueTagger/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:2229:40 'val Icons.Rounded.ArrowBack: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.ArrowBack.
+w: file:///C:/Users/mauri/Documents/TruePlayer/app/src/main/kotlin/dev/truetagger/android/MusicPlaybackService.kt:579:75 Redundant call of conversion method.
+w: file:///C:/Users/mauri/Documents/TruePlayer/app/src/main/kotlin/dev/truetagger/android/MusicPlaybackService.kt:1036:14 'fun setPriority(p0: Int): Notification.Builder!' is deprecated. Deprecated in Java.
+w: file:///C:/Users/mauri/Documents/TruePlayer/app/src/main/kotlin/dev/truetagger/android/MusicPlaybackService.kt:1036:39 'static field PRIORITY_LOW: Int' is deprecated. Deprecated in Java.
+w: file:///C:/Users/mauri/Documents/TruePlayer/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:719:72 'val Icons.Rounded.QueueMusic: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.QueueMusic.
+w: file:///C:/Users/mauri/Documents/TruePlayer/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:723:74 'val Icons.Rounded.QueueMusic: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.QueueMusic.
+w: file:///C:/Users/mauri/Documents/TruePlayer/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:995:58 'val Icons.Rounded.QueueMusic: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.QueueMusic.
+w: file:///C:/Users/mauri/Documents/TruePlayer/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:1154:80 Unnecessary non-null assertion (!!) on a non-null receiver of type 'IntentSender'.
+w: file:///C:/Users/mauri/Documents/TruePlayer/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:1322:56 'val Icons.Rounded.PlaylistAdd: ImageVector' is deprecated. Use the AutoMirrored version at Icons.AutoMirrored.Rounded.PlaylistAdd.
+w: file:///C:/Users/mauri/Documents/TruePlayer/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:1513:106 Unnecessary safe call on a non-null receiver of type 'Pair<AudioTrack, Long>'.
+w: file:///C:/Users/mauri/Documents/TruePlayer/app/src/main/kotlin/dev/truetagger/ui/PlayerUi.kt:1521:89 Unnecessary safe call on a non-null receiver of type 'Triple<String, String, Long>'.
 
 > Task :app:compileDebugJavaWithJavac NO-SOURCE
 > Task :app:dexBuilderDebug
@@ -83,5 +82,5 @@ PackagingOptions.jniLibs.useLegacyPackaging should be set to true because androi
 > Task :app:createDebugApkListingFileRedirect UP-TO-DATE
 > Task :app:assembleDebug
 
-BUILD SUCCESSFUL in 17s
+BUILD SUCCESSFUL in 10s
 37 actionable tasks: 4 executed, 33 up-to-date

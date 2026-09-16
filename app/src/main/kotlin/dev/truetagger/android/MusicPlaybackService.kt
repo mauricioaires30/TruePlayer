@@ -8,9 +8,14 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.content.BroadcastReceiver
+import android.content.IntentFilter
 import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
 import android.media.MediaPlayer
 import android.media.AudioAttributes
+import android.media.AudioDeviceInfo
+import android.media.AudioManager
 import android.media.audiofx.LoudnessEnhancer
 import android.media.session.MediaSession
 import android.media.session.PlaybackState
@@ -33,11 +38,13 @@ class MusicPlaybackService : Service() {
         const val ACTION_SHUFFLE = "dev.truetagger.player.SHUFFLE"
         const val ACTION_REPEAT = "dev.truetagger.player.REPEAT"
         const val ACTION_STOP = "dev.truetagger.player.STOP"
+        const val ACTION_HIDE_NOTIFICATION = "dev.truetagger.player.HIDE_NOTIFICATION"
         const val ACTION_PLAY_QUEUE_INDEX = "dev.truetagger.player.PLAY_QUEUE_INDEX"
         const val ACTION_REPLACE_QUEUE = "dev.truetagger.player.REPLACE_QUEUE"
         const val ACTION_SET_VOLUME_NORMALIZATION = "dev.truetagger.player.SET_VOLUME_NORMALIZATION"
         const val ACTION_RESTORE_LAST = "dev.truetagger.player.RESTORE_LAST"
         const val ACTION_RECONCILE_DELETED_TRACKS = "dev.truetagger.player.RECONCILE_DELETED_TRACKS"
+        const val ACTION_RELEASE_FILE_HANDLES = "dev.truetagger.player.RELEASE_FILE_HANDLES"
         const val EXTRA_TRACK_ID = "track_id"
         const val EXTRA_TRACK_TITLE = "track_title"
         const val EXTRA_TRACK_ARTIST = "track_artist"
@@ -58,6 +65,21 @@ class MusicPlaybackService : Service() {
         const val CHANNEL = "truetagger_player_v4"
         const val NOTIFICATION_ID = 301
         const val PREFS_LAST = "truetagger_last_playback"
+
+        /** Tempo pausado antes de soltar o arquivo aberto. */
+        private const val IDLE_RELEASE_DELAY_MS = 45_000L
+
+        /** Lado da capa usada no ícone grande da notificação. */
+        private const val NOTIFICATION_ARTWORK_SIZE = 1024
+
+        fun hideNotification(context: Context) {
+            runCatching {
+                context.applicationContext.startService(
+                    Intent(context.applicationContext, MusicPlaybackService::class.java)
+                        .setAction(ACTION_HIDE_NOTIFICATION)
+                )
+            }
+        }
 
         fun play(context: Context, track: AudioTrack, queue: List<AudioTrack>, index: Int, startShuffle: Boolean = false, sourceType: String = SOURCE_LIBRARY, sourceName: String = "") {
             val safeIndex = index.coerceIn(queue.indices)
@@ -114,6 +136,23 @@ class MusicPlaybackService : Service() {
             )
         }
 
+        /**
+         * Pede ao serviço que solte o arquivo de áudio aberto no momento.
+         *
+         * O MediaPlayer mantém um descritor aberto enquanto existir, e como o
+         * serviço é foreground ele sobrevive pausado — por isso o Android
+         * considera a pasta "em uso" e o gerenciador de arquivos se recusa a
+         * excluí-la. A fila, o índice e a posição são preservados: ao dar play
+         * de novo, a faixa recomeça exatamente de onde parou.
+         */
+        fun releaseFileHandles(context: Context) {
+            runCatching {
+                context.startService(
+                    Intent(context, MusicPlaybackService::class.java).setAction(ACTION_RELEASE_FILE_HANDLES)
+                )
+            }
+        }
+
         fun setVolumeNormalization(context: Context, enabled: Boolean) {
             val i = Intent(context, MusicPlaybackService::class.java).apply {
                 action = ACTION_SET_VOLUME_NORMALIZATION
@@ -126,6 +165,56 @@ class MusicPlaybackService : Service() {
     private var player: MediaPlayer? = null
     private lateinit var session: MediaSession
     private lateinit var handler: android.os.Handler
+    private lateinit var audioManager: AudioManager
+    private var resumeAfterAudioRouteReturn = false
+
+    private val noisyReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                android.media.AudioManager.ACTION_AUDIO_BECOMING_NOISY -> {
+                    if (isCurrentlyPlaying()) {
+                        resumeAfterAudioRouteReturn = true
+                        pause()
+                    }
+                }
+                Intent.ACTION_HEADSET_PLUG -> {
+                    // Wired headset connected again. The Android broadcast exposes the
+                    // state as an integer extra: 1 = connected, 0 = disconnected.
+                    if (intent.getIntExtra("state", 0) == 1) {
+                        resumeFromReturnedAudioRoute()
+                    }
+                }
+                android.bluetooth.BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED -> {
+                    val state = intent.getIntExtra(
+                        android.bluetooth.BluetoothProfile.EXTRA_STATE,
+                        android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
+                    )
+                    if (state == android.bluetooth.BluetoothProfile.STATE_CONNECTED) {
+                        resumeFromReturnedAudioRoute()
+                    }
+                }
+                android.bluetooth.BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED -> {
+                    val state = intent.getIntExtra(
+                        android.bluetooth.BluetoothProfile.EXTRA_STATE,
+                        android.bluetooth.BluetoothProfile.STATE_DISCONNECTED
+                    )
+                    if (state == android.bluetooth.BluetoothProfile.STATE_CONNECTED) {
+                        resumeFromReturnedAudioRoute()
+                    }
+                }
+            }
+        }
+    }
+
+    private fun resumeFromReturnedAudioRoute() {
+        if (!resumeAfterAudioRouteReturn) return
+        resumeAfterAudioRouteReturn = false
+        resume()
+    }
+
+    private fun isCurrentlyPlaying(): Boolean =
+        runCatching { player?.isPlaying == true }.getOrDefault(false)
+
     private var queue = mutableListOf<AudioTrack>()
     private var baseQueue = mutableListOf<AudioTrack>()
     private var index = -1
@@ -141,10 +230,19 @@ class MusicPlaybackService : Service() {
     private var notificationArtwork: android.graphics.Bitmap? = null
     private var notificationArtworkTrackId: String? = null
     private var notificationLastUpdateMs = 0L
+    private var notificationSuppressed = false
+    private var sessionMetadataTrackId: String? = null
+    private var sessionMetadataDurationMs = -1L
     private var loudnessEnhancer: LoudnessEnhancer? = null
     private var normalizationRampGeneration = 0L
     private var restoringLastPlayback = false
     private var playCountRecordedGeneration = -1L
+
+    /**
+     * Posição guardada quando o player é liberado por ociosidade (ou a pedido).
+     * Enquanto for >= 0, a fila continua válida mas nenhum arquivo está aberto.
+     */
+    private var detachedPositionMs = -1L
 
     private val progressRunnable = object : Runnable {
         override fun run() {
@@ -158,7 +256,16 @@ class MusicPlaybackService : Service() {
     override fun onCreate() {
         super.onCreate()
         handler = android.os.Handler(mainLooper)
+        audioManager = getSystemService(AudioManager::class.java)
         createChannel()
+        runCatching {
+            registerReceiver(noisyReceiver, IntentFilter().apply {
+                addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+                addAction(Intent.ACTION_HEADSET_PLUG)
+                addAction(android.bluetooth.BluetoothA2dp.ACTION_CONNECTION_STATE_CHANGED)
+                addAction(android.bluetooth.BluetoothHeadset.ACTION_CONNECTION_STATE_CHANGED)
+            })
+        }
         session = MediaSession(this, "TruePlayer").apply {
             setPlaybackToLocal(AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).setUsage(AudioAttributes.USAGE_MEDIA).build())
             setSessionActivity(PendingIntent.getActivity(
@@ -185,7 +292,11 @@ class MusicPlaybackService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        when (intent?.action) {
+        val action = intent?.action
+        if (action != ACTION_HIDE_NOTIFICATION) {
+            notificationSuppressed = false
+        }
+        when (action) {
             ACTION_PLAY -> {
                 val request = PlaybackRequests.take()
                 if (request == null || request.queue.isEmpty()) {
@@ -229,14 +340,19 @@ class MusicPlaybackService : Service() {
                     if (queue.isEmpty()) {
                         restoreSavedPlaybackState(shouldPlay = true)
                     } else {
-                        pendingPlay = true
-                        updateStateAndNotification()
+                        // O player pode ter sido solto por ociosidade: recarrega
+                        // a faixa na posição guardada em vez de só marcar pendência.
+                        resume()
                     }
                 } else if (runCatching { p.isPlaying }.getOrDefault(false)) {
                     pause()
                 } else {
                     resume()
                 }
+            }
+            ACTION_RELEASE_FILE_HANDLES -> {
+                cancelIdleRelease()
+                detachPlayerKeepingPosition()
             }
             ACTION_NEXT -> next()
             ACTION_PREVIOUS -> previous()
@@ -266,6 +382,7 @@ class MusicPlaybackService : Service() {
             ACTION_SHUFFLE -> setShuffle(!shuffle)
             ACTION_REPEAT -> cycleRepeat()
             ACTION_STOP -> stopPlayback()
+            ACTION_HIDE_NOTIFICATION -> hideNotificationNow()
         }
         updateStateAndNotification()
         return START_NOT_STICKY
@@ -387,9 +504,36 @@ class MusicPlaybackService : Service() {
         updateStateAndNotification()
     }
 
-    private var mediaErrorRetryCount = 0
-    private var lastMediaErrorKey: String? = null
-    private var lastMediaErrorAtMs = 0L
+    /**
+     * Depois de um tempo pausado não há motivo para segurar o arquivo aberto.
+     * Liberá-lo devolve o descritor ao sistema e permite renomear/excluir a
+     * pasta normalmente. A notificação e a fila continuam de pé.
+     */
+    private val idleReleaseRunnable = Runnable {
+        val active = runCatching { player?.isPlaying == true }.getOrDefault(false)
+        if (!active && !pendingPlay && player != null) detachPlayerKeepingPosition()
+    }
+
+    private fun scheduleIdleRelease() {
+        handler.removeCallbacks(idleReleaseRunnable)
+        handler.postDelayed(idleReleaseRunnable, IDLE_RELEASE_DELAY_MS)
+    }
+
+    private fun cancelIdleRelease() {
+        handler.removeCallbacks(idleReleaseRunnable)
+    }
+
+    /** Solta o MediaPlayer (e o descritor de arquivo) preservando a posição. */
+    private fun detachPlayerKeepingPosition() {
+        val current = player ?: return
+        detachedPositionMs = runCatching {
+            if (mediaPrepared) current.currentPosition.toLong().coerceAtLeast(0L) else 0L
+        }.getOrDefault(0L)
+        clearVolumeNormalization()
+        releaseCurrentPlayer()
+        pendingPlay = false
+        updateStateAndNotification()
+    }
 
     private fun clearVolumeNormalization() {
         runCatching { loudnessEnhancer?.enabled = false }
@@ -398,79 +542,64 @@ class MusicPlaybackService : Service() {
         runCatching { player?.setVolume(1f, 1f) }
     }
 
-    private fun applyVolumeNormalization(mediaPlayer: MediaPlayer, track: AudioTrack, generation: Long) {
+    private fun applyVolumeNormalization(
+        mediaPlayer: MediaPlayer,
+        track: AudioTrack,
+        generation: Long,
+        onReady: () -> Unit = {},
+    ) {
         clearVolumeNormalization()
-        if (!VolumeNormalizer.isEnabled(this)) return
-
-        val cacheKey = "gain_" + track.id.hashCode().toUInt().toString(16)
-        val prefs = getSharedPreferences("truetagger_volume_normalization_cache_v2", MODE_PRIVATE)
-        val cached = if (prefs.contains(cacheKey)) prefs.getFloat(cacheKey, 0f) else null
-
-        // Start every new track at the neutral 80% baseline. The normalization
-        // target is then reached gradually so the beginning of the song never
-        // gets a sudden volume jump/drop while the gain is being applied.
-        val normalizedOutputLevel = VolumeNormalizer.getOutputLevel(this).coerceIn(0.50f, 1.00f)
-        runCatching { mediaPlayer.setVolume(normalizedOutputLevel, normalizedOutputLevel) }
-        clearVolumeEnhancerOnly()
-
-        fun rampToGain(gainDb: Float) {
-            if (generation != playerGeneration || player !== mediaPlayer) return
-
-            val rampGeneration = ++normalizationRampGeneration
-            val clampedGain = gainDb.coerceIn(-10f, 10f)
-            val steps = 20
-            val stepDelayMs = 50L
-            val baseline = normalizedOutputLevel
-
-            val effect = if (clampedGain > 0f) {
-                runCatching { LoudnessEnhancer(mediaPlayer.audioSessionId) }.getOrNull()?.also { created ->
-                    loudnessEnhancer = created
-                    runCatching {
-                        created.setTargetGain(0)
-                        created.enabled = true
-                    }.onFailure {
-                        runCatching { created.release() }
-                        if (loudnessEnhancer === created) loudnessEnhancer = null
-                    }
-                }
-            } else null
-
-            var step = 0
-            val runnable = object : Runnable {
-                override fun run() {
-                    if (generation != playerGeneration || player !== mediaPlayer || rampGeneration != normalizationRampGeneration) return
-                    step++
-                    val fraction = (step / steps.toFloat()).coerceIn(0f, 1f)
-                    if (clampedGain < 0f) {
-                        val targetLinear = (baseline * 10.0.pow((clampedGain / 20.0).toDouble()).toFloat())
-                            .coerceIn(0.05f, baseline)
-                        val currentLinear = baseline + (targetLinear - baseline) * fraction
-                        runCatching { mediaPlayer.setVolume(currentLinear, currentLinear) }
-                    } else if (effect != null) {
-                        val targetMilliDb = (clampedGain * 100f).roundToInt()
-                        val currentMilliDb = (targetMilliDb * fraction).roundToInt()
-                        runCatching { effect.setTargetGain(currentMilliDb) }
-                    }
-                    if (step < steps) handler.postDelayed(this, stepDelayMs)
-                }
-            }
-            handler.post(runnable)
-        }
-
-        if (cached != null) {
-            rampToGain(cached)
+        if (!VolumeNormalizer.isEnabled(this)) {
+            onReady()
             return
         }
 
+        val cacheKey = "gain_" + track.id.hashCode().toUInt().toString(16)
+        val prefs = getSharedPreferences("truetagger_volume_normalization_cache_v4", MODE_PRIVATE)
+        val cached = if (prefs.contains(cacheKey)) prefs.getFloat(cacheKey, 0f) else null
+        val outputLevel = VolumeNormalizer.getOutputLevel(this).coerceIn(0.50f, 1.00f)
+
+        fun finish(gainDb: Float) {
+            if (generation != playerGeneration || player !== mediaPlayer) return
+            val clampedGain = gainDb.coerceIn(-10f, 10f)
+            runCatching { mediaPlayer.setVolume(outputLevel, outputLevel) }
+            if (clampedGain > 0f) {
+                val effect = runCatching { LoudnessEnhancer(mediaPlayer.audioSessionId) }.getOrNull()
+                if (effect != null) {
+                    loudnessEnhancer = effect
+                    runCatching {
+                        effect.setTargetGain((clampedGain * 100f).roundToInt())
+                        effect.enabled = true
+                    }.onFailure {
+                        runCatching { effect.release() }
+                        if (loudnessEnhancer === effect) loudnessEnhancer = null
+                    }
+                }
+            } else {
+                val linear = (outputLevel * 10.0.pow((clampedGain / 20.0).toDouble()).toFloat())
+                    .coerceIn(0.05f, outputLevel)
+                runCatching { mediaPlayer.setVolume(linear, linear) }
+            }
+            onReady()
+        }
+
+        if (cached != null) {
+            finish(cached)
+            return
+        }
+
+        // Não inicia a música antes de conhecer o ganho da faixa inteira.
+        // Isso evita a queda/subida audível no meio da música enquanto a análise termina.
         VolumeNormalizer.analyzeGainAsync(this, Uri.parse(track.id)) { gainDb ->
+            if (generation != playerGeneration || player !== mediaPlayer) return@analyzeGainAsync
             prefs.edit().putFloat(cacheKey, gainDb).apply()
-            rampToGain(gainDb)
+            finish(gainDb)
         }
     }
 
     private fun prewarmVolumeNormalization(track: AudioTrack) {
         val cacheKey = "gain_" + track.id.hashCode().toUInt().toString(16)
-        val prefs = getSharedPreferences("truetagger_volume_normalization_cache_v2", MODE_PRIVATE)
+        val prefs = getSharedPreferences("truetagger_volume_normalization_cache_v4", MODE_PRIVATE)
         if (prefs.contains(cacheKey)) return
         VolumeNormalizer.analyzeGainAsync(this, Uri.parse(track.id)) { gainDb ->
             prefs.edit().putFloat(cacheKey, gainDb).apply()
@@ -510,11 +639,15 @@ class MusicPlaybackService : Service() {
         val generation = ++playerGeneration
         pendingPlay = shouldPlay
         mediaPrepared = false
+        detachedPositionMs = -1L
+        cancelIdleRelease()
         releaseCurrentPlayer()
         clearVolumeNormalization()
 
         notificationArtwork = loadNotificationArtwork(track)
         notificationArtworkTrackId = track.id
+        sessionMetadataTrackId = null
+        sessionMetadataDurationMs = -1L
         playCountRecordedGeneration = -1L
 
         if (VolumeNormalizer.isEnabled(this)) {
@@ -586,17 +719,34 @@ class MusicPlaybackService : Service() {
                 mediaPlayer.seekTo(safePosition.toInt())
             }
 
-            applyVolumeNormalization(mediaPlayer, track, generation)
-
-            if (shouldPlay) {
-                mediaPlayer.start()
-                if (playCountRecordedGeneration != generation) {
-                    recordPlayCount(track.id)
-                    playCountRecordedGeneration = generation
+            var playbackStarted = false
+            fun startWhenReady() {
+                if (generation != playerGeneration || player !== mediaPlayer || playbackStarted) return
+                if (!shouldPlay) {
+                    updateStateAndNotification()
+                    return
+                }
+                runCatching { mediaPlayer.start() }.onSuccess {
+                    playbackStarted = true
+                    if (playCountRecordedGeneration != generation) {
+                        recordPlayCount(track.id)
+                        playCountRecordedGeneration = generation
+                    }
+                    updateStateAndNotification()
+                }.onFailure { error ->
+                    android.util.Log.e("TruePlayer", "Falha ao iniciar música ${track.id}", error)
+                    pendingPlay = false
+                    updateStateAndNotification()
                 }
             }
 
-            updateStateAndNotification()
+            applyVolumeNormalization(mediaPlayer, track, generation) {
+                startWhenReady()
+            }
+
+            if (!shouldPlay) {
+                updateStateAndNotification()
+            }
         } catch (error: Throwable) {
             if (generation != playerGeneration) return
             pendingPlay = false
@@ -608,7 +758,21 @@ class MusicPlaybackService : Service() {
     }
 
     private fun resume() {
-        val p = player ?: return run { pendingPlay = true; updateStateAndNotification() }
+        cancelIdleRelease()
+        val p = player
+        if (p == null) {
+            // Player solto por ociosidade (ou nunca carregado): recarrega a faixa
+            // atual exatamente na posição em que parou.
+            if (queue.isEmpty()) {
+                pendingPlay = true
+                updateStateAndNotification()
+                return
+            }
+            val startAt = detachedPositionMs.coerceAtLeast(0L)
+            detachedPositionMs = -1L
+            loadCurrent(shouldPlay = true, startPositionMs = startAt)
+            return
+        }
         if (!mediaPrepared) {
             pendingPlay = true
             updateStateAndNotification()
@@ -637,6 +801,7 @@ class MusicPlaybackService : Service() {
         }
         runCatching { player?.pause() }
         pendingPlay = false
+        scheduleIdleRelease()
         updateStateAndNotification()
     }
 
@@ -693,22 +858,42 @@ class MusicPlaybackService : Service() {
         loadCurrent(wasPlaying)
     }
 
+    private fun hideNotificationNow() {
+        notificationSuppressed = true
+        notificationLastUpdateMs = android.os.SystemClock.uptimeMillis()
+        if (Build.VERSION.SDK_INT >= 24) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+        } else {
+            @Suppress("DEPRECATION")
+            stopForeground(true)
+        }
+        runCatching {
+            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            manager.cancel(NOTIFICATION_ID)
+        }
+    }
+
     private fun stopPlayback() {
         ++playerGeneration
         handler.removeCallbacks(progressRunnable)
-        player?.setOnCompletionListener(null)
-        player?.setOnErrorListener(null)
-        runCatching { player?.stop() }
-        player?.release()
-        player = null
-        mediaPrepared = false
+        cancelIdleRelease()
+        clearVolumeNormalization()
+        // releaseCurrentPlayer() também fecha o ParcelFileDescriptor, que antes
+        // ficava aberto aqui e segurava o arquivo mesmo após parar.
+        releaseCurrentPlayer()
         queue.clear()
         baseQueue.clear()
         index = -1
         pendingPlay = false
-        mediaPrepared = false
+        detachedPositionMs = -1L
+        notificationArtwork = null
+        notificationArtworkTrackId = null
+        sessionMetadataTrackId = null
+        sessionMetadataDurationMs = -1L
+        runCatching { session.setMetadata(null) }
         session.isActive = false
         PlayerState.snapshot = PlayerSnapshot()
+        AppEvents.bump()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -763,7 +948,11 @@ class MusicPlaybackService : Service() {
 
     private fun persistPlaybackState() {
         val track = queue.getOrNull(index) ?: return
-        val position = runCatching { player?.currentPosition?.toLong() ?: 0L }.getOrDefault(0L)
+        val position = if (detachedPositionMs >= 0L) {
+            detachedPositionMs
+        } else {
+            runCatching { player?.currentPosition?.toLong() ?: 0L }.getOrDefault(0L)
+        }
         getSharedPreferences(PREFS_LAST, MODE_PRIVATE).edit()
             .putString("track_id", track.id)
             .putString("track_title", track.displayTitle())
@@ -782,9 +971,11 @@ class MusicPlaybackService : Service() {
         val track = queue.getOrNull(index)
         val p = player
         val duration = track?.durationMs ?: 0L
-        val position = runCatching {
-            p?.currentPosition?.toLong() ?: 0L
-        }.getOrDefault(0L)
+        val position = if (detachedPositionMs >= 0L) {
+            detachedPositionMs
+        } else {
+            runCatching { p?.currentPosition?.toLong() ?: 0L }.getOrDefault(0L)
+        }
         val playing = runCatching { p?.isPlaying == true }.getOrDefault(false)
         val safeDuration = runCatching {
             p?.duration?.toLong()?.takeIf { it > 0 } ?: duration
@@ -805,8 +996,17 @@ class MusicPlaybackService : Service() {
             .build()
         session.setPlaybackState(playbackState)
         if (track != null) {
+            // A arte grande da notificação de mídia (e da tela de bloqueio) vem
+            // dos metadados da MediaSession, não do setLargeIcon — que o Android
+            // reduz para ~64dp. Sem METADATA_KEY_ALBUM_ART o sistema só tinha o
+            // ícone pequeno para esticar, daí a aparência borrada.
+            if (sessionMetadataTrackId != track.id || sessionMetadataDurationMs != safeDuration) {
+                sessionMetadataTrackId = track.id
+                sessionMetadataDurationMs = safeDuration
+                updateSessionMetadata(track, safeDuration)
+            }
             val now = android.os.SystemClock.uptimeMillis()
-            if (now - notificationLastUpdateMs >= 1000L || !playing) {
+            if (!notificationSuppressed && (now - notificationLastUpdateMs >= 1000L || !playing)) {
                 notificationLastUpdateMs = now
                 val notification = buildNotification(track, position, safeDuration, playing)
                 startForeground(NOTIFICATION_ID, notification)
@@ -864,32 +1064,76 @@ class MusicPlaybackService : Service() {
         return builder.build()
     }
 
-    private fun loadNotificationArtwork(track: AudioTrack): android.graphics.Bitmap? {
-        // Always use the real embedded cover first. Then fall back to MediaStore.
-        val raw = track.artworkBytes
-        val source = if (raw != null && raw.isNotEmpty()) {
-            runCatching {
-                val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
-                BitmapFactory.decodeByteArray(raw, 0, raw.size, bounds)
-                val max = maxOf(bounds.outWidth, bounds.outHeight).coerceAtLeast(1)
-                val sample = generateSequence(1) { it * 2 }
-                    .takeWhile { it < 16 }
-                    .lastOrNull { max / it >= 512 } ?: 1
-                val opts = BitmapFactory.Options().apply {
-                    inSampleSize = sample
-                    inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888
+    /**
+     * Entrega título, artista, álbum, duração e capa à MediaSession.
+     *
+     * É isso que alimenta o player de mídia do sistema, a tela de bloqueio e o
+     * Android Auto. A capa aqui vai em resolução alta de propósito: quem decide
+     * o tamanho final é o sistema.
+     */
+    private fun updateSessionMetadata(track: AudioTrack, durationMs: Long) {
+        runCatching {
+            val artwork = if (notificationArtworkTrackId == track.id) {
+                notificationArtwork
+            } else {
+                loadNotificationArtwork(track).also {
+                    notificationArtwork = it
+                    notificationArtworkTrackId = track.id
                 }
-                BitmapFactory.decodeByteArray(raw, 0, raw.size, opts)
-            }.getOrNull()
-        } else null
+            }
+            val builder = android.media.MediaMetadata.Builder()
+                .putString(android.media.MediaMetadata.METADATA_KEY_TITLE, track.displayTitle())
+                .putString(android.media.MediaMetadata.METADATA_KEY_DISPLAY_TITLE, track.displayTitle())
+                .putString(android.media.MediaMetadata.METADATA_KEY_ARTIST, track.artist)
+                .putString(android.media.MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE, track.artist)
+                .putString(android.media.MediaMetadata.METADATA_KEY_ALBUM, track.album)
+                .putString(android.media.MediaMetadata.METADATA_KEY_ALBUM_ARTIST, track.albumArtist.ifBlank { track.artist })
+                .putLong(android.media.MediaMetadata.METADATA_KEY_DURATION, durationMs.coerceAtLeast(0L))
+            artwork?.let {
+                builder.putBitmap(android.media.MediaMetadata.METADATA_KEY_ALBUM_ART, it)
+                builder.putBitmap(android.media.MediaMetadata.METADATA_KEY_ART, it)
+            }
+            session.setMetadata(builder.build())
+        }
+    }
 
-        val fallback = source ?: if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+    private fun loadNotificationArtwork(track: AudioTrack): android.graphics.Bitmap? {
+        // A capa vinha quase sempre do loadThumbnail(512) do MediaStore, que
+        // devolve uma miniatura já comprimida — daí a baixa qualidade. A ordem
+        // agora é: bytes embutidos na faixa, depois a arte embutida no arquivo
+        // (resolução original) e só então a miniatura, num tamanho maior.
+        val target = NOTIFICATION_ARTWORK_SIZE
+
+        fun decode(raw: ByteArray): android.graphics.Bitmap? = runCatching {
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            BitmapFactory.decodeByteArray(raw, 0, raw.size, bounds)
+            val max = maxOf(bounds.outWidth, bounds.outHeight).coerceAtLeast(1)
+            var sample = 1
+            // Só reduz enquanto continuar acima do alvo: nunca abaixo dele.
+            while (max / (sample * 2) >= target) sample *= 2
+            val opts = BitmapFactory.Options().apply {
+                inSampleSize = sample
+                inPreferredConfig = android.graphics.Bitmap.Config.ARGB_8888
+            }
+            BitmapFactory.decodeByteArray(raw, 0, raw.size, opts)
+        }.getOrNull()
+
+        val embedded = track.artworkBytes?.takeIf { it.isNotEmpty() }?.let(::decode)
+
+        val fromFile = embedded ?: runCatching {
+            MediaMetadataRetriever().use { retriever ->
+                retriever.setDataSource(this, Uri.parse(track.id))
+                retriever.embeddedPicture?.let(::decode)
+            }
+        }.getOrNull()
+
+        val fallback = fromFile ?: if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             runCatching {
-                contentResolver.loadThumbnail(Uri.parse(track.id), android.util.Size(512, 512), null)
+                contentResolver.loadThumbnail(Uri.parse(track.id), android.util.Size(target, target), null)
             }.getOrNull()
         } else null
 
-        // Notification large icons look much better when the artwork is a clean square.
+        // O ícone grande da notificação fica muito melhor com a capa quadrada.
         return fallback?.let { bitmap ->
             val side = minOf(bitmap.width, bitmap.height)
             if (side <= 0) return@let bitmap
@@ -915,9 +1159,22 @@ class MusicPlaybackService : Service() {
         }
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        // App fechado pelo usuário: se nada está tocando, não faz sentido manter
+        // um arquivo aberto dentro da pasta de músicas.
+        val active = runCatching { player?.isPlaying == true }.getOrDefault(false)
+        if (!active) {
+            cancelIdleRelease()
+            detachPlayerKeepingPosition()
+        }
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onDestroy() {
         persistPlaybackState()
+        runCatching { unregisterReceiver(noisyReceiver) }
         handler.removeCallbacks(progressRunnable)
+        cancelIdleRelease()
         ++playerGeneration
         clearVolumeNormalization()
         releaseCurrentPlayer()
