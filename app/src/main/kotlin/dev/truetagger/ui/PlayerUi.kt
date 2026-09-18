@@ -973,7 +973,14 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
         Column(Modifier.fillMaxSize().padding(horizontal = UiTokens.screenHorizontalPadding, vertical = UiTokens.screenVerticalPadding), horizontalAlignment = Alignment.CenterHorizontally) {
             ScreenHeaderRow(title = "Reproduzindo", onBack = onClose)
             Spacer(Modifier.height(UiTokens.sectionSpacing))
-            PlayerArtworkBox(s.current?.artworkBytes, Modifier.fillMaxWidth().weight(1f, fill = false).aspectRatio(1f), s.current?.id, maxDimension = 1024)
+            key(s.current?.id) {
+                PlayerArtworkBox(
+                    s.current?.artworkBytes,
+                    Modifier.fillMaxWidth().weight(1f, fill = false).aspectRatio(1f),
+                    s.current?.id,
+                    maxDimension = 1024,
+                )
+            }
             Spacer(Modifier.height(UiTokens.sectionSpacing))
             Text(s.current?.displayTitle().orEmpty(), style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, maxLines = 2, overflow = TextOverflow.Ellipsis)
             Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
