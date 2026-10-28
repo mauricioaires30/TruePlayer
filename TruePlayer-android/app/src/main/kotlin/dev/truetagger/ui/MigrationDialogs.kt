@@ -44,9 +44,7 @@ fun FolderMigrationDialogs(
                 title = { Text("Libere a pasta de novo") },
                 text = {
                     Text(
-                        "Ao trocar de celular o Android pede a permissão da pasta outra vez. " +
-                            "Toque em Escolher pasta e confirme a mesma de antes, em \"Usar esta pasta\". " +
-                            "Suas músicas não são mexidas.",
+                        "Escolha a mesma pasta de antes e toque em \"Usar esta pasta\".",
                     )
                 },
                 confirmButton = { TextButton(onClick = onGrantAccess) { Text("Escolher pasta") } },
@@ -80,7 +78,7 @@ fun FolderMigrationDialogs(
                             )
                         }
                         Spacer(Modifier.height(12.dp))
-                        Text("Não feche o app, a tela fica ligada enquanto isso.", style = MaterialTheme.typography.bodySmall)
+                        Text("Não feche o app.", style = MaterialTheme.typography.bodySmall)
                     }
                 },
                 confirmButton = {},
@@ -92,14 +90,11 @@ fun FolderMigrationDialogs(
                 text = {
                     Column(Modifier.verticalScroll(rememberScrollState())) {
                         Text(
-                            "Achei ${preview.songs} música(s) e ${preview.playlists} playlist(s) fora das pastas " +
-                                "songs e playlists. Posso mover tudo pra dentro delas.",
+                            "${preview.songs} música(s) e ${preview.playlists} playlist(s) fora de songs e playlists. Mover para lá?",
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Os arquivos só mudam de lugar: nada é copiado, apagado ou sobrescrito, e suas " +
-                                "playlists continuam com as mesmas músicas. O que não der pra mover fica onde está. " +
-                                "Tudo que for feito fica registrado em .trueplayer.",
+                            "Os arquivos só mudam de lugar, nada é apagado. O que não der para mover fica onde está.",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
@@ -157,8 +152,7 @@ fun FolderCleanupDialog(
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     Text(
-                        "Estes itens não são música nem playlist. Eles vão para a pasta _lixeira, " +
-                            "não são apagados e dá pra desfazer pelo gerenciador de arquivos.",
+                        "Nada aqui é música nem playlist. Vai tudo para a _lixeira, sem apagar.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Spacer(Modifier.height(8.dp))

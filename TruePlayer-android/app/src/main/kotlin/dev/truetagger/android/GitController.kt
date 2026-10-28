@@ -234,22 +234,28 @@ object GitController {
                 require(request.githubUser.isNotBlank() && request.email.isNotBlank()) { "informe seu usuário e e-mail" }
                 val branch = request.branch.ifBlank { "main" }
 
-                // O repositório remoto precisa existir e estar vazio: assim nada do que já está lá é sobrescrito.
-                if (GitManager.remoteHasBranches(request.url, request.githubUser, request.token)) {
-                    error("esse repositório do GitHub já tem conteúdo. Crie um repositório novo e vazio para não misturar nada.")
-                }
+                // Confere o endereço e o token. O repositório pode estar vazio ou já ter conteúdo.
+                val hasContent = GitManager.remoteHasBranches(request.url, request.githubUser, request.token)
                 _ui.update { it.copy(busy = "Criando o repositório…") }
                 GitManager.init(dir, branch, request.url, request.githubUser, request.email)
                 prefs(app).edit().putString("github_user", request.githubUser).putString("name", request.githubUser).putString("email", request.email).apply()
                 SecretStore.put(app, TOKEN, request.token)
 
+                val monitor = GitManager.TextMonitor { text -> _ui.update { it.copy(busy = text) } }
+                val adopted = if (hasContent) GitManager.adoptRemote(dir, branch, request.githubUser, request.token, monitor) else null
+
                 val changes = GitManager.status(dir)
                 val large = GitManager.tooLarge(dir, changes)
                 GitManager.updateGitignore(dir, large)
                 _ui.update { it.copy(busy = "Registrando os arquivos (pode demorar)…") }
-                GitManager.commitAll(dir, "Primeiro commit do TruePlayer", request.githubUser, request.email)
-                GitManager.push(dir, request.url, request.githubUser, request.token, GitManager.TextMonitor { text -> _ui.update { it.copy(busy = text) } })
-                "Repositório criado e enviado ao GitHub." + largeFilesNote(large)
+                val firstCommit = if (adopted == null) "Primeiro commit do TruePlayer" else "Pasta de músicas do TruePlayer"
+                if (adopted == null || !GitManager.isClean(dir)) {
+                    GitManager.commitAll(dir, firstCommit, request.githubUser, request.email)
+                }
+                GitManager.push(dir, request.url, request.githubUser, request.token, monitor)
+                val head = if (adopted == null) "Repositório criado e enviado ao GitHub." else "Pasta ligada ao repositório e enviada ao GitHub."
+                val brought = if (adopted != null && adopted.restored > 0) "\n\n${adopted.restored} arquivo(s) que só estavam no GitHub vieram para a pasta." else ""
+                head + brought + largeFilesNote(large)
             }
             finish(outcome, app)
         }

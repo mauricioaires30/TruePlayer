@@ -15,10 +15,19 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontFamily
+import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import dev.truetagger.android.UpdateUi
+import dev.truetagger.data.MdKind
+import dev.truetagger.data.MdLine
 import dev.truetagger.data.ReleaseInfo
+import dev.truetagger.data.SimpleMarkdown
 
 /** Avisos de atualização do app e "o que mudou" depois de atualizar. */
 @Composable
@@ -54,10 +63,10 @@ fun UpdateDialogs(
                     Column(Modifier.verticalScroll(rememberScrollState())) {
                         Text("O que mudou", fontWeight = FontWeight.SemiBold)
                         Spacer(Modifier.height(4.dp))
-                        Text(state.release.notes.ifBlank { "Sem notas para esta versão." }, style = MaterialTheme.typography.bodySmall)
+                        ReleaseNotesText(state.release.notes.ifBlank { "Sem notas para esta versão." })
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "O download tem ${formatSize(state.release.apkSizeBytes)}. Suas músicas, playlists e estatísticas não são alteradas.",
+                            "Download de ${formatSize(state.release.apkSizeBytes)}. Suas músicas e playlists não mudam.",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
@@ -77,7 +86,7 @@ fun UpdateDialogs(
                         }
                         Spacer(Modifier.height(12.dp))
                         Text(
-                            "Quando terminar, o Android vai pedir para confirmar a instalação.",
+                            "No fim, o Android pede para confirmar a instalação.",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
@@ -90,8 +99,7 @@ fun UpdateDialogs(
                 title = { Text("Libere a instalação") },
                 text = {
                     Text(
-                        "Para atualizar, o Android precisa que você permita o TruePlayer instalar apps. " +
-                            "Toque em Abrir ajustes, ative a opção e volte aqui: a atualização continua sozinha.",
+                        "Ative a permissão para o TruePlayer instalar apps e volte aqui.",
                     )
                 },
                 confirmButton = { TextButton(onClick = { onUpdate(state.release) }) { Text("Abrir ajustes") } },
@@ -110,10 +118,40 @@ fun UpdateDialogs(
             AlertDialog(
                 onDismissRequest = onWhatsNewDismiss,
                 title = { Text("Novidades da ${whatsNew.first}") },
-                text = { Column(Modifier.verticalScroll(rememberScrollState())) { Text(whatsNew.second, style = MaterialTheme.typography.bodySmall) } },
+                text = { Column(Modifier.verticalScroll(rememberScrollState())) { ReleaseNotesText(whatsNew.second) } },
                 confirmButton = { TextButton(onClick = onWhatsNewDismiss) { Text("OK") } },
             )
         }
+    }
+}
+
+/** Mostra as notas da release (Markdown) como texto formatado: negrito, listas e títulos, sem os símbolos. */
+@Composable
+private fun ReleaseNotesText(markdown: String) {
+    val lines = SimpleMarkdown.parse(markdown, dropLeadingHeading = true)
+    Column {
+        lines.forEach { line ->
+            when (line.kind) {
+                MdKind.BLANK -> Spacer(Modifier.height(6.dp))
+                MdKind.BULLET -> Row(Modifier.padding(vertical = 2.dp)) {
+                    Text("•", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(end = 8.dp))
+                    Text(styled(line), style = MaterialTheme.typography.bodySmall)
+                }
+                MdKind.HEADING -> Text(styled(line), style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
+                MdKind.TEXT -> Text(styled(line), style = MaterialTheme.typography.bodySmall)
+            }
+        }
+    }
+}
+
+private fun styled(line: MdLine): AnnotatedString = buildAnnotatedString {
+    line.spans.forEach { span ->
+        val style = SpanStyle(
+            fontWeight = if (span.bold) FontWeight.SemiBold else null,
+            fontStyle = if (span.italic) FontStyle.Italic else null,
+            fontFamily = if (span.code) FontFamily.Monospace else null,
+        )
+        withStyle(style) { append(span.text) }
     }
 }
 

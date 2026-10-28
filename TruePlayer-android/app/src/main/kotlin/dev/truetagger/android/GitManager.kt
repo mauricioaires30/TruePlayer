@@ -4,6 +4,8 @@ import dev.truetagger.data.GitChange
 import dev.truetagger.data.GitLimits
 import dev.truetagger.data.GitRemote
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.ResetCommand
+import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.lib.ProgressMonitor
 import org.eclipse.jgit.transport.RemoteRefUpdate
@@ -172,6 +174,56 @@ internal object GitManager {
             .setCredentialsProvider(UsernamePasswordCredentialsProvider(user, token))
             .call()
             .isNotEmpty()
+
+    /** Resultado de [adoptRemote]: branch usada e quantos arquivos só existiam no GitHub e vieram para a pasta. */
+    data class Adopted(val branch: String, val restored: Int)
+
+    /**
+     * Liga uma pasta recém-iniciada (sem commits) a um repositório que já tem conteúdo.
+     * Baixa o histórico, aponta a branch para o último commit de lá e mantém a pasta como está:
+     * - arquivo só na pasta: entra no próximo commit;
+     * - arquivo só no GitHub: é trazido para a pasta (nunca sobrescreve nada);
+     * - arquivo nos dois com conteúdo diferente: vale o da pasta, e a versão do GitHub fica no histórico.
+     * Como o próximo commit parte do último de lá, o envio é um avanço normal, sem forçar.
+     */
+    fun adoptRemote(dir: File, preferredBranch: String, user: String, token: String, monitor: ProgressMonitor): Adopted =
+        Git.open(dir).use { git ->
+            git.fetch()
+                .setRemote("origin")
+                .setCredentialsProvider(UsernamePasswordCredentialsProvider(user, token))
+                .setProgressMonitor(monitor)
+                .call()
+            val repo = git.repository
+            val prefix = "refs/remotes/origin/"
+            val remotes = repo.refDatabase.getRefsByPrefix(prefix).filter { !it.name.endsWith("/HEAD") }
+            val chosen = listOf(preferredBranch, "main", "master")
+                .firstNotNullOfOrNull { wanted -> remotes.firstOrNull { it.name == prefix + wanted } }
+                ?: remotes.firstOrNull()
+                ?: error("não achei nenhuma branch no repositório do GitHub")
+            val name = chosen.name.removePrefix(prefix)
+
+            val create = repo.updateRef("refs/heads/$name")
+            create.setNewObjectId(chosen.objectId)
+            create.setForceUpdate(true)
+            create.update()
+            repo.updateRef(Constants.HEAD).link("refs/heads/$name")
+            val config = repo.config
+            if (name != preferredBranch) {
+                config.unsetSection("branch", preferredBranch)
+            }
+            config.setString("branch", name, "remote", "origin")
+            config.setString("branch", name, "merge", "refs/heads/$name")
+            config.save()
+
+            // Índice igual ao do GitHub, pasta intocada: o que difere aparece como mudança.
+            git.reset().setMode(ResetCommand.ResetType.MIXED).setRef("HEAD").call()
+            val missing = git.status().call().missing.toList()
+            if (missing.isNotEmpty()) git.checkout().addPaths(missing).call()
+            Adopted(name, missing.size)
+        }
+
+    /** True se não há nada para registrar (pasta igual ao último commit). */
+    fun isClean(dir: File): Boolean = Git.open(dir).use { it.status().call().isClean }
 
     fun init(dir: File, branch: String, url: String, name: String, email: String) {
         Git.init().setDirectory(dir).setInitialBranch(branch).call().use { git ->

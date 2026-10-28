@@ -155,6 +155,64 @@ class GitManagerTest {
         assertTrue(summaryOf(dir).songsAdded.isEmpty())
     }
 
+    @Test fun adoptingARemoteWithContentKeepsEverythingAndPushesForward() {
+        // GitHub já tem a.mp3 (igual), b.mp3 (diferente do local), so-no-github.mp3 e um .gitignore.
+        val remote = bareRemote()
+        val seed = temp.newFolder("semente")
+        Git.cloneRepository().setURI(remote.toURI().toString()).setDirectory(seed).call().use { git ->
+            File(seed, "songs").mkdirs()
+            File(seed, "songs/a.mp3").writeText("audio a")
+            File(seed, "songs/b.mp3").writeText("b antigo do github")
+            File(seed, "songs/so-no-github.mp3").writeText("so la")
+            git.add().addFilepattern(".").call()
+            git.commit().setMessage("Antigo").setAuthor("Outro", "o@x.com").setCommitter("Outro", "o@x.com").call()
+            git.push().setRemote("origin").add("refs/heads/main").call()
+        }
+
+        val dir = music() // local: a.mp3 igual, b.mp3 "audio b", playlist
+        val url = remote.toURI().toString()
+        GitManager.init(dir, "main", url, "Fulano", "f@x.com")
+        val adopted = GitManager.adoptRemote(dir, "main", "Fulano", "", GitManager.TextMonitor { })
+        assertEquals("main", adopted.branch)
+        assertEquals(1, adopted.restored)
+        assertEquals("so la", File(dir, "songs/so-no-github.mp3").readText())
+        assertEquals("audio b", File(dir, "songs/b.mp3").readText()) // a pasta vale
+
+        // mudanças em relação ao GitHub: b.mp3 diferente e playlist nova; a.mp3 e a música que veio de lá não aparecem
+        val summary = summaryOf(dir)
+        assertEquals(listOf("b.mp3"), summary.tagsEdited)
+        assertEquals(listOf("Treino"), summary.playlistsAdded)
+        assertTrue(summary.songsRemoved.isEmpty())
+
+        GitManager.updateGitignore(dir, emptyList())
+        GitManager.commitAll(dir, "Pasta de músicas do TruePlayer", "Fulano", "f@x.com")
+        GitManager.push(dir, url, "Fulano", "", GitManager.TextMonitor { })
+
+        // o remoto avançou sem perder o commit antigo nem a música que só existia lá
+        Git.open(remote).use { git ->
+            val log = git.log().call().map { it.fullMessage.trim() }
+            assertEquals(listOf("Pasta de músicas do TruePlayer", "Antigo"), log)
+        }
+        assertTrue(GitManager.isClean(dir))
+    }
+
+    @Test fun adoptingPicksTheRemoteBranchWhenTheNameDiffers() {
+        val remote = temp.newFolder("remoto-master.git").also { Git.init().setBare(true).setDirectory(it).setInitialBranch("master").call().close() }
+        val seed = temp.newFolder("semente2")
+        Git.init().setDirectory(seed).setInitialBranch("master").call().use { git ->
+            File(seed, "x.txt").writeText("x")
+            git.add().addFilepattern(".").call()
+            git.commit().setMessage("Antigo").setAuthor("Outro", "o@x.com").setCommitter("Outro", "o@x.com").call()
+            git.push().setRemote(remote.toURI().toString()).add("refs/heads/master").call()
+        }
+        val dir = temp.newFolder("local")
+        GitManager.init(dir, "main", remote.toURI().toString(), "Fulano", "f@x.com")
+        val adopted = GitManager.adoptRemote(dir, "main", "Fulano", "", GitManager.TextMonitor { })
+        assertEquals("master", adopted.branch)
+        assertEquals("master", GitManager.branch(dir))
+        assertEquals("x", File(dir, "x.txt").readText())
+    }
+
     @Test fun repoWithoutOriginCanReceiveOne() {
         val dir = music()
         Git.init().setDirectory(dir).setInitialBranch("main").call().close()

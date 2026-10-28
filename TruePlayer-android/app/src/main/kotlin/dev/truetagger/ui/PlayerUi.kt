@@ -307,9 +307,7 @@ private fun StatsResetDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
         title = { Text("Resetar as estatísticas?") },
         text = {
             Text(
-                "Zera o tempo ouvido e as vezes tocadas de todas as músicas, artistas e álbuns. " +
-                    "Antes de zerar, o app guarda uma cópia na pasta .trueplayer/backup. " +
-                    "Suas músicas e playlists não mudam.",
+                "Zera o tempo ouvido e as vezes tocadas. Uma cópia fica em .trueplayer/backup.",
             )
         },
         confirmButton = { TextButton(onClick = onConfirm) { Text("Resetar") } },
@@ -2587,9 +2585,7 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
             title = { Text("Liberar pasta?") },
             text = {
                 Text(
-                    "O TruePlayer vai fechar os arquivos abertos e devolver a permissão da pasta ao Android. " +
-                        "Sua biblioteca sai da tela até você escolher uma pasta de novo. " +
-                        "Nenhuma música é apagada."
+                    "A biblioteca some da tela até você escolher a pasta de novo. Nenhuma música é apagada."
                 )
             },
             confirmButton = {
@@ -2626,28 +2622,28 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                 item {
                     SettingSwitch(
                         "Atualizar biblioteca automaticamente",
-                        "Relê a pasta sozinho quando você adiciona, tira ou edita músicas.",
+                        "Relê a pasta quando as músicas mudam.",
                         settings.autoRefreshLibrary,
                     ) { onChange(settings.copy(autoRefreshLibrary = it)) }
                 }
                 item {
                     SettingSwitch(
                         "Usar a imagem do vídeo como capa",
-                        "Se o app achar a música mas não a capa do álbum, usa a imagem do vídeo. Com o ajuste automático de tags desligado, grava a imagem do vídeo em todo download.",
+                        "Usa a imagem do vídeo quando não acha a capa do álbum.",
                         settings.embedYoutubeThumbnail,
                     ) { onChange(settings.copy(embedYoutubeThumbnail = it)) }
                 }
                 item {
                     SettingSwitch(
                         "Atualizar o baixador automaticamente",
-                        "Mantém em dia o programa que baixa as músicas dos links (yt-dlp). Costuma resolver quando um download para de funcionar.",
+                        "Mantém o yt-dlp em dia. Ajuda quando um download para de funcionar.",
                         settings.autoUpdateDownloader,
                     ) { onChange(settings.copy(autoUpdateDownloader = it)) }
                 }
                 item {
                     SettingSwitch(
                         "Ajustar as tags sozinho",
-                        "Depois de baixar um link, procura a música no Apple Music e no Deezer e preenche título, artista, álbum e capa. Se não achar com certeza, não mexe nas tags.",
+                        "Depois do download, busca título, artista, álbum e capa. Sem certeza, não mexe.",
                         settings.autoTag,
                     ) { onChange(settings.copy(autoTag = it)) }
                 }
@@ -2663,21 +2659,21 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                         val hasFolder = downloadFolderLabel.isNotBlank()
                         SettingAction(
                             "Escolher pasta", Icons.Rounded.Folder,
-                            "Define a pasta onde ficam suas músicas e downloads. Dentro dela o app usa as pastas songs (músicas) e playlists.",
+                            "Pasta das músicas e dos downloads.",
                         ) { onChooseDownloadFolder?.invoke() }
                         SettingAction(
                             "Organizar pasta", Icons.Rounded.Folder,
-                            "Move músicas e playlists que estão soltas para dentro de songs e playlists. Os arquivos só mudam de lugar, nada é apagado.",
+                            "Move músicas e playlists soltas para songs e playlists.",
                             enabled = hasFolder,
                         ) { onOrganizeFolder?.invoke() }
                         SettingAction(
                             "Limpar pasta", Icons.Rounded.FolderOff,
-                            "Mostra o que não é música nem playlist e, se você confirmar, manda para a pasta _lixeira. Dá pra desfazer pelo gerenciador de arquivos.",
+                            "Manda o que não é música nem playlist para a _lixeira.",
                             enabled = hasFolder,
                         ) { onCleanFolder?.invoke() }
                         SettingAction(
                             "Liberar pasta", Icons.Rounded.FolderOff,
-                            "Devolve a permissão da pasta ao Android, para você renomear ou apagar a pasta pelo gerenciador de arquivos. A biblioteca some da tela até escolher a pasta de novo. Nada é apagado.",
+                            "Devolve a pasta ao Android, para você poder renomeá-la ou apagá-la.",
                             enabled = hasFolder,
                         ) { confirmReleaseFolder = true }
                     }
@@ -2688,7 +2684,7 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                         Text("Estatísticas", fontWeight = FontWeight.SemiBold)
                         SettingAction(
                             "Resetar estatísticas", Icons.Rounded.Delete,
-                            "Zera o tempo ouvido e as vezes tocadas de tudo. O app guarda uma cópia antes, na pasta .trueplayer/backup.",
+                            "Zera o tempo ouvido e as vezes tocadas. Guarda uma cópia antes.",
                         ) { confirmResetStats = true }
                     }
                 }
@@ -2697,7 +2693,7 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                         Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.space2)) {
                             Text("Permissões", fontWeight = FontWeight.SemiBold)
                             Text(
-                                "O que o app precisa do Android para funcionar. Toque em Conceder nas que faltam.",
+                                "Toque em Conceder nas que faltam.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -2717,7 +2713,7 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                 item {
                     SettingSwitch(
                         "Avisar quando sair versão nova",
-                        "Confere sozinho se existe uma versão mais nova do app e avisa por notificação. Precisa de internet.",
+                        "Avisa por notificação quando sai versão nova.",
                         settings.autoCheckUpdates,
                     ) { onChange(settings.copy(autoCheckUpdates = it)) }
                 }
@@ -2725,7 +2721,7 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                     Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.space2)) {
                         SettingAction(
                             "Verificar atualização", Icons.Rounded.Refresh,
-                            "Consulta agora se existe uma versão mais nova e, se você quiser, baixa e instala. Suas músicas, playlists e estatísticas não são alteradas.",
+                            "Procura uma versão nova agora.",
                         ) { onCheckUpdate?.invoke() }
                     }
                 }

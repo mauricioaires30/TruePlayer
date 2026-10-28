@@ -51,7 +51,7 @@ fun GitSection() {
     Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
         Text("Git", fontWeight = FontWeight.SemiBold)
         Text(
-            "Guarda sua pasta de músicas num repositório do GitHub: o app mostra o que mudou (músicas novas, playlists, tags, tempo ouvido) e faz o commit pra você.",
+            "Envia a pasta de músicas para um repositório do GitHub.",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -59,21 +59,21 @@ fun GitSection() {
             GitUi.Availability.UNKNOWN, GitUi.Availability.NO_FOLDER -> Unit
 
             GitUi.Availability.UNSUPPORTED -> Text(
-                "O git só funciona com uma pasta no armazenamento interno do celular. Escolha outra pasta para usar.",
+                "Só funciona com pasta no armazenamento interno do celular.",
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.padding(top = 8.dp),
             )
 
             GitUi.Availability.NO_REPO -> GitAction(
                 "Criar repositório Git", Icons.Rounded.CloudUpload,
-                "Sua pasta ainda não tem git. Isso liga a pasta a um repositório vazio do GitHub e envia tudo. O app só lê e envia seus arquivos, nunca apaga.",
+                "A pasta ainda não tem git. Liga a um repositório do GitHub e envia.",
             ) {
                 if (GitController.hasAllFilesAccess()) showSetup = true else GitController.requestAllFilesAccess(context)
             }
 
             GitUi.Availability.REPO_NEEDS_ACCESS -> GitAction(
                 "Liberar acesso a todos os arquivos", Icons.Rounded.Folder,
-                "Sua pasta já tem git. Para ver as mudanças e fazer commit o app precisa trabalhar direto nos arquivos, e o Android pede essa permissão numa tela à parte. Depois é só voltar aqui.",
+                "A pasta já tem git. O app precisa dessa permissão para ver as mudanças.",
             ) { GitController.requestAllFilesAccess(context) }
 
             GitUi.Availability.READY -> {
@@ -94,7 +94,7 @@ fun GitSection() {
                 )
                 GitAction(
                     "Sincronizar com o Git", Icons.Rounded.CloudUpload,
-                    "Mostra o que mudou, deixa você ajustar a mensagem e faz o commit. Se quiser, já envia ao GitHub.",
+                    "Mostra o que mudou, faz o commit e envia ao GitHub se você quiser.",
                     enabled = summary != null,
                 ) { showSync = true }
             }
@@ -112,7 +112,7 @@ fun GitSection() {
                         Spacer(Modifier.height(12.dp))
                         LinearProgressIndicator(Modifier.fillMaxWidth())
                         Spacer(Modifier.height(12.dp))
-                        Text("Não feche o app, a tela fica ligada enquanto isso.", style = MaterialTheme.typography.bodySmall)
+                        Text("Não feche o app.", style = MaterialTheme.typography.bodySmall)
                     }
                 },
                 confirmButton = {},
@@ -188,12 +188,11 @@ private fun SetupDialog(initialUser: String, onCancel: () -> Unit, onConfirm: (G
     MaterialTheme(colorScheme = TruePlayerDarkScheme) {
         AlertDialog(
             onDismissRequest = onCancel,
-            title = { Text("Criar repositório Git") },
+            title = { Text("Ligar ao GitHub") },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     Text(
-                        "Crie antes um repositório VAZIO no GitHub (sem README) e cole o endereço dele abaixo. " +
-                            "O primeiro envio leva todas as músicas e pode demorar: prefira o Wi-Fi.",
+                        "Cole o endereço do repositório, novo ou já com arquivos. O que só existir no GitHub vem para a pasta, e se um arquivo for diferente vale o da pasta. O primeiro envio pode ser grande, use Wi-Fi.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Spacer(Modifier.height(8.dp))
@@ -206,7 +205,7 @@ private fun SetupDialog(initialUser: String, onCancel: () -> Unit, onConfirm: (G
                         visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth(),
                     )
                     Text(
-                        "No GitHub: Settings > Developer settings > Personal access tokens. Dê permissão de escrita em Contents do repositório. O token fica guardado cifrado, só neste celular.",
+                        "Crie em Settings > Developer settings > Personal access tokens, com escrita em Contents. Fica cifrado neste celular.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp),
@@ -217,7 +216,7 @@ private fun SetupDialog(initialUser: String, onCancel: () -> Unit, onConfirm: (G
                 TextButton(
                     enabled = url.isNotBlank() && user.isNotBlank() && email.isNotBlank() && token.isNotBlank(),
                     onClick = { onConfirm(GitSetupRequest(url, user, email, branch, token)) },
-                ) { Text("Criar e enviar") }
+                ) { Text("Ligar e enviar") }
             },
             dismissButton = { TextButton(onClick = onCancel) { Text("Cancelar") } },
         )
@@ -268,7 +267,7 @@ private fun SyncDialog(
                         )
                     }
                     Text(
-                        "Arquivos acima de 100 MB ficam de fora, porque o GitHub recusa. Nada é enviado à força: se o GitHub tiver algo que você não tem, o envio para e avisa.",
+                        "Arquivos acima de 100 MB ficam de fora. Se o GitHub tiver algo que você não tem, o envio para.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp),

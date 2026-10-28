@@ -10,13 +10,17 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import dev.truetagger.data.DownloadQueueStore
 import dev.truetagger.data.PlaylistEntry
+import dev.truetagger.data.QueuedDownload
 import dev.truetagger.data.UrlSupport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.launch
 import java.io.File
@@ -28,35 +32,49 @@ import java.io.File
 class YoutubeDownloadService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var importer: YoutubeImportManager
-    private val downloadChannel = Channel<DownloadTask>(Channel.UNLIMITED)
+    private lateinit var queue: DownloadQueueStore
+    private val downloadChannel = Channel<QueuedDownload>(Channel.UNLIMITED)
     private val queuedDownloads = AtomicInteger(0)
+
+    /** Itens que entraram e ainda não terminaram, inclusive o que está baixando agora. */
+    private val unfinished = AtomicInteger(0)
 
     override fun onCreate() {
         super.onCreate()
         importer = YoutubeImportManager(this)
+        queue = queueStore(this)
         ensureNotificationChannel()
         serviceScope.launch {
-            for (task in downloadChannel) {
+            for (item in downloadChannel) {
                 queuedDownloads.decrementAndGet()
-                when (task) {
-                    is DownloadTask.Single -> processDownload(task)
-                    is DownloadTask.Expand -> expandPlaylist(task)
-                }
+                if (item.expand) expandPlaylist(item) else processDownload(item)
+                // Se o serviço foi encerrado no meio, o item continua na fila para a próxima vez.
+                currentCoroutineContext().ensureActive()
+                queue.remove(item.id)
+                unfinished.decrementAndGet()
                 finishBatchIfIdle()
             }
         }
+        // Retoma o que ficou pela metade se o processo foi encerrado.
+        queue.load().forEach { enqueue(it) }
+    }
+
+    private fun enqueue(item: QueuedDownload) {
+        queuedDownloads.incrementAndGet()
+        unfinished.incrementAndGet()
+        downloadChannel.trySend(item)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val url = intent?.getStringExtra(ShareContract.EXTRA_SHARED_URL).orEmpty().trim()
         if (url.isBlank() || !UrlSupport.isSupported(url)) {
-            stopSelf(startId)
-            return START_NOT_STICKY
+            // Reinício do sistema ou pedido para retomar: só segue se sobrou algo na fila.
+            if (unfinished.get() == 0) stopSelf(startId)
+            return START_STICKY
         }
 
-        queuedDownloads.incrementAndGet()
-        downloadChannel.trySend(if (UrlSupport.needsListing(url)) DownloadTask.Expand(url) else DownloadTask.Single(url))
-        return START_NOT_STICKY
+        enqueue(queue.add(url, expand = UrlSupport.needsListing(url)))
+        return START_STICKY
     }
 
     private fun finishBatchIfIdle() {
@@ -70,7 +88,7 @@ class YoutubeDownloadService : Service() {
     }
 
     /** Lê a playlist, cria a playlist do app (vazia) e põe cada música na fila, na ordem original. */
-    private suspend fun expandPlaylist(task: DownloadTask.Expand) {
+    private suspend fun expandPlaylist(task: QueuedDownload) {
         runCatching {
             startForeground(
                 ShareContract.NOTIFICATION_ID,
@@ -93,7 +111,7 @@ class YoutubeDownloadService : Service() {
                 )
             } else {
                 // Link curto que na verdade era uma música só.
-                processDownload(DownloadTask.Single(task.url))
+                processDownload(task.copy(expand = false))
             }
             return
         }
@@ -101,19 +119,17 @@ class YoutubeDownloadService : Service() {
         val store = PlaylistStore(this)
         val name = store.uniqueNameFor(playlist.title)
         store.createWithEntries(name, emptyList())
-        val job = PlaylistJob(name, playlist.entries.size)
         playlist.entries.forEachIndexed { index, entry ->
-            queuedDownloads.incrementAndGet()
-            downloadChannel.trySend(DownloadTask.Single(entry.url, job, index + 1))
+            enqueue(queue.add(entry.url, playlist = name, total = playlist.entries.size, position = index + 1))
         }
     }
 
-    private suspend fun processDownload(task: DownloadTask.Single) {
+    private suspend fun processDownload(task: QueuedDownload) {
         val url = task.url
-        val job = task.job
+        val job = task.playlist
         var videoTitle = ""
         val queuedAfterCurrent = queuedDownloads.get()
-        val position = job?.let { "Playlist ${it.name} (${task.position}/${it.total})" }
+        val position = job?.let { "Playlist $it (${task.position}/${task.total})" }
 
         runCatching {
             startForeground(
@@ -158,9 +174,9 @@ class YoutubeDownloadService : Service() {
                     completed = true,
                 )
             } else {
-                PlaylistStore(this).appendEntries(job.name, listOf(PlaylistEntry(result.relPath, result.label)))
-                job.done++
-                if (task.position == job.total) finishPlaylist(job)
+                PlaylistStore(this).appendEntries(job, listOf(PlaylistEntry(result.relPath, result.label)))
+                queue.record(job, success = true)
+                if (queue.pendingFor(job, task.id) == 0) finishPlaylist(job, task.total)
             }
         }.onFailure { error ->
             saveLastError(error)
@@ -171,19 +187,20 @@ class YoutubeDownloadService : Service() {
                     failed = true,
                 )
             } else {
-                job.failed++
-                if (task.position == job.total) finishPlaylist(job)
+                queue.record(job, success = false)
+                if (queue.pendingFor(job, task.id) == 0) finishPlaylist(job, task.total)
             }
         }
     }
 
-    private fun finishPlaylist(job: PlaylistJob) {
-        val missing = if (job.failed > 0) " (${job.failed} não baixaram)" else ""
+    private fun finishPlaylist(name: String, total: Int) {
+        val counts = queue.finishJob(name)
+        val missing = if (counts.failed > 0) " (${counts.failed} não baixaram)" else ""
         finishWithNotification(
             title = "Playlist baixada",
-            text = "${job.name}: ${job.done} de ${job.total} músicas$missing",
-            completed = job.done > 0,
-            failed = job.done == 0,
+            text = "$name: ${counts.done} de $total músicas$missing",
+            completed = counts.done > 0,
+            failed = counts.done == 0,
         )
     }
 
@@ -287,18 +304,19 @@ class YoutubeDownloadService : Service() {
         runCatching { File(filesDir, "last-download-error.txt").delete() }
     }
 
-    /** Playlist em andamento: quantas músicas já baixaram e quantas falharam. */
-    private class PlaylistJob(val name: String, val total: Int) {
-        var done = 0
-        var failed = 0
-    }
-
-    private sealed interface DownloadTask {
-        data class Single(val url: String, val job: PlaylistJob? = null, val position: Int = 0) : DownloadTask
-        data class Expand(val url: String) : DownloadTask
-    }
-
     companion object {
+        private fun queueStore(context: Context) = DownloadQueueStore(File(context.filesDir, "download-queue.json"))
+
+        /** Chamado ao abrir o app: se algum download ficou pela metade, retoma. */
+        fun resumePending(context: Context) {
+            val app = context.applicationContext
+            if (queueStore(app).load().isEmpty()) return
+            val intent = Intent(app, YoutubeDownloadService::class.java).apply { action = ShareContract.ACTION_START_DOWNLOAD }
+            runCatching {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) app.startForegroundService(intent) else app.startService(intent)
+            }
+        }
+
         fun start(context: Context, url: String) {
             val cleanUrl = url.trim()
             if (cleanUrl.isBlank()) return

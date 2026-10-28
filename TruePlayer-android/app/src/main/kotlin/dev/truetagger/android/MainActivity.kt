@@ -150,6 +150,7 @@ class MainActivity : ComponentActivity() {
         releaseStalePermissions()
         checkFolderAccess()
         registerMediaObserver()
+        YoutubeDownloadService.resumePending(this)
 
         setContent {
             TrueTaggerPlayerApp(
