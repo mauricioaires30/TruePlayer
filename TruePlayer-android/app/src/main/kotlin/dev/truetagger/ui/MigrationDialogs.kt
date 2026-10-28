@@ -37,7 +37,7 @@ fun FolderMigrationDialogs(
     onLater: () -> Unit,
     onReportDismiss: () -> Unit,
 ) {
-    MaterialTheme(colorScheme = TruePlayerDarkScheme) {
+    TruePlayerTheme {
         when {
             accessNeeded -> AlertDialog(
                 onDismissRequest = onAccessLater,
@@ -90,7 +90,7 @@ fun FolderMigrationDialogs(
                 text = {
                     Column(Modifier.verticalScroll(rememberScrollState())) {
                         Text(
-                            "${preview.songs} música(s) e ${preview.playlists} playlist(s) fora de songs e playlists. Mover para lá?",
+                            "${plural(preview.songs, "música", "músicas")} e ${plural(preview.playlists, "playlist", "playlists")} fora de songs e playlists. Mover para lá?",
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
@@ -115,7 +115,7 @@ fun FolderMigrationDialogs(
                 title = { Text(if (report.failed.isEmpty()) "Pasta organizada" else "Organizei, mas teve problema") },
                 text = {
                     Column(Modifier.verticalScroll(rememberScrollState())) {
-                        Text("${report.songsMoved} música(s) e ${report.playlistsMoved} playlist(s) movidas. Nada foi apagado.")
+                        Text("Movidas: ${plural(report.songsMoved, "música", "músicas")} e ${plural(report.playlistsMoved, "playlist", "playlists")}. Nada foi apagado.")
                         if (report.failed.isNotEmpty()) {
                             Spacer(Modifier.height(8.dp))
                             Text("Estes ficaram onde estavam (${report.failed.size}):", style = MaterialTheme.typography.bodySmall)
@@ -145,7 +145,7 @@ fun FolderCleanupDialog(
     val checked = androidx.compose.runtime.remember(scan) {
         androidx.compose.runtime.mutableStateMapOf<String, Boolean>().apply { scan.candidates.forEach { put(it.name, true) } }
     }
-    MaterialTheme(colorScheme = TruePlayerDarkScheme) {
+    TruePlayerTheme {
         AlertDialog(
             onDismissRequest = onCancel,
             title = { Text("Limpar a pasta") },
@@ -169,7 +169,7 @@ fun FolderCleanupDialog(
                                 Text(item.name, fontWeight = FontWeight.SemiBold)
                                 val size = android.text.format.Formatter.formatShortFileSize(context, item.sizeBytes)
                                 Text(
-                                    if (item.isDir) "${item.files} arquivo(s), $size" else size,
+                                    if (item.isDir) "${plural(item.files, "arquivo", "arquivos")}, $size" else size,
                                     style = MaterialTheme.typography.bodySmall,
                                 )
                                 item.samples.forEach {

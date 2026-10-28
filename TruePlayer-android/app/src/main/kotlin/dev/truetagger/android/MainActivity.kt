@@ -36,6 +36,7 @@ import dev.truetagger.ui.FolderCleanupDialog
 import dev.truetagger.ui.UpdateDialogs
 import dev.truetagger.ui.FolderMigrationDialogs
 import dev.truetagger.ui.OnboardingDialog
+import dev.truetagger.ui.GitDialogs
 import dev.truetagger.ui.TrueTaggerPlayerApp
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineScope
@@ -201,7 +202,9 @@ class MainActivity : ComponentActivity() {
                 onUpdate = { UpdateManager.downloadAndInstall(this@MainActivity, it) },
                 onDismiss = UpdateManager::dismiss,
                 onWhatsNewDismiss = { whatsNew = null },
+                onHideDownload = UpdateManager::hideDownload,
             )
+            GitDialogs()
             if (showTutorial) {
                 OnboardingDialog(
                     folderLabel = downloadFolderLabel,
@@ -241,12 +244,14 @@ class MainActivity : ComponentActivity() {
 
     override fun onStart() {
         super.onStart()
+        AppVisibility.visible = true
         // Toda vez que o app volta para a frente (abrir, ou voltar de outro app) confere se há versão nova.
         // É silencioso: só aparece algo se houver.
         if (settings.autoCheckUpdates) UpdateManager.check(this, manual = false, force = true)
     }
 
     override fun onStop() {
+        AppVisibility.visible = false
         PlayStatsState.flush(this)
         SettingsBackup.scheduleWrite(this, settings)
         super.onStop()
@@ -457,16 +462,27 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Sem a "otimização de bateria", o Android não congela o app em segundo plano (downloads e envio continuam). */
+    private fun ignoresBatteryLimits(): Boolean =
+        runCatching { getSystemService(android.os.PowerManager::class.java).isIgnoringBatteryOptimizations(packageName) }.getOrDefault(true)
+
+    private fun requestNoBatteryLimits() {
+        val direct = Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:$packageName"))
+        runCatching { startActivity(direct) }.onFailure {
+            runCatching { startActivity(Intent(android.provider.Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) }
+        }
+    }
+
     /** Checklist de Configurações; reler `permissionsRevision` faz a lista atualizar quando algo muda. */
     private fun permissionItems(): List<PermissionItem> {
         @Suppress("UNUSED_VARIABLE") val refresh = permissionsRevision
         val savedFolder = MusicFolder.savedUri(this)
         return listOf(
-            PermissionItem("Arquivos de áudio", hasAudioPermission()) {
+            PermissionItem("Músicas do celular", hasAudioPermission(), "Para listar e tocar as músicas") {
                 openSettingsIfDenied = true
                 permissionsLauncher.launch(requiredPermissions())
             },
-            PermissionItem("Notificações", notificationsGranted()) {
+            PermissionItem("Notificações", notificationsGranted(), "Controles do player, downloads e avisos") {
                 openSettingsIfDenied = true
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -474,11 +490,14 @@ class MainActivity : ComponentActivity() {
                     openAppSettingsIfAsked()
                 }
             },
-            PermissionItem("Pasta de músicas", savedFolder != null && MusicFolder.hasPermission(this, savedFolder)) {
+            PermissionItem("Pasta de músicas", savedFolder != null && MusicFolder.hasPermission(this, savedFolder), "Para ler e salvar na pasta escolhida") {
                 folderPicker.launch(savedDownloadTree())
             },
-            PermissionItem("Instalar atualizações", UpdateManager.canInstallPackages(this)) {
+            PermissionItem("Instalar atualizações", UpdateManager.canInstallPackages(this), "Para o app se atualizar sozinho") {
                 UpdateManager.openInstallPermissionSettings(this)
+            },
+            PermissionItem("Rodar em segundo plano", ignoresBatteryLimits(), "Downloads, envio ao GitHub e avisos com o app fechado") {
+                requestNoBatteryLimits()
             },
         )
     }
@@ -514,7 +533,7 @@ class MainActivity : ComponentActivity() {
             val outcome = withContext(Dispatchers.IO) { runCatching { FolderOrganizer(tree).moveToTrash(selected) } }
             migrationMessage = outcome.fold(
                 onSuccess = { r ->
-                    "${r.moved} item(ns) movido(s) para a pasta _lixeira." +
+                    "${dev.truetagger.ui.plural(r.moved, "item movido", "itens movidos")} para a pasta _lixeira." +
                         if (r.failed.isNotEmpty()) "\n\nNão consegui mover: ${r.failed.joinToString(", ")}." else ""
                 },
                 onFailure = { "Não deu pra limpar a pasta: ${it.message}. Nada foi apagado." },

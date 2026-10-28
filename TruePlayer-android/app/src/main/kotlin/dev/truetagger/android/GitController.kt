@@ -42,12 +42,22 @@ data class GitUi(
     /** Etapa atual e total de etapas (0 quando a operação não tem etapas). */
     val busyStep: Int = 0,
     val busySteps: Int = 0,
+    /** Nome da operação em andamento ("Envio ao GitHub", "Commit"...), para a tela e a notificação. */
+    val busyTitle: String = "",
+    /** O usuário escondeu o andamento para usar o app; a operação continua em segundo plano. */
+    val progressHidden: Boolean = false,
+    /** Quando a operação começou (relógio do sistema), para o tempo decorrido não zerar ao reabrir o andamento. */
+    val busySinceMs: Long = 0L,
     /** Branch do GitHub que o envio vai substituir; enquanto não for null a tela pergunta se pode. */
     val replaceBranch: String? = null,
     /** Resultado ou erro para mostrar uma vez. */
     val message: String? = null,
 ) {
     enum class Availability { UNKNOWN, NO_FOLDER, UNSUPPORTED, NO_REPO, REPO_NEEDS_ACCESS, READY }
+
+    /** Andamento da operação inteira (etapas feitas + o quanto da atual já foi), ou null quando não há etapas. */
+    val overallFraction: Float?
+        get() = if (busySteps > 0) (((busyStep - 1).coerceAtLeast(0) + (busyFraction ?: 0f)) / busySteps).coerceIn(0f, 1f) else null
 }
 
 data class GitSetupRequest(
@@ -181,12 +191,28 @@ object GitController {
 
     /** Pede para parar o que está rodando. O envio só para entre uma etapa e outra; nada fica pela metade no GitHub. */
     fun cancel() {
+        if (_ui.value.busy == null) return
         cancelRequested = true
         _ui.update { it.copy(busy = "Cancelando…", busyFraction = null) }
     }
 
     /** Chamado depois de baixar arquivos do GitHub, para a biblioteca e as playlists lerem a pasta de novo. */
     @Volatile var onFolderChanged: (() -> Unit)? = null
+
+    /** Esconde o andamento para usar o app; a operação segue em segundo plano (com notificação). */
+    fun hideProgress() {
+        _ui.update { it.copy(progressHidden = true) }
+    }
+
+    fun showProgress() {
+        _ui.update { it.copy(progressHidden = false) }
+    }
+
+    /** Começo de uma operação longa: dá nome a ela e liga o serviço que a mantém viva fora do app. */
+    private fun startWork(app: Context, title: String) {
+        _ui.update { it.copy(busyTitle = title, progressHidden = false, busySinceMs = System.currentTimeMillis()) }
+        GitWorkService.start(app)
+    }
 
     fun dismissMessage() {
         _ui.update { it.copy(message = null) }
@@ -206,7 +232,7 @@ object GitController {
         }
         pendingReplace = retry
         cancelRequested = false
-        _ui.update { it.copy(busy = null, busyFraction = null, busyStep = 0, busySteps = 0, replaceBranch = need.branch) }
+        _ui.update { it.copy(busy = null, busyFraction = null, busyStep = 0, busySteps = 0, busyTitle = "", progressHidden = false, busySinceMs = 0L, replaceBranch = need.branch) }
     }
 
     /** O usuário aceitou substituir a branch do GitHub: repete o envio já com permissão. */
@@ -253,7 +279,7 @@ object GitController {
     }
 
     private fun skippedNote(skipped: List<String>) =
-        if (skipped.isEmpty()) "" else "\n\n${skipped.size} arquivo(s) não puderam ser lidos e ficaram de fora: ${skipped.take(3).joinToString(", ")}."
+        if (skipped.isEmpty()) "" else "\n\n${if (skipped.size == 1) "1 arquivo não pôde" else "${skipped.size} arquivos não puderam"} ser lido e ficou de fora: ${skipped.take(3).joinToString(", ")}."
 
     private fun finish(outcome: Result<String>, app: Context) {
         val cancelled = cancelRequested
@@ -264,7 +290,7 @@ object GitController {
             val where = whereIs(e)
             "Não deu certo: ${reason(e)}" + if (where.isNotBlank()) "\n\nOnde: $where" else ""
         })
-        _ui.update { it.copy(busy = null, busyFraction = null, busyStep = 0, busySteps = 0, message = text) }
+        _ui.update { it.copy(busy = null, busyFraction = null, busyStep = 0, busySteps = 0, busyTitle = "", progressHidden = false, busySinceMs = 0L, message = text) }
         refresh(app)
     }
 
@@ -278,12 +304,12 @@ object GitController {
 
     private fun coversNote(covers: CoverExport.Result?): String = when {
         covers == null || (covers.written == 0 && covers.missing == 0) -> ""
-        covers.missing > 0 -> "\n\n${covers.written} capa(s) salvas. Faltam ${covers.missing}, que vão no próximo envio."
-        else -> "\n\n${covers.written} capa(s) salvas em .trueplayer/covers."
+        covers.missing > 0 -> "\n\n${dev.truetagger.ui.plural(covers.written, "capa salva", "capas salvas")}. Faltam ${covers.missing}, que vão no próximo envio."
+        else -> "\n\n${dev.truetagger.ui.plural(covers.written, "capa salva", "capas salvas")} em .trueplayer/covers."
     }
 
     private fun largeFilesNote(large: List<String>) =
-        if (large.isEmpty()) "" else "\n\n${large.size} arquivo(s) passam de 100 MB e ficaram de fora (o GitHub recusa): ${large.take(3).joinToString(", ")}."
+        if (large.isEmpty()) "" else "\n\nAcima de 100 MB (o GitHub recusa), ficaram de fora ${dev.truetagger.ui.plural(large.size, "arquivo", "arquivos")}: ${large.take(3).joinToString(", ")}."
 
     // ---- ações
 
@@ -296,6 +322,7 @@ object GitController {
         if (_ui.value.busy != null) return
         val steps = if (push) 3 else 2
         show(1, steps, "Conferindo o que mudou…")
+        startWork(app, if (push) "Commit e envio" else "Commit")
         _ui.update { it.copy(message = null) }
         launchGit {
             val outcome = runCatching {
@@ -327,7 +354,7 @@ object GitController {
                 // Arquivos grandes demais ficam de fora sem mexer no .gitignore do usuário (lista local em .git/info/exclude).
                 val large = GitManager.tooLarge(dir, changes)
                 GitManager.addLocalExclude(dir, large)
-                show(2, steps, "Registrando ${changes.size} arquivo(s)…")
+                show(2, steps, "Registrando ${dev.truetagger.ui.plural(changes.size, "arquivo", "arquivos")}…")
                 val skipped = GitManager.commitAll(dir, message.ifBlank { "Atualização da pasta" }, name.trim(), email.trim(), monitor(2, steps))
 
                 var pushed = false
@@ -348,6 +375,7 @@ object GitController {
         val app = context.applicationContext
         if (_ui.value.busy != null) return
         show(1, 2, "Conectando ao GitHub…")
+        startWork(app, "Envio ao GitHub")
         _ui.update { it.copy(message = null) }
         launchGit {
             val outcome = runCatching {
@@ -375,6 +403,7 @@ object GitController {
         val app = context.applicationContext
         if (_ui.value.busy != null) return
         show(1, 4, "Conferindo o repositório no GitHub…")
+        startWork(app, "Ligando ao GitHub")
         _ui.update { it.copy(message = null) }
         launchGit {
             val outcome = runCatching {
@@ -414,6 +443,7 @@ object GitController {
         val app = context.applicationContext
         if (_ui.value.busy != null) return
         _ui.update { it.copy(busy = "Conferindo o repositório no GitHub…", busyFraction = null, message = null) }
+        startWork(app, "Trocando repositório")
         launchGit {
             val outcome = runCatching {
                 val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("pasta não suportada")
@@ -438,6 +468,7 @@ object GitController {
         val app = context.applicationContext
         if (_ui.value.busy != null) return
         show(1, 2, "Conectando ao GitHub…")
+        startWork(app, "Download do GitHub")
         _ui.update { it.copy(message = null) }
         launchGit {
             val outcome = runCatching {
@@ -456,7 +487,7 @@ object GitController {
                     onFolderChanged?.invoke()
                 }
                 if (result.upToDate) "A pasta já está em dia com o GitHub."
-                else "${result.files.size} arquivo(s) baixados do GitHub. A biblioteca atualiza sozinha em instantes."
+                else "${dev.truetagger.ui.plural(result.files.size, "arquivo baixado", "arquivos baixados")} do GitHub. A biblioteca atualiza sozinha em instantes."
             }
             finish(outcome, app)
         }

@@ -2,30 +2,25 @@ package dev.truetagger.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.SwapHoriz
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.rounded.Sync
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -39,9 +34,10 @@ import androidx.compose.ui.unit.dp
 import dev.truetagger.android.GitController
 import dev.truetagger.android.GitSetupRequest
 import dev.truetagger.android.GitUi
+import dev.truetagger.data.GitSummary
 import kotlinx.coroutines.delay
 
-/** Parte de Configurações que cuida do git da pasta de músicas. */
+/** Grupo "GitHub" de Configurações: guardar a pasta de músicas num repositório do GitHub. */
 @Composable
 fun GitSection() {
     val context = LocalContext.current
@@ -52,134 +48,56 @@ fun GitSection() {
     var showChange by remember { mutableStateOf(false) }
     var showPull by remember { mutableStateOf(false) }
 
-    // Mantém a tela ligada enquanto o git trabalha (o primeiro envio pode demorar).
-    val view = LocalView.current
-    DisposableEffect(state.busy != null) {
-        view.keepScreenOn = state.busy != null
-        onDispose { view.keepScreenOn = false }
-    }
-
-    Column(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp)) {
-        Text("Git", fontWeight = FontWeight.SemiBold)
-        Text(
-            "Envia a pasta de músicas para um repositório do GitHub.",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    SettingsGroup("GitHub") {
+        // Andamento escondido aparece aqui em qualquer situação (ligar ao GitHub, baixar, enviar...).
+        if (state.busy != null && state.progressHidden) {
+            BackgroundProgressRow(state)
+            SettingsDivider()
+        }
         when (state.availability) {
-            GitUi.Availability.UNKNOWN, GitUi.Availability.NO_FOLDER -> Unit
-
-            GitUi.Availability.UNSUPPORTED -> Text(
-                "Só funciona com pasta no armazenamento interno do celular.",
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(top = 8.dp),
+            GitUi.Availability.UNKNOWN, GitUi.Availability.NO_FOLDER -> SettingsRow(
+                Icons.Rounded.CloudUpload, "Guardar no GitHub", "Escolha a pasta de músicas primeiro", enabled = false,
             )
 
-            GitUi.Availability.NO_REPO -> GitAction(
-                "Criar repositório Git", Icons.Rounded.CloudUpload,
-                "A pasta ainda não tem git. Liga a um repositório do GitHub e envia a pasta.",
+            GitUi.Availability.UNSUPPORTED -> SettingsRow(
+                Icons.Rounded.CloudUpload, "Guardar no GitHub", "Só funciona com pasta na memória interna do celular", enabled = false,
+            )
+
+            GitUi.Availability.NO_REPO -> SettingsRow(
+                Icons.Rounded.CloudUpload, "Ligar ao GitHub", "Guarda músicas, playlists e estatísticas num repositório seu",
             ) {
                 if (GitController.hasAllFilesAccess()) showSetup = true else GitController.requestAllFilesAccess(context)
             }
 
-            GitUi.Availability.REPO_NEEDS_ACCESS -> GitAction(
-                "Liberar acesso a todos os arquivos", Icons.Rounded.Folder,
-                "A pasta já tem git. O app precisa dessa permissão para ver as mudanças.",
+            GitUi.Availability.REPO_NEEDS_ACCESS -> SettingsRow(
+                Icons.Rounded.Folder, "Liberar acesso aos arquivos", "O Git precisa ler a pasta direto",
             ) { GitController.requestAllFilesAccess(context) }
 
             GitUi.Availability.READY -> {
                 val summary = state.summary
-                Text(
-                    when {
-                        summary == null -> "Lendo as mudanças…"
-                        summary.isEmpty -> "Nada mudou desde o último commit."
-                        else -> describe(summary)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(top = 8.dp),
-                )
-                Text(
-                    "Repositório da pasta: " + (state.remote ?: "sem endereço de envio (origin)") + (state.branch?.let { " • branch $it" } ?: ""),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                GitAction(
-                    "Commitar", Icons.Rounded.Save,
-                    "Registra as mudanças da pasta no Git. Não envia.",
-                    enabled = summary != null && !summary.isEmpty,
+                SettingsRow(Icons.Rounded.Sync, repoLabel(state.remote), statusLine(state))
+                SettingsDivider()
+                SettingsRow(
+                    Icons.Rounded.Save, "Commitar",
+                    if (summary != null && summary.isEmpty) "Nada novo para salvar" else "Salva o que mudou, só neste celular",
+                    enabled = summary != null && !summary.isEmpty && state.busy == null,
                 ) { showCommit = true }
-                GitAction(
-                    "Enviar", Icons.Rounded.CloudUpload,
-                    "Manda os commits para o GitHub.",
-                    enabled = summary != null,
+                SettingsDivider()
+                SettingsRow(
+                    Icons.Rounded.CloudUpload, "Enviar", "Manda os commits para o GitHub",
+                    enabled = summary != null && state.busy == null,
                 ) { showSend = true }
-                GitAction(
-                    "Baixar do GitHub", Icons.Rounded.CloudDownload,
-                    "Traz para a pasta o que só existe no GitHub. O que você mudou não é sobrescrito.",
-                    enabled = state.remote != null && summary != null,
+                SettingsDivider()
+                SettingsRow(
+                    Icons.Rounded.CloudDownload, "Baixar do GitHub", "Para restaurar tudo num celular novo",
+                    enabled = state.remote != null && summary != null && state.busy == null,
                 ) { showPull = true }
-                GitAction(
-                    "Trocar repositório", Icons.Rounded.SwapHoriz,
-                    "Aponta a pasta para outro repositório do GitHub.",
+                SettingsDivider()
+                SettingsRow(
+                    Icons.Rounded.SwapHoriz, "Trocar repositório", "Usa outro repositório do GitHub",
+                    enabled = state.busy == null,
                 ) { showChange = true }
             }
-        }
-    }
-
-    state.busy?.let { text ->
-        MaterialTheme(colorScheme = TruePlayerDarkScheme) {
-            AlertDialog(
-                onDismissRequest = {},
-                title = { Text("Git") },
-                text = {
-                    // Tempo desde que a operação começou, atualizado a cada segundo.
-                    var elapsedS by remember { mutableLongStateOf(0L) }
-                    LaunchedEffect(Unit) {
-                        val start = System.currentTimeMillis()
-                        while (true) {
-                            elapsedS = (System.currentTimeMillis() - start) / 1000
-                            delay(1000)
-                        }
-                    }
-                    // Porcentagem do total: etapas já feitas mais o quanto da atual já foi.
-                    val steps = state.busySteps
-                    val overall = if (steps > 0) {
-                        (((state.busyStep - 1).coerceAtLeast(0) + (state.busyFraction ?: 0f)) / steps).coerceIn(0f, 1f)
-                    } else {
-                        null
-                    }
-                    Column {
-                        if (steps > 0) {
-                            Text("Etapa ${state.busyStep} de $steps", fontWeight = FontWeight.SemiBold)
-                            Spacer(Modifier.height(8.dp))
-                        }
-                        if (overall == null) {
-                            LinearProgressIndicator(Modifier.fillMaxWidth())
-                        } else {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                LinearProgressIndicator(progress = { overall }, modifier = Modifier.weight(1f))
-                                Text("${(overall * 100).toInt()}%", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 12.dp))
-                            }
-                        }
-                        Spacer(Modifier.height(8.dp))
-                        Text(text)
-                        Spacer(Modifier.height(12.dp))
-                        Text("Tempo: ${elapsedText(elapsedS)} • Não feche o app.", style = MaterialTheme.typography.bodySmall)
-                    }
-                },
-                confirmButton = { TextButton(onClick = GitController::cancel) { Text("Cancelar") } },
-            )
-        }
-    }
-
-    state.message?.let { text ->
-        MaterialTheme(colorScheme = TruePlayerDarkScheme) {
-            AlertDialog(
-                onDismissRequest = GitController::dismissMessage,
-                title = { Text("Git") },
-                text = { Column(Modifier.verticalScroll(rememberScrollState())) { Text(text) } },
-                confirmButton = { TextButton(onClick = GitController::dismissMessage) { Text("OK") } },
-            )
         }
     }
 
@@ -203,19 +121,14 @@ fun GitSection() {
         }
     }
     if (showPull) {
-        MaterialTheme(colorScheme = TruePlayerDarkScheme) {
-            AlertDialog(
-                onDismissRequest = { showPull = false },
-                title = { Text("Baixar do GitHub?") },
-                text = {
-                    Text(
-                        "Traz para a pasta as músicas, playlists, estatísticas e configurações que só existem no GitHub, " +
-                            "e atualiza o que você não mexeu. O que você mudou continua como está. Pode usar bastante internet e espaço.",
-                    )
-                },
-                confirmButton = { TextButton(onClick = { showPull = false; GitController.pull(context) }) { Text("Baixar") } },
-                dismissButton = { TextButton(onClick = { showPull = false }) { Text("Cancelar") } },
-            )
+        AppDialog(
+            title = "Baixar do GitHub?",
+            onDismiss = { showPull = false },
+            confirmText = "Baixar",
+            onConfirm = { showPull = false; GitController.pull(context) },
+        ) {
+            Text("Traz o que só existe no GitHub e atualiza o que você não mexeu. O que você mudou continua como está.")
+            DialogNote("Pode usar bastante internet e espaço.")
         }
     }
     if (showChange) {
@@ -225,55 +138,128 @@ fun GitSection() {
             onConfirm = { url, token -> showChange = false; GitController.changeRemote(context, url, token) },
         )
     }
+}
+
+/**
+ * Avisos do Git que valem para o app inteiro: andamento, resultado e a pergunta de substituir o GitHub.
+ * Ficam fora da tela de Configurações para não sumirem ao trocar de aba (e para a notificação
+ * "abra o app para confirmar" levar direto à pergunta).
+ */
+@Composable
+fun GitDialogs() {
+    val state by GitController.ui.collectAsState()
+
+    // Com o andamento na tela, ela fica ligada; escondido, a operação segue no serviço em segundo plano.
+    val progressOnScreen = state.busy != null && !state.progressHidden
+    val view = LocalView.current
+    DisposableEffect(progressOnScreen) {
+        view.keepScreenOn = progressOnScreen
+        onDispose { view.keepScreenOn = false }
+    }
+    if (progressOnScreen) ProgressDialog(state)
+
+    state.message?.let { text ->
+        AppDialog(title = "GitHub", onDismiss = GitController::dismissMessage) { Text(text) }
+    }
     state.replaceBranch?.let { branch ->
-        MaterialTheme(colorScheme = TruePlayerDarkScheme) {
-            AlertDialog(
-                onDismissRequest = GitController::cancelReplace,
-                title = { Text("Substituir o que está no GitHub?") },
-                text = {
-                    Text(
-                        "A branch $branch do GitHub tem outro histórico. Se continuar, ela fica só com o que está na pasta " +
-                            "e o que estava lá se perde. Isso não dá para desfazer.",
-                    )
-                },
-                confirmButton = { TextButton(onClick = GitController::confirmReplace) { Text("Substituir") } },
-                dismissButton = { TextButton(onClick = GitController::cancelReplace) { Text("Cancelar") } },
-            )
+        AppDialog(
+            title = "Substituir o que está no GitHub?",
+            onDismiss = GitController::cancelReplace,
+            confirmText = "Substituir",
+            onConfirm = GitController::confirmReplace,
+            destructive = true,
+        ) {
+            Text("A branch $branch do GitHub tem outro histórico. Se continuar, ela fica só com o que está na pasta.")
+            DialogNote("O que estava lá se perde. Isso não dá para desfazer.")
         }
     }
 }
 
+/** "usuario/repositorio" a partir do endereço (https, SSH, com usuário embutido, www...). */
+private fun repoLabel(remote: String?): String {
+    if (remote.isNullOrBlank()) return "Sem repositório"
+    val https = dev.truetagger.data.GitRemote.stripCredentials(dev.truetagger.data.GitRemote.toHttps(remote))
+    val path = https.substringAfter("://", https).substringAfter('/', "").trimEnd('/').removeSuffix(".git")
+    val parts = path.split('/').filter { it.isNotBlank() }
+    return if (parts.size >= 2) parts.takeLast(2).joinToString("/") else remote
+}
+
+private fun statusLine(state: GitUi): String {
+    val summary = state.summary
+    val branch = state.branch?.let { " • branch $it" }.orEmpty()
+    return when {
+        summary == null -> "Lendo as mudanças…"
+        summary.isEmpty -> "Tudo salvo$branch"
+        else -> changesText(summary) + branch
+    }
+}
+
+/** "3 músicas novas, 1 playlist" — o que mudou desde o último commit, em poucas palavras. */
+private fun changesText(summary: GitSummary): String {
+    fun count(n: Int, one: String, many: String) = "$n " + if (n == 1) one else many
+    val parts = ArrayList<String>()
+    if (summary.songsAdded.isNotEmpty()) parts += count(summary.songsAdded.size, "música nova", "músicas novas")
+    if (summary.songsRemoved.isNotEmpty()) parts += count(summary.songsRemoved.size, "removida", "removidas")
+    if (summary.tagsEdited.isNotEmpty()) parts += count(summary.tagsEdited.size, "tag editada", "tags editadas")
+    val playlists = summary.playlistsAdded.size + summary.playlistsChanged.size + summary.playlistsRemoved.size
+    if (playlists > 0) parts += count(playlists, "playlist", "playlists")
+    if (summary.statsChanged) parts += "estatísticas"
+    if (summary.settingsChanged) parts += "configurações"
+    if (parts.isEmpty()) parts += count(summary.other, "arquivo", "arquivos")
+    return parts.joinToString(", ")
+}
+
+/** Andamento escondido: linha com a porcentagem; tocar mostra o andamento completo de novo. */
 @Composable
-private fun ChangeRemoteDialog(hasToken: Boolean, onCancel: () -> Unit, onConfirm: (url: String, token: String) -> Unit) {
-    var url by remember { mutableStateOf("") }
-    var token by remember { mutableStateOf("") }
-    MaterialTheme(colorScheme = TruePlayerDarkScheme) {
-        AlertDialog(
-            onDismissRequest = onCancel,
-            title = { Text("Trocar repositório") },
-            text = {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    Text(
-                        "Cole o endereço do outro repositório. O app confere o endereço e o token antes de trocar.",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(url, { url = it.trim() }, label = { Text("Endereço do repositório") }, placeholder = { Text("https://github.com/usuario/repo.git") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(
-                        token, { token = it.trim() },
-                        label = { Text(if (hasToken) "Token (vazio usa o guardado)" else "Token do GitHub") },
-                        visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = url.isNotBlank() && (hasToken || token.isNotBlank()),
-                    onClick = { onConfirm(url, token) },
-                ) { Text("Trocar") }
-            },
-            dismissButton = { TextButton(onClick = onCancel) { Text("Cancelar") } },
+private fun BackgroundProgressRow(state: GitUi) {
+    val overall = state.overallFraction
+    Column(Modifier.fillMaxWidth()) {
+        SettingsRow(
+            Icons.Rounded.CloudUpload,
+            state.busyTitle.ifBlank { "Git" } + (overall?.let { " • ${(it * 100).toInt()}%" } ?: ""),
+            state.busy,
+            trailing = { RowHint("Ver", highlighted = true) },
+            onClick = GitController::showProgress,
         )
+        if (overall == null) {
+            LinearProgressIndicator(Modifier.fillMaxWidth().padding(start = 64.dp, end = 16.dp, bottom = 12.dp))
+        } else {
+            LinearProgressIndicator(progress = { overall }, modifier = Modifier.fillMaxWidth().padding(start = 64.dp, end = 16.dp, bottom = 12.dp))
+        }
+    }
+}
+
+/** Andamento na tela: porcentagem total, etapa, fase atual e tempo. "Ocultar" deixa rodando em segundo plano. */
+@Composable
+private fun ProgressDialog(state: GitUi) {
+    var elapsedS by remember { mutableLongStateOf(0L) }
+    LaunchedEffect(state.busySinceMs) {
+        val start = state.busySinceMs.takeIf { it > 0 } ?: System.currentTimeMillis()
+        while (true) {
+            elapsedS = ((System.currentTimeMillis() - start) / 1000).coerceAtLeast(0)
+            delay(1000)
+        }
+    }
+    val overall = state.overallFraction
+    AppDialog(
+        title = state.busyTitle.ifBlank { "Git" },
+        onDismiss = GitController::cancel,
+        confirmText = "Ocultar",
+        onConfirm = GitController::hideProgress,
+        dismissText = "Cancelar",
+        dismissOnOutside = false,
+    ) {
+        if (state.busySteps > 0) Text("Etapa ${state.busyStep} de ${state.busySteps}", fontWeight = FontWeight.SemiBold)
+        if (overall == null) {
+            LinearProgressIndicator(Modifier.fillMaxWidth())
+        } else {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                LinearProgressIndicator(progress = { overall }, modifier = Modifier.weight(1f))
+                Text("${(overall * 100).toInt()}%", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 12.dp))
+            }
+        }
+        Text(state.busy.orEmpty())
+        DialogNote("Tempo: ${elapsedText(elapsedS)}. Pode ocultar: continua em segundo plano, com o andamento na notificação.")
     }
 }
 
@@ -284,35 +270,23 @@ private fun elapsedText(seconds: Long): String = when {
     else -> "${seconds / 3600} h ${((seconds % 3600) / 60).toString().padStart(2, '0')} min"
 }
 
-private fun describe(summary: dev.truetagger.data.GitSummary): String {
-    val parts = ArrayList<String>()
-    if (summary.songsAdded.isNotEmpty()) parts += "${summary.songsAdded.size} música(s) nova(s)"
-    if (summary.songsRemoved.isNotEmpty()) parts += "${summary.songsRemoved.size} removida(s)"
-    if (summary.playlistsAdded.isNotEmpty() || summary.playlistsChanged.isNotEmpty() || summary.playlistsRemoved.isNotEmpty()) {
-        parts += "${summary.playlistsAdded.size + summary.playlistsChanged.size + summary.playlistsRemoved.size} playlist(s) mexida(s)"
-    }
-    if (summary.tagsEdited.isNotEmpty()) parts += "${summary.tagsEdited.size} tag(s) editada(s)"
-    if (summary.statsChanged) parts += "estatísticas atualizadas"
-    if (summary.settingsChanged) parts += "configurações atualizadas"
-    if (parts.isEmpty()) parts += "${summary.other} arquivo(s) de apoio"
-    return "Mudou desde o último commit: " + parts.joinToString(", ") + "."
-}
-
 @Composable
-private fun GitAction(
-    label: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
-    description: String,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
-) {
-    Column(Modifier.fillMaxWidth().padding(top = UiTokens.sectionSpacing)) {
-        ActionButton(label, icon, onClick, Modifier.fillMaxWidth(), enabled = enabled)
-        Text(
-            description,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp),
+private fun ChangeRemoteDialog(hasToken: Boolean, onCancel: () -> Unit, onConfirm: (url: String, token: String) -> Unit) {
+    var url by remember { mutableStateOf("") }
+    var token by remember { mutableStateOf("") }
+    AppDialog(
+        title = "Trocar repositório",
+        onDismiss = onCancel,
+        confirmText = "Trocar",
+        onConfirm = { onConfirm(url, token) },
+        confirmEnabled = url.isNotBlank() && (hasToken || token.isNotBlank()),
+    ) {
+        DialogNote("Cole o endereço do outro repositório. O app confere antes de trocar.")
+        OutlinedTextField(url, { url = it.trim() }, label = { Text("Endereço do repositório") }, placeholder = { Text("https://github.com/usuario/repo.git") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            token, { token = it.trim() },
+            label = { Text(if (hasToken) "Token (vazio usa o guardado)" else "Token do GitHub") },
+            visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth(),
         )
     }
 }
@@ -324,41 +298,23 @@ private fun SetupDialog(initialUser: String, onCancel: () -> Unit, onConfirm: (G
     var email by remember { mutableStateOf("") }
     var branch by remember { mutableStateOf("main") }
     var token by remember { mutableStateOf("") }
-    MaterialTheme(colorScheme = TruePlayerDarkScheme) {
-        AlertDialog(
-            onDismissRequest = onCancel,
-            title = { Text("Ligar ao GitHub") },
-            text = {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    Text(
-                        "Cole o endereço do repositório, novo ou já com arquivos. Nada do GitHub vem para a pasta. Se a branch já existir lá, o app pergunta antes de substituir. O primeiro envio pode ser grande, use Wi-Fi.",
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    OutlinedTextField(url, { url = it.trim() }, label = { Text("Endereço do repositório") }, placeholder = { Text("https://github.com/usuario/repo.git") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(user, { user = it.trim() }, label = { Text("Usuário do GitHub") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(email, { email = it.trim() }, label = { Text("E-mail dos commits") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(branch, { branch = it.trim() }, label = { Text("Branch") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    OutlinedTextField(
-                        token, { token = it.trim() }, label = { Text("Token do GitHub") },
-                        visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth(),
-                    )
-                    Text(
-                        "Crie em Settings > Developer settings > Personal access tokens, com escrita em Contents. Fica cifrado neste celular.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp),
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = url.isNotBlank() && user.isNotBlank() && email.isNotBlank() && token.isNotBlank(),
-                    onClick = { onConfirm(GitSetupRequest(url, user, email, branch, token)) },
-                ) { Text("Ligar e enviar") }
-            },
-            dismissButton = { TextButton(onClick = onCancel) { Text("Cancelar") } },
+    AppDialog(
+        title = "Ligar ao GitHub",
+        onDismiss = onCancel,
+        confirmText = "Ligar e enviar",
+        onConfirm = { onConfirm(GitSetupRequest(url, user, email, branch, token)) },
+        confirmEnabled = url.isNotBlank() && user.isNotBlank() && email.isNotBlank() && token.isNotBlank(),
+    ) {
+        DialogNote("Pode ser um repositório novo ou que já tenha arquivos. Nada do GitHub vem para a pasta.")
+        OutlinedTextField(url, { url = it.trim() }, label = { Text("Endereço do repositório") }, placeholder = { Text("https://github.com/usuario/repo.git") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(user, { user = it.trim() }, label = { Text("Usuário do GitHub") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(email, { email = it.trim() }, label = { Text("E-mail dos commits") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(branch, { branch = it.trim() }, label = { Text("Branch") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            token, { token = it.trim() }, label = { Text("Token do GitHub") },
+            visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth(),
         )
+        DialogNote("Token: GitHub > Settings > Developer settings > Personal access tokens, com escrita em Contents. Fica cifrado neste celular. O primeiro envio é grande: use Wi-Fi.")
     }
 }
 
@@ -372,37 +328,20 @@ private fun CommitDialog(
     var message by remember { mutableStateOf(state.suggestedMessage) }
     var name by remember { mutableStateOf(state.userName) }
     var email by remember { mutableStateOf(state.userEmail) }
-    MaterialTheme(colorScheme = TruePlayerDarkScheme) {
-        AlertDialog(
-            onDismissRequest = onClose,
-            title = { Text("Commitar") },
-            text = {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    Text(
-                        if (summary.isEmpty) "Nada mudou desde o último commit." else describe(summary),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                    OutlinedTextField(message, { message = it }, label = { Text("Mensagem do commit") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
-                    if (state.userName.isBlank() || state.userEmail.isBlank()) {
-                        OutlinedTextField(name, { name = it }, label = { Text("Seu nome") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                        OutlinedTextField(email, { email = it.trim() }, label = { Text("Seu e-mail") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-                    }
-                    Text(
-                        "Arquivos acima de 100 MB ficam de fora. O commit fica só neste celular até você tocar em Enviar.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = !summary.isEmpty && name.isNotBlank() && email.isNotBlank(),
-                    onClick = { onCommit(message, name, email) },
-                ) { Text("Commitar") }
-            },
-            dismissButton = { TextButton(onClick = onClose) { Text("Cancelar") } },
-        )
+    AppDialog(
+        title = "Commitar",
+        onDismiss = onClose,
+        confirmText = "Commitar",
+        onConfirm = { onCommit(message, name, email) },
+        confirmEnabled = !summary.isEmpty && name.isNotBlank() && email.isNotBlank(),
+    ) {
+        Text(if (summary.isEmpty) "Nada mudou desde o último commit." else "Mudou: ${changesText(summary)}.")
+        OutlinedTextField(message, { message = it }, label = { Text("Mensagem") }, modifier = Modifier.fillMaxWidth())
+        if (state.userName.isBlank() || state.userEmail.isBlank()) {
+            OutlinedTextField(name, { name = it }, label = { Text("Seu nome") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(email, { email = it.trim() }, label = { Text("Seu e-mail") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        }
+        DialogNote("Fica salvo só neste celular até você tocar em Enviar. Arquivos acima de 100 MB ficam de fora.")
     }
 }
 
@@ -417,48 +356,30 @@ private fun SendDialog(
     var remoteUrl by remember { mutableStateOf("") }
     val needsToken = !state.hasToken
     val needsRemote = state.remote.isNullOrBlank()
-    MaterialTheme(colorScheme = TruePlayerDarkScheme) {
-        AlertDialog(
-            onDismissRequest = onClose,
-            title = { Text("Enviar ao GitHub") },
-            text = {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    if (needsRemote) {
-                        OutlinedTextField(
-                            remoteUrl, { remoteUrl = it.trim() }, label = { Text("Endereço do repositório") },
-                            placeholder = { Text("https://github.com/usuario/repo.git") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
-                        )
-                    } else {
-                        Text("Repositório: ${state.remote}", style = MaterialTheme.typography.bodySmall)
-                    }
-                    if (needsToken) {
-                        OutlinedTextField(
-                            token, { token = it.trim() }, label = { Text("Token do GitHub") },
-                            visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
-                    if (!summary.isEmpty) {
-                        Text(
-                            "Há mudanças sem commit. Elas não vão: toque em Commitar antes.",
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(top = 8.dp),
-                        )
-                    }
-                    Text(
-                        "O envio é feito em partes e continua de onde parou se falhar. Se a branch do GitHub tiver outro histórico, o app pergunta antes de substituir.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    enabled = (!needsToken || token.isNotBlank()) && (!needsRemote || remoteUrl.isNotBlank()),
-                    onClick = { onSend(token, remoteUrl) },
-                ) { Text("Enviar") }
-            },
-            dismissButton = { TextButton(onClick = onClose) { Text("Cancelar") } },
-        )
+    AppDialog(
+        title = "Enviar ao GitHub",
+        onDismiss = onClose,
+        confirmText = "Enviar",
+        onConfirm = { onSend(token, remoteUrl) },
+        confirmEnabled = (!needsToken || token.isNotBlank()) && (!needsRemote || remoteUrl.isNotBlank()),
+    ) {
+        if (needsRemote) {
+            OutlinedTextField(
+                remoteUrl, { remoteUrl = it.trim() }, label = { Text("Endereço do repositório") },
+                placeholder = { Text("https://github.com/usuario/repo.git") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            Text("Para: ${repoLabel(state.remote)}")
+        }
+        if (needsToken) {
+            OutlinedTextField(
+                token, { token = it.trim() }, label = { Text("Token do GitHub") },
+                visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (!summary.isEmpty) {
+            Text("Há mudanças sem commit. Elas não vão: faça o commit antes.", color = MaterialTheme.colorScheme.tertiary)
+        }
+        DialogNote("Roda em segundo plano. Se falhar, o próximo envio continua de onde parou.")
     }
 }

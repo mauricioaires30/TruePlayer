@@ -319,10 +319,18 @@ class MusicPlaybackService : Service() {
      */
     private var detachedPositionMs = -1L
 
+    private var lastTickPlaying = false
+    private var lastPersistMs = 0L
+    private var lastPersistedSignature: String? = null
+
     private val progressRunnable = object : Runnable {
         override fun run() {
             trackListening()
-            updateStateAndNotification()
+            // Pausado, nada muda a cada segundo: atualiza tela e notificação só no tique em que pausou.
+            // Pausar, trocar de música ou buscar já atualizam por conta própria.
+            val playing = isPlayingNow()
+            if (playing || lastTickPlaying) updateStateAndNotification()
+            lastTickPlaying = playing
             if (player != null || queue.isNotEmpty()) {
                 handler.postDelayed(this, 1000)
             }
@@ -985,7 +993,15 @@ class MusicPlaybackService : Service() {
         }.getOrDefault(duration)
         PlayerState.snapshot = PlayerSnapshot(track, queue.toList(), index, playing, position, safeDuration, shuffle, repeat)
         AppEvents.bump()
-        if (track != null) persistPlaybackState()
+        // Tocando, a posição muda todo segundo: gravar a cada 5 s basta (perde no máximo 5 s se o Android matar o app).
+        // Pausar, trocar de música ou de modo grava na hora.
+        val nowMs = android.os.SystemClock.uptimeMillis()
+        val signature = track?.let { "${it.id}|$shuffle|$repeat|$playbackSourceType|$playbackSourceName" }
+        if (track != null && (!playing || signature != lastPersistedSignature || nowMs - lastPersistMs >= 5_000L)) {
+            persistPlaybackState()
+            lastPersistMs = nowMs
+            lastPersistedSignature = signature
+        }
 
         val state = if (playing) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED
         val actions = PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE or

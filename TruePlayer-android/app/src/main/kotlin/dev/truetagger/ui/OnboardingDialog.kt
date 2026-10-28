@@ -45,7 +45,7 @@ fun OnboardingDialog(
     onFinish: () -> Unit,
 ) {
     var step by rememberSaveable { mutableIntStateOf(0) }
-    MaterialTheme(colorScheme = TruePlayerDarkScheme) {
+    TruePlayerTheme {
         // Sem fechar ao tocar fora: o tutorial só sai por "Pular" ou "Concluir".
         Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) {
             Card(

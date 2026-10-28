@@ -9,7 +9,7 @@ Player de músicas e editor de tags para Android. Toca os arquivos da sua pasta 
 - **Ajuste automático de tags:** depois do download, procura a música no Apple Music, no Deezer e no Genius e preenche título, artista, álbum e capa. Se não achar com certeza, não mexe nas tags.
 - **Estatísticas:** tempo ouvido e vezes tocadas por música, álbum e artista (semana, mês, 6 meses, ano e sempre).
 - **Pasta organizada e portátil:** tudo fica na pasta que você escolher (`songs/` para músicas, `playlists/` para as playlists em `.m3u`, `.trueplayer/` para estatísticas e configurações). Trocar de celular não perde nada.
-- **Git:** se a pasta tem um repositório `.git`, o app mostra o que mudou, monta a mensagem do commit e envia ao GitHub (junto vão as estatísticas, as configurações e as capas dos álbuns). Se não tem, pode criar um. Só envia: nada do GitHub vem para a pasta.
+- **Git:** guarda a pasta num repositório do GitHub. Os botões Commitar e Enviar ficam separados, o envio roda em segundo plano (com andamento na notificação) e vai em partes, continuando de onde parou se falhar. Junto vão as estatísticas, as configurações e as capas dos álbuns. "Baixar do GitHub" restaura tudo num celular novo.
 - **Atualização automática:** confere as versões novas em [Releases](https://github.com/mauricioaires30/TruePlayer/releases), mostra as novidades e instala depois da sua confirmação.
 
 ## Instalar
@@ -27,6 +27,7 @@ Requer Android 8.0 ou mais novo, em celulares de 64 bits (arm64). Depois da prim
 | Internet | Baixar músicas, buscar tags e capas, conferir atualizações e enviar ao GitHub |
 | Instalar apps desconhecidos | Instalar as atualizações baixadas pelo próprio app |
 | Acesso a todos os arquivos | **Só** para o recurso de Git, que precisa trabalhar direto nos arquivos da pasta |
+| Rodar em segundo plano (sem otimização de bateria) | Opcional: downloads, envio ao GitHub e avisos de atualização continuam com o app fechado |
 
 ## Privacidade
 Não há conta, cadastro, anúncio nem rastreamento. Sua biblioteca, playlists e estatísticas ficam no seu celular, na pasta que você escolheu. O app só acessa a internet quando você usa um recurso que precisa dela:

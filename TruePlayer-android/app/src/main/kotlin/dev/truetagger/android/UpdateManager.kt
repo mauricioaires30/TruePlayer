@@ -32,7 +32,7 @@ sealed interface UpdateUi {
     data object Checking : UpdateUi
     data class UpToDate(val version: String) : UpdateUi
     data class Available(val release: ReleaseInfo) : UpdateUi
-    data class Downloading(val release: ReleaseInfo, val percent: Int) : UpdateUi
+    data class Downloading(val release: ReleaseInfo, val percent: Int, val hidden: Boolean = false) : UpdateUi
     data class NeedsInstallPermission(val release: ReleaseInfo) : UpdateUi
     data class Failed(val message: String) : UpdateUi
 }
@@ -65,6 +65,11 @@ object UpdateManager {
 
     fun installedVersion(context: Context): String =
         runCatching { context.packageManager.getPackageInfo(context.packageName, 0).versionName.orEmpty() }.getOrDefault("")
+
+    /** Esconde o andamento do download; ele continua e o instalador aparece no fim. */
+    fun hideDownload() {
+        (_ui.value as? UpdateUi.Downloading)?.let { _ui.value = it.copy(hidden = true) }
+    }
 
     /** Fecha o aviso atual (o usuário escolheu "Depois" ou leu o resultado). */
     fun dismiss() {
@@ -169,7 +174,7 @@ object UpdateManager {
         scope.launch {
             runCatching {
                 val file = download(app, release) { percent ->
-                    if (_ui.value is UpdateUi.Downloading) _ui.value = UpdateUi.Downloading(release, percent)
+                    (_ui.value as? UpdateUi.Downloading)?.let { _ui.value = it.copy(percent = percent) }
                 }
                 install(app, file)
             }.onFailure {

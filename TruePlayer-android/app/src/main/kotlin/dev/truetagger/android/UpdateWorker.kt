@@ -26,10 +26,12 @@ class UpdateWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 manager.cancelUniqueWork(NAME)
                 return
             }
-            val request = PeriodicWorkRequestBuilder<UpdateWorker>(12, TimeUnit.HOURS)
+            // Funciona com o app fechado: o Android roda a conferência sozinho e o app avisa por notificação.
+            val request = PeriodicWorkRequestBuilder<UpdateWorker>(6, TimeUnit.HOURS)
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                 .build()
-            manager.enqueueUniquePeriodicWork(NAME, ExistingPeriodicWorkPolicy.KEEP, request)
+            // UPDATE troca o intervalo de quem já tinha o agendamento antigo, sem reiniciar a contagem.
+            manager.enqueueUniquePeriodicWork(NAME, ExistingPeriodicWorkPolicy.UPDATE, request)
         }
     }
 }

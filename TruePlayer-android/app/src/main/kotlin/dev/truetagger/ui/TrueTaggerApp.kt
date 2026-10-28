@@ -10,7 +10,13 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
@@ -96,6 +102,9 @@ val TruePlayerDarkScheme = darkColorScheme(
     secondaryContainer = Color(0xFF2B123D),
     onSecondaryContainer = Color(0xFFF0D8FF),
     errorContainer = Color(0xFF5B2028),
+    outline = Color(0xFF7A6A8C),
+    outlineVariant = Color(0xFF2A2036),
+    tertiaryContainer = Color(0xFF3B2150),
 )
 
 @Composable
@@ -107,6 +116,7 @@ fun CurrentTrackScreen(
     settings: AppSettings,
     onDraftChange: (String, EditableTags) -> Unit,
     onSaveEdits: suspend (AudioTrack, EditableTags) -> TagWriteResult,
+    onBack: () -> Unit = {},
 ) {
     if (track == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -133,6 +143,18 @@ fun CurrentTrackScreen(
         editor = next
         hasUserEdited = true
         onDraftChange(track.id, next)
+    }
+
+    fun saveNow() {
+        if (saving || editor.title.isBlank()) return
+        saving = true
+        message = null
+        scope.launch {
+            val result = onSaveEdits(track, editor)
+            result.updatedTrack?.let { updated -> updateEditor(updated.toEditableTags()) }
+            message = result.message
+            saving = false
+        }
     }
 
     LaunchedEffect(
@@ -195,12 +217,21 @@ fun CurrentTrackScreen(
         message = "Sugestão carregada."
     }
 
+    Box(Modifier.fillMaxSize()) {
+    Column(Modifier.fillMaxSize()) {
+    ScreenHeaderRow(
+        title = "Editar tags",
+        onBack = onBack,
+        modifier = Modifier.padding(horizontal = UiTokens.screenPadding, vertical = UiTokens.space2),
+    )
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(horizontal = UiTokens.screenPadding, vertical = UiTokens.compactPadding),
+        modifier = Modifier.weight(1f).fillMaxWidth(),
+        // Com a barra de salvar visível, sobra espaço no fim para o último campo não ficar escondido atrás dela.
+        contentPadding = PaddingValues(start = UiTokens.screenPadding, end = UiTokens.screenPadding, top = UiTokens.space1, bottom = if (hasUserEdited) 88.dp else UiTokens.screenPadding),
         verticalArrangement = Arrangement.spacedBy(UiTokens.sectionSpacing + UiTokens.itemSpacing),
     ) {
         item {
-            SectionTitle("Buscar metadados", "A pesquisa começa pelo nome do arquivo/vídeo.")
+            SectionTitle("Buscar dados online", "Procura título, artista, álbum e capa pelo nome da música.")
             SearchBar(
                 value = query,
                 onValueChange = { query = it; message = null },
@@ -308,22 +339,50 @@ fun CurrentTrackScreen(
                 enabled = !saving && editor.title.isNotBlank(),
                 modifier = Modifier.fillMaxWidth().height(UiTokens.controlHeight),
                 shape = RoundedCornerShape(UiTokens.buttonRadius),
-                onClick = {
-                    saving = true
-                    message = null
-                    scope.launch {
-                        val result = onSaveEdits(track, editor)
-                        result.updatedTrack?.let { updated -> updateEditor(updated.toEditableTags()) }
-                        message = result.message
-                        saving = false
-                    }
-                },
+                onClick = { saveNow() },
             ) {
                 Icon(Icons.Rounded.Save, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
                 Text(if (saving) "Salvando…" else "Salvar alterações")
             }
         }
+    }
+    }
+    // Barra de salvar: aparece assim que algo é alterado, sem precisar rolar até o fim do formulário.
+    AnimatedVisibility(
+        visible = hasUserEdited,
+        modifier = Modifier.align(Alignment.BottomCenter),
+        enter = slideInVertically { it } + fadeIn(),
+        exit = slideOutVertically { it } + fadeOut(),
+    ) {
+        Surface(
+            color = MaterialTheme.colorScheme.surfaceVariant,
+            tonalElevation = 6.dp,
+            shape = RoundedCornerShape(topStart = UiTokens.space4, topEnd = UiTokens.space4),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(
+                Modifier.fillMaxWidth().padding(horizontal = UiTokens.screenPadding, vertical = UiTokens.space3),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(UiTokens.space3),
+            ) {
+                Text(
+                    message ?: "Alterações não salvas",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Button(
+                    onClick = { saveNow() },
+                    enabled = !saving && editor.title.isNotBlank(),
+                    shape = RoundedCornerShape(UiTokens.buttonRadius),
+                    modifier = Modifier.height(UiTokens.controlHeight),
+                ) { Text(if (saving) "Salvando…" else "Salvar") }
+            }
+        }
+    }
     }
 
     if (showCurrentPreview) {
@@ -660,8 +719,12 @@ fun ImportBanner(status: ImportStatus, onDismiss: () -> Unit) {
         status.progress != null -> "Baixando • ${status.progress}%"
         else -> "Download"
     }
-    Surface(color = if (status.failed) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer) {
-        Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.screenHorizontalPadding, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(UiTokens.itemSpacing + 1.dp)) {
+    Surface(
+        color = if (status.failed) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
+        shape = RoundedCornerShape(UiTokens.space3),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = UiTokens.space2, vertical = UiTokens.space1),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.space3, vertical = UiTokens.space2), verticalArrangement = Arrangement.spacedBy(UiTokens.itemSpacing + 1.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Column(Modifier.weight(1f)) {
                     Text(title, fontWeight = FontWeight.Bold)

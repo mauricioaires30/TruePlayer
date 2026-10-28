@@ -3,6 +3,7 @@ package dev.truetagger.ui
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -37,90 +38,60 @@ fun UpdateDialogs(
     onUpdate: (ReleaseInfo) -> Unit,
     onDismiss: () -> Unit,
     onWhatsNewDismiss: () -> Unit,
+    onHideDownload: () -> Unit = {},
 ) {
-    MaterialTheme(colorScheme = TruePlayerDarkScheme) {
-        when (state) {
-            UpdateUi.Idle -> Unit
+    when (state) {
+        UpdateUi.Idle -> Unit
 
-            UpdateUi.Checking -> AlertDialog(
-                onDismissRequest = onDismiss,
-                title = { Text("Procurando atualização") },
-                text = { LinearProgressIndicator(Modifier.padding(top = 4.dp)) },
-                confirmButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
-            )
-
-            is UpdateUi.UpToDate -> AlertDialog(
-                onDismissRequest = onDismiss,
-                title = { Text("Tudo em dia") },
-                text = { Text("Você já está na versão mais recente (${state.version}).") },
-                confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } },
-            )
-
-            is UpdateUi.Available -> AlertDialog(
-                onDismissRequest = onDismiss,
-                title = { Text("Nova versão: ${state.release.version}") },
-                text = {
-                    Column(Modifier.verticalScroll(rememberScrollState())) {
-                        Text("O que mudou", fontWeight = FontWeight.SemiBold)
-                        Spacer(Modifier.height(4.dp))
-                        ReleaseNotesText(state.release.notes.ifBlank { "Sem notas para esta versão." })
-                        Spacer(Modifier.height(8.dp))
-                        Text(
-                            "Download de ${formatSize(state.release.apkSizeBytes)}. Suas músicas e playlists não mudam.",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                },
-                confirmButton = { TextButton(onClick = { onUpdate(state.release) }) { Text("Atualizar") } },
-                dismissButton = { TextButton(onClick = onDismiss) { Text("Agora não") } },
-            )
-
-            is UpdateUi.Downloading -> AlertDialog(
-                onDismissRequest = {},
-                title = { Text("Baixando a atualização") },
-                text = {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            LinearProgressIndicator(progress = { state.percent / 100f }, modifier = Modifier.weight(1f))
-                            Text("${state.percent}%", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 12.dp))
-                        }
-                        Spacer(Modifier.height(12.dp))
-                        Text(
-                            "No fim, o Android pede para confirmar a instalação.",
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                },
-                confirmButton = {},
-            )
-
-            is UpdateUi.NeedsInstallPermission -> AlertDialog(
-                onDismissRequest = onDismiss,
-                title = { Text("Libere a instalação") },
-                text = {
-                    Text(
-                        "Ative a permissão para o TruePlayer instalar apps e volte aqui.",
-                    )
-                },
-                confirmButton = { TextButton(onClick = { onUpdate(state.release) }) { Text("Abrir ajustes") } },
-                dismissButton = { TextButton(onClick = onDismiss) { Text("Agora não") } },
-            )
-
-            is UpdateUi.Failed -> AlertDialog(
-                onDismissRequest = onDismiss,
-                title = { Text("Atualização") },
-                text = { Text(state.message) },
-                confirmButton = { TextButton(onClick = onDismiss) { Text("OK") } },
-            )
+        UpdateUi.Checking -> AppDialog(title = "Procurando atualização", onDismiss = onDismiss, dismissText = "Cancelar") {
+            LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 4.dp))
         }
 
-        if (whatsNew != null && state == UpdateUi.Idle) {
-            AlertDialog(
-                onDismissRequest = onWhatsNewDismiss,
-                title = { Text("Novidades da ${whatsNew.first}") },
-                text = { Column(Modifier.verticalScroll(rememberScrollState())) { ReleaseNotesText(whatsNew.second) } },
-                confirmButton = { TextButton(onClick = onWhatsNewDismiss) { Text("OK") } },
-            )
+        is UpdateUi.UpToDate -> AppDialog(title = "Tudo em dia", onDismiss = onDismiss) {
+            Text("Você já está na versão mais recente (${state.version}).")
+        }
+
+        is UpdateUi.Available -> AppDialog(
+            title = "Versão ${state.release.version} disponível",
+            onDismiss = onDismiss,
+            confirmText = "Atualizar",
+            onConfirm = { onUpdate(state.release) },
+            dismissText = "Agora não",
+        ) {
+            ReleaseNotesText(state.release.notes.ifBlank { "Sem notas para esta versão." })
+            DialogNote("Download de ${formatSize(state.release.apkSizeBytes)}. Suas músicas e playlists não mudam.")
+        }
+
+        // "Ocultar" só esconde: o download continua e o Android pede a confirmação da instalação no fim.
+        is UpdateUi.Downloading -> if (!state.hidden) AppDialog(
+            title = "Baixando a atualização",
+            onDismiss = onHideDownload,
+            dismissText = "Ocultar",
+            dismissOnOutside = false,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                LinearProgressIndicator(progress = { state.percent / 100f }, modifier = Modifier.weight(1f))
+                Text("${state.percent}%", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 12.dp))
+            }
+            DialogNote("No fim, o Android pede para confirmar a instalação.")
+        }
+
+        is UpdateUi.NeedsInstallPermission -> AppDialog(
+            title = "Libere a instalação",
+            onDismiss = onDismiss,
+            confirmText = "Abrir ajustes",
+            onConfirm = { onUpdate(state.release) },
+            dismissText = "Agora não",
+        ) {
+            Text("Ative a permissão para o TruePlayer instalar apps e volte aqui.")
+        }
+
+        is UpdateUi.Failed -> AppDialog(title = "Atualização", onDismiss = onDismiss) { Text(state.message) }
+    }
+
+    if (whatsNew != null && state == UpdateUi.Idle) {
+        AppDialog(title = "Novidades da ${whatsNew.first}", onDismiss = onWhatsNewDismiss) {
+            ReleaseNotesText(whatsNew.second)
         }
     }
 }

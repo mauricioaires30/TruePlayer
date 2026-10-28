@@ -87,4 +87,4 @@ data class AppSettings(
 )
 
 /** Uma permissão que o app precisa, para o checklist de Configurações. */
-data class PermissionItem(val label: String, val granted: Boolean, val onGrant: () -> Unit)
+data class PermissionItem(val label: String, val granted: Boolean, val description: String = "", val onGrant: () -> Unit)

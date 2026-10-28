@@ -141,6 +141,9 @@ internal object GitManager {
         val config = git.repository.config
         config.setLong("core", null, "bigFileThreshold", 1L shl 20)
         config.setInt("pack", null, "threads", 1)
+        // MP3/FLAC já são comprimidos: tentar de novo não economiza nada e deixa commit e envio bem mais lentos.
+        config.setInt("core", null, "compression", 0)
+        config.setInt("pack", null, "compression", 0)
     }
 
     fun hasRepo(dir: File) = File(dir, ".git").exists()

@@ -84,11 +84,18 @@ class YoutubeDownloadService : Service() {
         val url = intent?.getStringExtra(ShareContract.EXTRA_SHARED_URL).orEmpty().trim()
         if (url.isBlank() || !UrlSupport.isSupported(url)) {
             // Reinício do sistema ou pedido para retomar: só segue se sobrou algo na fila.
-            if (unfinished.get() == 0) stopSelf(startId)
+            synchronized(batchLock) {
+                lastStartId = startId
+                if (unfinished.get() == 0) stopSelf(startId)
+            }
             return START_STICKY
         }
 
-        enqueue(queue.add(url, expand = UrlSupport.needsListing(url)))
+        // Sob a mesma trava do "fila vazia, pode encerrar": um link novo nunca é perdido no meio do encerramento.
+        synchronized(batchLock) {
+            lastStartId = startId
+            enqueue(queue.add(url, expand = UrlSupport.needsListing(url)))
+        }
         return START_STICKY
     }
 
@@ -100,7 +107,14 @@ class YoutubeDownloadService : Service() {
             @Suppress("DEPRECATION")
             runCatching { stopForeground(true) }
         }
+        // Fila vazia: encerra o serviço em vez de ficar parado na memória. Se chegou um link depois do
+        // último pedido visto aqui, o Android ignora este stopSelf e o serviço continua.
+        synchronized(batchLock) {
+            if (unfinished.get() == 0) stopSelf(lastStartId)
+        }
     }
+
+    @Volatile private var lastStartId = 0
 
     /** Lê a playlist, cria a playlist do app (vazia) e põe cada música na fila, na ordem original. */
     private suspend fun expandPlaylist(task: QueuedDownload) {
