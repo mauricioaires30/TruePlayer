@@ -80,10 +80,8 @@ class YoutubeDownloadService : Service() {
                 ),
             )
 
-            val tree = getSharedPreferences(ShareContract.PREFS, MODE_PRIVATE)
-                .getString(ShareContract.PREF_DOWNLOAD_TREE, null)
-                ?.let(Uri::parse)
-                ?: error("Escolha uma pasta de download no TrueTagger antes de baixar.")
+            val tree = MusicFolder.treeUri(this)
+                ?: error("Autorize a pasta de músicas no TruePlayer (Configurações > Escolher) antes de baixar.")
 
             importer.downloadAudio(url, tree) { status ->
                 if (status.mediaTitle.isNotBlank()) videoTitle = status.mediaTitle

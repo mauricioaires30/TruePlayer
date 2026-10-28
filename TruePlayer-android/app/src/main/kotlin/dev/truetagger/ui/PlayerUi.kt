@@ -316,6 +316,7 @@ fun TrueTaggerPlayerApp(
     onReleaseDownloadFolder: (() -> Unit)? = null,
     onSettingsChange: (AppSettings) -> Unit,
     appVersion: String,
+    onOrganizeFolder: (() -> Unit)? = null,
     importStatus: dev.truetagger.model.ImportStatus?,
     onDismissImportStatus: () -> Unit,
 ) {
@@ -688,7 +689,7 @@ fun TrueTaggerPlayerApp(
                             onExport = { playlist -> pendingExportPlaylist = playlist; exportPlaylistLauncher.launch("${playlist.name}.m3u") },
                             onRename = { oldName, newName -> if (store.rename(oldName, newName)) { reloadPlaylists(); if (uiPrefs.getString("last_playlist_key", "").orEmpty() == oldName) uiPrefs.edit().putString("last_playlist_key", newName).apply() } },
                         )
-                        HomeTab.SETTINGS -> SettingsTab(settings, onSettingsChange, downloadFolderLabel, onChooseDownloadFolder, onReleaseDownloadFolder, appVersion)
+                        HomeTab.SETTINGS -> SettingsTab(settings, onSettingsChange, downloadFolderLabel, onChooseDownloadFolder, onReleaseDownloadFolder, appVersion, onOrganizeFolder)
                     }
                 }
             }
@@ -2357,7 +2358,7 @@ private fun ScrollingText(
 }
 
 @Composable
-private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, downloadFolderLabel: String, onChooseDownloadFolder: (() -> Unit)?, onReleaseDownloadFolder: (() -> Unit)?, appVersion: String) {
+private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, downloadFolderLabel: String, onChooseDownloadFolder: (() -> Unit)?, onReleaseDownloadFolder: (() -> Unit)?, appVersion: String, onOrganizeFolder: (() -> Unit)? = null) {
     val context = LocalContext.current
     val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     var confirmReleaseFolder by remember { mutableStateOf(false) }
@@ -2414,6 +2415,16 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                                 "Liberar",
                                 Icons.Rounded.FolderOff,
                                 { confirmReleaseFolder = true },
+                                Modifier.weight(1f),
+                                enabled = downloadFolderLabel.isNotBlank(),
+                            )
+                        }
+                        Spacer(Modifier.height(UiTokens.sectionSpacing))
+                        ActionButtonRow {
+                            ActionButton(
+                                "Organizar pasta",
+                                Icons.Rounded.Folder,
+                                { onOrganizeFolder?.invoke() },
                                 Modifier.weight(1f),
                                 enabled = downloadFolderLabel.isNotBlank(),
                             )

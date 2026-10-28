@@ -22,12 +22,31 @@ fun FolderMigrationDialogs(
     preview: FolderMigrator.Preview?,
     progress: Pair<Int, Int>?,
     report: FolderMigrator.Report?,
+    message: String?,
+    onMessageDismiss: () -> Unit,
+    accessNeeded: Boolean,
+    onGrantAccess: () -> Unit,
+    onAccessLater: () -> Unit,
     onConfirm: () -> Unit,
     onLater: () -> Unit,
     onReportDismiss: () -> Unit,
 ) {
     MaterialTheme(colorScheme = TruePlayerDarkScheme) {
         when {
+            accessNeeded -> AlertDialog(
+                onDismissRequest = onAccessLater,
+                title = { Text("Autorize sua pasta de músicas") },
+                text = {
+                    Text(
+                        "O Android não guarda a permissão de acesso à pasta quando o app é restaurado em outro " +
+                            "celular. Toque em Autorizar e confirme a mesma pasta de antes (use \"Usar esta pasta\"). " +
+                            "Nenhuma música é alterada.",
+                    )
+                },
+                confirmButton = { TextButton(onClick = onGrantAccess) { Text("Autorizar") } },
+                dismissButton = { TextButton(onClick = onAccessLater) { Text("Depois") } },
+            )
+
             progress != null -> AlertDialog(
                 onDismissRequest = {},
                 title = { Text("Organizando a pasta…") },
@@ -61,6 +80,13 @@ fun FolderMigrationDialogs(
                 },
                 confirmButton = { TextButton(onClick = onConfirm) { Text("Organizar agora") } },
                 dismissButton = { TextButton(onClick = onLater) { Text("Depois") } },
+            )
+
+            message != null -> AlertDialog(
+                onDismissRequest = onMessageDismiss,
+                title = { Text("Organizar pasta") },
+                text = { Column(Modifier.verticalScroll(rememberScrollState())) { Text(message) } },
+                confirmButton = { TextButton(onClick = onMessageDismiss) { Text("OK") } },
             )
 
             report != null -> AlertDialog(

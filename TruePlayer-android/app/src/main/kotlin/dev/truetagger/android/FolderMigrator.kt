@@ -56,6 +56,39 @@ class FolderMigrator(context: Context, private val tree: SafTree) {
         return Layout(songs, playlists, meta)
     }
 
+    data class Diagnosis(
+        val layoutOk: Boolean,
+        val totalFiles: Int,
+        val audioFiles: Int,
+        val audioInSongs: Int,
+        val audioOutside: Int,
+        val playlistsOutside: Int,
+        val plan: List<PlannedMove>,
+        val error: String? = null,
+    )
+
+    /** Olha a pasta e explica o que encontrou (sem mover nada). Nunca lança exceção. */
+    fun diagnose(): Diagnosis {
+        return try {
+            val layoutOk = ensureLayout() != null
+            val files = inventory()
+            val plan = MigrationPlanner.plan(files.map { FolderFile(it.relPath, it.node.sizeBytes) })
+            val audio = files.filter { MigrationPlanner.isAudio(it.node.name) }
+            val inSongs = audio.count { it.relPath.substringBefore('/').equals(MigrationPlanner.SONGS_DIR, ignoreCase = true) }
+            Diagnosis(
+                layoutOk = layoutOk,
+                totalFiles = files.size,
+                audioFiles = audio.size,
+                audioInSongs = inSongs,
+                audioOutside = plan.count { it.kind == PlannedMove.Kind.SONG },
+                playlistsOutside = plan.count { it.kind == PlannedMove.Kind.PLAYLIST },
+                plan = plan,
+            )
+        } catch (error: Throwable) {
+            Diagnosis(false, 0, 0, 0, 0, 0, emptyList(), error.message ?: error::class.java.simpleName)
+        }
+    }
+
     /** Calcula o que seria movido, sem alterar nada. */
     fun preview(): Preview {
         val plan = MigrationPlanner.plan(inventory().map { FolderFile(it.relPath, it.node.sizeBytes) })

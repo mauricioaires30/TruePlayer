@@ -13,6 +13,7 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.DocumentsContract
 import android.provider.MediaStore
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.IntentSenderRequest
@@ -56,6 +57,9 @@ class MainActivity : ComponentActivity() {
     private var migrationPreview by mutableStateOf<FolderMigrator.Preview?>(null)
     private var migrationProgress by mutableStateOf<Pair<Int, Int>?>(null)
     private var migrationReport by mutableStateOf<FolderMigrator.Report?>(null)
+    private var migrationMessage by mutableStateOf<String?>(null)
+    private var folderAccessNeeded by mutableStateOf(false)
+    private var accessPromptDismissed = false
     private var migrationRunning = false
     private var folderChecked = false
     private var pendingSharedUrl: String? = null
@@ -90,6 +94,7 @@ class MainActivity : ComponentActivity() {
         }
         prefs.edit().putString(ShareContract.PREF_DOWNLOAD_TREE, uri.toString()).apply()
         downloadFolderLabel = folderLabel(uri)
+        folderAccessNeeded = false
         folderChecked = false
         lastLibraryTrackIds = null
         refreshLibrary()
@@ -119,6 +124,7 @@ class MainActivity : ComponentActivity() {
         downloadFolderLabel = savedDownloadTree()?.let(::folderLabel).orEmpty()
         settings = loadSettings()
         releaseStalePermissions()
+        checkFolderAccess()
         registerMediaObserver()
 
         setContent {
@@ -135,6 +141,7 @@ class MainActivity : ComponentActivity() {
                 onChooseDownloadFolder = { folderPicker.launch(savedDownloadTree()) },
                 onReleaseDownloadFolder = ::releaseDownloadFolder,
                 onSettingsChange = ::updateSettings,
+                onOrganizeFolder = ::organizeFolderNow,
                 appVersion = runCatching { packageManager.getPackageInfo(packageName, 0).versionName.orEmpty() }.getOrDefault(""),
                 importStatus = importStatus,
                 onDismissImportStatus = { importStatus = null },
@@ -143,6 +150,11 @@ class MainActivity : ComponentActivity() {
                 preview = migrationPreview,
                 progress = migrationProgress,
                 report = migrationReport,
+                message = migrationMessage,
+                onMessageDismiss = { migrationMessage = null },
+                accessNeeded = folderAccessNeeded && !accessPromptDismissed,
+                onGrantAccess = { folderPicker.launch(savedDownloadTree()) },
+                onAccessLater = { accessPromptDismissed = true; folderAccessNeeded = false },
                 onConfirm = ::runMigration,
                 onLater = {
                     prefs.edit().putLong(PREF_MIGRATION_DECLINED_AT, System.currentTimeMillis()).apply()
@@ -181,12 +193,19 @@ class MainActivity : ComponentActivity() {
         // Antes o app varria o MediaStore inteiro a cada volta para a tela,
         // inclusive ao sair de um diálogo. Agora só revarre se passou tempo
         // suficiente desde a última varredura.
+        checkFolderAccess()
         val now = android.os.SystemClock.elapsedRealtime()
         if (::audioService.isInitialized && hasAudioPermission() &&
             now - lastRefreshAtMs >= MIN_REFRESH_INTERVAL_MS
         ) {
             refreshLibrary()
         }
+    }
+
+    /** A pasta está salva, mas o Android não deu (ou perdeu) a permissão sobre ela? */
+    private fun checkFolderAccess() {
+        val saved = MusicFolder.savedUri(this)
+        folderAccessNeeded = saved != null && !MusicFolder.hasPermission(this, saved)
     }
 
     private fun registerMediaObserver() {
@@ -296,11 +315,41 @@ class MainActivity : ComponentActivity() {
                     if (migrator.ensureLayout() == null) null else migrator.preview()
                 }.getOrNull()
             }
+            Log.i("TruePlayer", "checagem da pasta: plano=${preview?.plan?.size}")
             PlaylistFolderSync.importFromFolder(this@MainActivity)
             PlaylistFolderSync.exportAllNow(this@MainActivity)
             val declinedAt = prefs.getLong(PREF_MIGRATION_DECLINED_AT, 0L)
             val recentlyDeclined = System.currentTimeMillis() - declinedAt < MIGRATION_ASK_AGAIN_MS
             if (preview != null && preview.plan.isNotEmpty() && !recentlyDeclined) migrationPreview = preview
+        }
+    }
+
+    /** Botão em Configurações: confere a pasta agora e mostra exatamente o que encontrou. */
+    private fun organizeFolderNow() {
+        val tree = MusicFolder.tree(this)
+        if (tree == null) {
+            if (MusicFolder.savedUri(this) != null) {
+                accessPromptDismissed = false
+                folderAccessNeeded = true
+            } else {
+                migrationMessage = "Nenhuma pasta de músicas escolhida. Escolha uma pasta em Configurações."
+            }
+            return
+        }
+        appScope.launch {
+            val diagnosis = withContext(Dispatchers.IO) { FolderMigrator(this@MainActivity, tree).diagnose() }
+            Log.i("TruePlayer", "diagnostico da pasta: $diagnosis")
+            if (diagnosis.error != null) {
+                migrationMessage = "Não consegui ler a pasta: ${diagnosis.error}"
+            } else if (diagnosis.plan.isNotEmpty()) {
+                migrationPreview = FolderMigrator.Preview(diagnosis.audioOutside, diagnosis.playlistsOutside, diagnosis.plan)
+            } else {
+                migrationMessage = "Nada para mover.\n\n" +
+                    "Pasta: $downloadFolderLabel\n" +
+                    "Arquivos encontrados: ${diagnosis.totalFiles}\n" +
+                    "Músicas: ${diagnosis.audioFiles} (${diagnosis.audioInSongs} já em songs/)\n" +
+                    "Pastas songs/ e playlists/: " + if (diagnosis.layoutOk) "criadas" else "não foi possível criar"
+            }
         }
     }
 

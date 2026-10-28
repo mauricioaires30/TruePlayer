@@ -18,10 +18,22 @@ import java.util.Locale
 
 /** Ponteiro para a pasta de músicas escolhida. */
 object MusicFolder {
-    fun treeUri(context: Context): Uri? = context.applicationContext
+    /** Pasta escolhida, ou null se não há pasta ou se o Android não concede mais acesso a ela. */
+    fun treeUri(context: Context): Uri? = savedUri(context)?.takeIf { hasPermission(context, it) }
+
+    /** Pasta lembrada nas preferências, mesmo que a permissão tenha se perdido. */
+    fun savedUri(context: Context): Uri? = context.applicationContext
         .getSharedPreferences(ShareContract.PREFS, Context.MODE_PRIVATE)
         .getString(ShareContract.PREF_DOWNLOAD_TREE, null)
         ?.let(Uri::parse)
+
+    /**
+     * Preferências restauradas por backup (ex.: troca de celular) trazem o endereço da pasta, mas o
+     * Android não restaura a permissão: sem ela toda leitura/escrita na pasta dá "Permission Denial".
+     */
+    fun hasPermission(context: Context, uri: Uri): Boolean = runCatching {
+        context.contentResolver.persistedUriPermissions.any { it.uri == uri && it.isReadPermission && it.isWritePermission }
+    }.getOrDefault(false)
 
     fun tree(context: Context): SafTree? = treeUri(context)?.let { runCatching { SafTree(context, it) }.getOrNull() }
 

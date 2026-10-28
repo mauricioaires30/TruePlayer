@@ -16,8 +16,8 @@ class ShareReceiverActivity : ComponentActivity() {
             return
         }
 
-        val prefs = getSharedPreferences(ShareContract.PREFS, MODE_PRIVATE)
-        val hasDownloadFolder = prefs.getString(ShareContract.PREF_DOWNLOAD_TREE, null) != null
+        // Sem permissão ativa sobre a pasta o download falharia: pede para escolher/autorizar de novo.
+        val hasDownloadFolder = MusicFolder.treeUri(this) != null
 
         if (hasDownloadFolder) {
             YoutubeDownloadService.start(this, url)
