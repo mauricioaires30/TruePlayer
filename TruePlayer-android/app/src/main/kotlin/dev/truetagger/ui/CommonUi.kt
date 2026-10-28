@@ -112,8 +112,8 @@ internal object UiTokens {
     val bottomBarHeight = 64.dp
     val bottomBarIconSize = 20.dp
     val bottomBarLabelSize = 10.sp
-    val miniPlayerHeight = 78.dp
-    val miniPlayerArtworkSize = 44.dp
+    val miniPlayerHeight = 94.dp
+    val miniPlayerArtworkSize = 56.dp
 
     // ---- Telas específicas ------------------------------------------------
     val albumCardHeight = 296.dp // não usado: o card agora tem altura natural
@@ -230,13 +230,8 @@ internal fun ScreenTitle(
     title: String,
     modifier: Modifier = Modifier,
 ) {
-    Text(
-        title,
-        style = MaterialTheme.typography.titleLarge,
-        maxLines = 2,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier,
-    )
+    // Título longo (nome de álbum, playlist, artista...) rola em loop em vez de ser cortado.
+    ScrollingText(title, modifier = modifier, style = MaterialTheme.typography.titleLarge)
 }
 
 /**

@@ -1,6 +1,10 @@
 package dev.truetagger.ui
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.MarqueeAnimationMode
+import androidx.compose.foundation.MarqueeSpacing
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Text
@@ -18,7 +23,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -60,6 +68,46 @@ internal fun TruePlayerTheme(content: @Composable () -> Unit) {
         shapes = TruePlayerShapes,
         content = content,
     )
+}
+
+/**
+ * Nome de música, álbum, artista, playlist ou gênero em uma linha. Se não cabe, rola em loop para a esquerda
+ * (como no Spotify): espera um pouco, anda, dá um espaço e recomeça. Se cabe, fica parado. Rola sozinho e não
+ * reage a toque.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+internal fun ScrollingText(
+    text: String,
+    modifier: Modifier = Modifier,
+    style: TextStyle = MaterialTheme.typography.bodyMedium,
+    color: Color = LocalContentColor.current,
+    fontWeight: FontWeight? = null,
+    textAlign: TextAlign = TextAlign.Start,
+) {
+    if (text.isBlank()) return
+    // O Box deixa o texto centralizado quando cabe (o marquee mede o texto sem limite de largura).
+    Box(modifier, contentAlignment = if (textAlign == TextAlign.Center) Alignment.Center else Alignment.CenterStart) {
+        Text(
+            text = text,
+            style = style,
+            color = color,
+            fontWeight = fontWeight,
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Clip,
+            // Só animação: não responde a toque nem a foco (o toque segue para a linha) e começa sozinho
+            // enquanto o nome está na tela. Fora da tela (lista rolada) o item nem existe, então não anima.
+            modifier = Modifier.basicMarquee(
+                iterations = Int.MAX_VALUE,
+                animationMode = MarqueeAnimationMode.Immediately,
+                initialDelayMillis = 1_500,
+                repeatDelayMillis = 1_500,
+                spacing = MarqueeSpacing(32.dp),
+                velocity = 30.dp,
+            ),
+        )
+    }
 }
 
 /** "1 música", "3 músicas". */

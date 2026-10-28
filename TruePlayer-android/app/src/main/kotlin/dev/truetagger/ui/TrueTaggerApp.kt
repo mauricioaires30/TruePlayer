@@ -581,7 +581,7 @@ private fun SuggestionCard(
     ) {
         Column(Modifier.padding(UiTokens.cardPadding), verticalArrangement = Arrangement.spacedBy(UiTokens.itemSpacing + 2.dp)) {
             ArtworkBox(artworkBytes, artworkUrl, Modifier.fillMaxWidth().height(UiTokens.suggestionArtworkHeight))
-            Text(title, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            ScrollingText(title, fontWeight = FontWeight.SemiBold)
             Text(subtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)

@@ -945,6 +945,7 @@ private fun MiniPlayer(
     onShuffle: () -> Unit,
     onRepeat: () -> Unit,
 ) {
+    val accent = MaterialTheme.colorScheme.primary
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant,
         tonalElevation = 3.dp,
@@ -954,9 +955,7 @@ private fun MiniPlayer(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(UiTokens.miniPlayerHeight)
-                .clickable(onClick = onOpen)
-                .padding(start = UiTokens.compactPadding, end = UiTokens.compactPadding, bottom = 4.dp),
-            verticalArrangement = Arrangement.spacedBy(UiTokens.itemSpacing),
+                .clickable(onClick = onOpen),
         ) {
             // Linha fina de progresso no topo: mostra quanto da música já tocou sem ocupar espaço.
             LinearProgressIndicator(
@@ -965,11 +964,11 @@ private fun MiniPlayer(
                 trackColor = Color.Transparent,
                 drawStopIndicator = {},
             )
-            Spacer(Modifier.height(3.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxWidth().weight(1f).padding(start = UiTokens.compactPadding, end = UiTokens.space2),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // Esquerda: capa e informações da música (nome grande rola em loop).
                 key(s.current?.id) {
                     PlayerArtworkBox(
                         s.current?.artworkBytes,
@@ -979,41 +978,59 @@ private fun MiniPlayer(
                     )
                 }
                 Column(
-                    modifier = Modifier.weight(1f).padding(horizontal = UiTokens.cardItemHorizontalPadding),
+                    modifier = Modifier.weight(1f).padding(horizontal = UiTokens.compactPadding),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                 ) {
-                    Text(
+                    ScrollingText(
                         s.current?.displayTitle().orEmpty(),
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
-                    Text(
+                    ScrollingText(
                         listOf(s.current?.artist, s.current?.album).filter { !it.isNullOrBlank() }.joinToString(" • "),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
                     )
                 }
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth().weight(1f),
-                horizontalArrangement = Arrangement.SpaceEvenly,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onShuffle, modifier = Modifier.size(UiTokens.iconButtonSize)) {
-                    Icon(painterResource(if (s.shuffle) R.drawable.truetagger_shuffle_on else R.drawable.truetagger_shuffle_off), "Aleatório", modifier = Modifier.size(UiTokens.smallIconSize), tint = if (s.shuffle) MaterialTheme.colorScheme.primary else LocalContentColor.current)
+                // Direita, em duas linhas: [anterior] [tocar/pausar] [próxima] em cima; embaixo, [aleatório] entre anterior e tocar,
+                // e [repetir] entre tocar e próxima.
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onPrevious, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_MAIN_BUTTON)) {
+                            Icon(Icons.Rounded.SkipPrevious, "Anterior", Modifier.size(28.dp))
+                        }
+                        FilledIconButton(onClick = onToggle, modifier = Modifier.size(MINI_MAIN_BUTTON)) {
+                            Icon(if (s.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (s.playing) "Pausar" else "Reproduzir", Modifier.size(30.dp))
+                        }
+                        IconButton(onClick = onNext, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_MAIN_BUTTON)) {
+                            Icon(Icons.Rounded.SkipNext, "Próxima", Modifier.size(28.dp))
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = onShuffle, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_SMALL_BUTTON)) {
+                            Icon(
+                                painterResource(if (s.shuffle) R.drawable.truetagger_shuffle_on else R.drawable.truetagger_shuffle_off),
+                                "Aleatório", modifier = Modifier.size(22.dp), tint = if (s.shuffle) accent else LocalContentColor.current,
+                            )
+                        }
+                        // Quase colados: a linha de baixo fica centralizada, então cada botão cai no vão entre dois de cima.
+                        Spacer(Modifier.width(2.dp))
+                        IconButton(onClick = onRepeat, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_SMALL_BUTTON)) {
+                            Icon(
+                                painterResource(if (s.repeat == RepeatMode.ONE) R.drawable.truetagger_repeat_on else R.drawable.truetagger_repeat_off),
+                                "Repetição", modifier = Modifier.size(22.dp), tint = if (s.repeat != RepeatMode.OFF) accent else LocalContentColor.current,
+                            )
+                        }
+                    }
                 }
-                IconButton(onClick = onPrevious, modifier = Modifier.size(UiTokens.iconButtonSize)) { Icon(Icons.Rounded.SkipPrevious, "Anterior", Modifier.size(UiTokens.primaryIconSize)) }
-                FilledTonalIconButton(onClick = onToggle, modifier = Modifier.size(UiTokens.iconButtonSize)) { Icon(if (s.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (s.playing) "Pausar" else "Reproduzir", Modifier.size(UiTokens.primaryIconSize + 4.dp)) }
-                IconButton(onClick = onNext, modifier = Modifier.size(UiTokens.iconButtonSize)) { Icon(Icons.Rounded.SkipNext, "Próxima", Modifier.size(UiTokens.primaryIconSize)) }
-                IconButton(onClick = onRepeat, modifier = Modifier.size(UiTokens.iconButtonSize)) { Icon(painterResource(if (s.repeat == RepeatMode.ONE) R.drawable.truetagger_repeat_on else R.drawable.truetagger_repeat_off), "Repetição", modifier = Modifier.size(UiTokens.smallIconSize), tint = if (s.repeat != RepeatMode.OFF) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
             }
         }
     }
 }
+
+private val MINI_MAIN_BUTTON = 48.dp
+private val MINI_SIDE_BUTTON = 44.dp
+private val MINI_SMALL_BUTTON = 34.dp
 
 @Composable
 private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Unit, onArtist: () -> Unit, onAlbum: () -> Unit) {
@@ -1031,12 +1048,10 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
                 )
             }
             Spacer(Modifier.height(UiTokens.sectionSpacing))
-            Text(
+            ScrollingText(
                 s.current?.displayTitle().orEmpty(),
                 style = MaterialTheme.typography.headlineSmall,
                 textAlign = TextAlign.Center,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.fillMaxWidth(),
             )
             // Artista e álbum em uma linha só, cada um tocável (abre a tela dele).
@@ -1045,13 +1060,13 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
                 val album = s.current?.album.orEmpty()
                 if (artist.isNotBlank()) {
                     TextButton(onClick = onArtist, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), modifier = Modifier.weight(1f, fill = false)) {
-                        Text(artist, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium)
+                        ScrollingText(artist, style = MaterialTheme.typography.bodyMedium)
                     }
                 }
                 if (artist.isNotBlank() && album.isNotBlank()) Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (album.isNotBlank()) {
                     TextButton(onClick = onAlbum, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), modifier = Modifier.weight(1f, fill = false)) {
-                        Text(album, maxLines = 1, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        ScrollingText(album, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
                 }
             }
@@ -2093,7 +2108,7 @@ private fun PlaylistScreen(
                 var expanded by remember(playlist.name) { mutableStateOf(false) }
                 ListCardRow(onClick = { onOpen(playlist.name) }) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(UiTokens.songItemSpacing)) {
-                        Text(playlist.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        ScrollingText(playlist.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                         Text(plural(playlist.trackIds.size, "música", "músicas"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     Box {
@@ -2277,8 +2292,8 @@ private fun GenreList(values: List<Pair<String, Int>>, open: (String) -> Unit, m
             }
             items(genres, key = { (name, _) -> "$letter-$name" }) { (name, songs) ->
                 ListCardRow(onClick = { open(name) }, minHeight = UiTokens.controlHeight) {
-                    Text(name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
-                    Text(plural(songs, "música", "músicas"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1)
+                    ScrollingText(name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+                    Text(plural(songs, "música", "músicas"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, modifier = Modifier.padding(start = UiTokens.space2))
                 }
             }
         }
@@ -2668,7 +2683,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                         albums.forEach { (album, albumTracks) ->
                             item(key = "album-$album") {
                                 Column(Modifier.fillMaxWidth().padding(top = UiTokens.standardListTopSpacing, bottom = UiTokens.space1)) {
-                                    TextButton(onClick = { onOpenAlbum(album) }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) { Text(album, fontWeight = FontWeight.Bold, maxLines = 1, overflow = TextOverflow.Ellipsis) }
+                                    TextButton(onClick = { onOpenAlbum(album) }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) { ScrollingText(album, fontWeight = FontWeight.Bold) }
                                     Text("${plural(albumTracks.size, "música", "músicas")} • ${formatDuration(albumTracks.sumOf { it.durationMs })}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
@@ -2692,29 +2707,6 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
             }
         }
     }
-
-@Composable
-private fun ScrollingText(
-    text: String,
-    modifier: Modifier = Modifier,
-    style: androidx.compose.ui.text.TextStyle = MaterialTheme.typography.bodyMedium,
-    color: androidx.compose.ui.graphics.Color = LocalContentColor.current,
-    fontWeight: FontWeight? = null,
-    textAlign: androidx.compose.ui.text.style.TextAlign = androidx.compose.ui.text.style.TextAlign.Start,
-) {
-    if (text.isBlank()) return
-    Text(
-        text = text,
-        style = style,
-        color = color,
-        fontWeight = fontWeight,
-        maxLines = 1,
-        softWrap = false,
-        overflow = TextOverflow.Ellipsis,
-        textAlign = textAlign,
-        modifier = modifier,
-    )
-}
 
 @Composable
 private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, downloadFolderLabel: String, onChooseDownloadFolder: (() -> Unit)?, onReleaseDownloadFolder: (() -> Unit)?, appVersion: String, onOrganizeFolder: (() -> Unit)? = null, onCleanFolder: (() -> Unit)? = null, permissions: List<dev.truetagger.model.PermissionItem> = emptyList(), onCheckUpdate: (() -> Unit)? = null) {
