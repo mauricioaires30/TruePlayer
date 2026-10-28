@@ -1,12 +1,24 @@
-# TrueTagger 1.0.12
+# TruePlayer
 
-Teste recomendado: celular Android físico via USB e Depuração USB.
+Player de músicas e editor de tags (ID3) para Android, com download de links do YouTube e SoundCloud.
 
-## Testar
-1. Conecte o celular por USB.
-2. Ative Depuração USB e aceite a autorização no celular.
-3. Execute `TrueTagger.bat`.
+## Instalar
+Baixe o `.apk` mais recente na aba [Releases](https://github.com/mauricioaires30/TruePlayer/releases) e instale no celular (o Android pede para permitir "instalar apps desconhecidas" para o navegador/gerenciador de arquivos).
 
-Na primeira execução, o script baixa automaticamente apenas os componentes necessários para compilar e instalar o app. Depois eles são reutilizados.
+## Estrutura do repositório
+```
+TruePlayer-android/   projeto Android (Kotlin + Jetpack Compose)
+  app/                código do aplicativo
+  gradle/             catálogo de versões das dependências
+```
+O APK de cada versão não fica no repositório: é publicado em Releases.
 
-Não é necessário Android Studio nem emulador.
+## Compilar (para quem clonar o código)
+Requer JDK 21 e o Android SDK 36.
+
+```
+cd TruePlayer-android
+gradle :app:assembleDebug
+```
+
+O APK sai em `TruePlayer-android/app/build/outputs/apk/debug/`. Esse APK é assinado com a chave de debug da sua máquina, então **não** atualiza por cima do APK oficial da aba Releases (a assinatura é diferente).

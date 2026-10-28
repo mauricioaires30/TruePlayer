@@ -8,6 +8,7 @@ build/
 .idea/
 *.iml
 local.properties
+.claude/
 
 # Secrets / signing
 .env
@@ -16,6 +17,10 @@ local.properties
 *.keystore
 signing.properties
 
+# Privado do mantenedor: script que gera o APK assinado e a chave de assinatura
+tools/
+dist/
+
 # OS
 .DS_Store
 Thumbs.db
@@ -23,7 +28,7 @@ Thumbs.db
 # Kotlin/Java
 *.hprof
 
-# APKs
+# APKs (o APK de cada versão vai para o GitHub Releases, não para o repositório)
 *.apk
 *.aab
 
@@ -31,3 +36,5 @@ Thumbs.db
 captures/
 .externalNativeBuild/
 .cxx/
+build-log.txt
+adb_install.*

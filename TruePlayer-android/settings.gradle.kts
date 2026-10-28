@@ -17,4 +17,3 @@ dependencyResolutionManagement {
 rootProject.name = "TrueTagger"
 
 include(":app")
-project(":app").projectDir = file("../app")

@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -17,7 +19,31 @@ android {
         versionName = providers.gradleProperty("appVersion").get()
 
         ndk {
-            abiFilters += listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86")
+            // Só arm64: yt-dlp + ffmpeg multiplicam o tamanho do APK por ABI.
+            abiFilters += listOf("arm64-v8a")
+        }
+    }
+
+    // A chave de assinatura fica em tools/signing.properties (ignorado pelo git).
+    // Sem esse arquivo, quem clonar o repositório só consegue gerar o APK debug.
+    val signingFile = rootProject.projectDir.resolve("../tools/signing.properties")
+    val hasReleaseSigning = signingFile.exists()
+    if (hasReleaseSigning) {
+        val signing = Properties().apply { signingFile.inputStream().use { load(it) } }
+        signingConfigs {
+            create("release") {
+                storeFile = signingFile.parentFile.resolve(signing.getProperty("storeFile"))
+                storePassword = signing.getProperty("storePassword")
+                keyAlias = signing.getProperty("keyAlias")
+                keyPassword = signing.getProperty("keyPassword")
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            if (hasReleaseSigning) signingConfig = signingConfigs.getByName("release")
         }
     }
 
