@@ -114,6 +114,27 @@ internal object GitManager {
 
     fun hasRepo(dir: File) = File(dir, ".git").exists()
 
+    /**
+     * Uma operação interrompida (app fechado, falta de memória) deixa `.git/index.lock` para trás, e depois
+     * disso nada consegue registrar arquivos ("Cannot lock .git/index"). Trava com mais de 2 minutos é de uma
+     * operação que já morreu e é apagada; trava recente pode ser de uma operação em andamento e vira erro.
+     * Devolve quantas travas antigas foram removidas.
+     */
+    fun clearStaleLocks(dir: File, now: Long = System.currentTimeMillis()): Int {
+        val git = File(dir, ".git")
+        val heads = File(git, "refs/heads").listFiles { f -> f.name.endsWith(".lock") }?.toList().orEmpty()
+        var removed = 0
+        (listOf(File(git, "index.lock"), File(git, "HEAD.lock")) + heads).filter { it.isFile }.forEach { lock ->
+            check(now - lock.lastModified() >= STALE_LOCK_MS) {
+                "outra operação do Git está em andamento (${lock.name} é recente). Espere um minuto e tente de novo."
+            }
+            if (lock.delete()) removed++
+        }
+        return removed
+    }
+
+    private const val STALE_LOCK_MS = 2 * 60_000L
+
     fun status(dir: File): List<GitChange> = openRepo(dir).use { git ->
         val st = git.status().call()
         val out = ArrayList<GitChange>()

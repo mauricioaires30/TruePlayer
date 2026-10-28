@@ -368,6 +368,38 @@ class GitManagerTest {
         assertTrue(GitManager.isClean(fresh))
     }
 
+    @Test fun anOldIndexLockLeftByACrashIsClearedAndCommitWorks() {
+        val dir = music()
+        GitManager.init(dir, "main", "https://github.com/x/y.git", "Fulano", "f@x.com")
+        GitManager.updateGitignore(dir, emptyList())
+        val lock = File(dir, ".git/index.lock").also { it.writeText("") }
+        lock.setLastModified(System.currentTimeMillis() - 10 * 60_000L)
+
+        assertEquals(1, GitManager.clearStaleLocks(dir))
+        assertFalse(lock.exists())
+        GitManager.commitAll(dir, "Depois da trava", "Fulano", "f@x.com", GitManager.TextMonitor { })
+        assertTrue(GitManager.isClean(dir))
+    }
+
+    @Test fun aFreshLockIsNotDeletedBecauseAnotherOperationMayBeRunning() {
+        val dir = music()
+        GitManager.init(dir, "main", "https://github.com/x/y.git", "Fulano", "f@x.com")
+        val lock = File(dir, ".git/index.lock").also { it.writeText("") }
+        try {
+            GitManager.clearStaleLocks(dir)
+            fail("trava recente tem que virar erro")
+        } catch (expected: IllegalStateException) {
+            assertTrue(expected.message.orEmpty().contains("em andamento"))
+        }
+        assertTrue(lock.exists())
+    }
+
+    @Test fun noLockMeansNothingToClear() {
+        val dir = music()
+        GitManager.init(dir, "main", "https://github.com/x/y.git", "Fulano", "f@x.com")
+        assertEquals(0, GitManager.clearStaleLocks(dir))
+    }
+
     @Test fun repoWithoutOriginCanReceiveOne() {
         val dir = music()
         Git.init().setDirectory(dir).setInitialBranch("main").call().close()

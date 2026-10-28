@@ -214,6 +214,9 @@ object GitController {
 
     /** Texto do erro com a causa de dentro (o JGit só diz "exception caught during execution of add command"). */
     private fun reason(error: Throwable): String {
+        if (generateSequence(error) { it.cause }.any { it.message.orEmpty().contains("Cannot lock") }) {
+            return "o repositório está travado por uma operação que ficou pela metade (arquivo .git/index.lock). Tente de novo em um minuto."
+        }
         val parts = generateSequence(error) { it.cause }
             .take(5)
             .map { it.message?.trim().takeUnless { text -> text.isNullOrBlank() } ?: it::class.simpleName.orEmpty() }
@@ -267,6 +270,7 @@ object GitController {
             val outcome = runCatching {
                 val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("pasta não suportada")
                 require(name.isNotBlank() && email.isNotBlank()) { "informe nome e e-mail para o commit" }
+                GitManager.clearStaleLocks(dir)
                 prefs(app).edit().putString("name", name).putString("email", email).apply()
                 if (remoteUrl.isNotBlank() && GitManager.remoteUrl(dir).isNullOrBlank()) GitManager.setRemote(dir, remoteUrl.trim())
 
@@ -407,6 +411,7 @@ object GitController {
         scope.launch {
             val outcome = runCatching {
                 val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("pasta não suportada")
+                GitManager.clearStaleLocks(dir)
                 val (user, secret) = credentials(app, dir, "")
                 require(secret.isNotBlank()) { "informe o token do GitHub (Trocar repositório)" }
                 show(2, 2, "Baixando do GitHub…")
