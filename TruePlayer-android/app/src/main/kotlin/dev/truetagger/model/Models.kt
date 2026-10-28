@@ -2,6 +2,12 @@ package dev.truetagger.model
 
 data class AudioTrack(
     val id: String,
+    /**
+     * Caminho do arquivo relativo à pasta de músicas escolhida (ex.: "songs/Faixa.mp3").
+     * Diferente de [id] (content URI do MediaStore, que muda de celular para celular),
+     * é a chave portátil usada por playlists e estatísticas.
+     */
+    val relPath: String = "",
     val displayName: String,
     val title: String = "",
     val artist: String = "",

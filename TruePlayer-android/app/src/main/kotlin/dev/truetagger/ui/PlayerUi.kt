@@ -9,6 +9,11 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import dev.truetagger.android.PlaylistData
+import dev.truetagger.android.PlaylistStore
+import dev.truetagger.android.LibraryIndex
+import dev.truetagger.android.MusicFolder
+import dev.truetagger.android.OpenPlaylistFiles
 import android.media.MediaMetadataRetriever
 import android.util.Log
 import android.util.Size
@@ -257,175 +262,6 @@ private data class NavEntry(
     val editorOpen: Boolean,
 )
 
-private data class PlaylistData(val name: String, val trackIds: List<String>)
-
-private class PlaylistStore(private val context: Context) {
-    companion object {
-        private val _revision = MutableStateFlow(0L)
-        val revision: StateFlow<Long> = _revision.asStateFlow()
-
-        private fun bumpRevision() {
-            _revision.value = _revision.value + 1L
-        }
-    }
-
-    private val prefs = context.getSharedPreferences("truetagger_player", Context.MODE_PRIVATE)
-    private val key = "playlists_json"
-
-    fun load(): List<PlaylistData> = runCatching {
-        val raw = prefs.getString(key, "[]") ?: "[]"
-        val array = JSONArray(raw)
-        buildList {
-            for (i in 0 until array.length()) {
-                val obj = array.optJSONObject(i) ?: continue
-                val name = obj.optString("name").trim()
-                if (name.isBlank()) continue
-                add(PlaylistData(name, buildList {
-                    val ids = obj.optJSONArray("trackIds") ?: JSONArray()
-                    for (j in 0 until ids.length()) {
-                        val id = ids.optString(j)
-                        if (id.isNotBlank()) add(id)
-                    }
-                }))
-            }
-        }
-    }.getOrElse { emptyList() }
-
-    private fun save(items: List<PlaylistData>) {
-        val array = JSONArray()
-        items.forEach { playlist ->
-            array.put(JSONObject().apply {
-                put("name", playlist.name)
-                put("trackIds", JSONArray(playlist.trackIds))
-            })
-        }
-        prefs.edit().putString(key, array.toString()).apply()
-        bumpRevision()
-        AppEvents.bump()
-    }
-
-    fun create(name: String, trackIds: List<String> = emptyList()) {
-        val clean = name.trim()
-        if (clean.isBlank() || load().any { it.name.equals(clean, true) }) return
-        save(load() + PlaylistData(clean, trackIds.distinct()))
-    }
-
-    fun delete(name: String) = save(load().filterNot { it.name == name })
-
-    fun rename(oldName: String, newName: String): Boolean {
-        val clean = newName.trim()
-        val items = load()
-        if (clean.isBlank() || oldName == clean || items.any { it.name != oldName && it.name.equals(clean, true) } || items.none { it.name == oldName }) return false
-        save(items.map { if (it.name == oldName) it.copy(name = clean) else it })
-        return true
-    }
-
-    fun add(name: String, trackId: String) {
-        save(load().map {
-            if (it.name == name && trackId !in it.trackIds) it.copy(trackIds = listOf(trackId) + it.trackIds) else it
-        })
-    }
-
-    fun addAll(name: String, trackIds: List<String>) {
-        val incoming = trackIds.distinct()
-        if (incoming.isEmpty()) return
-        save(load().map {
-            if (it.name == name) {
-                val existing = it.trackIds.toHashSet()
-                val fresh = incoming.filterNot(existing::contains)
-                it.copy(trackIds = fresh + it.trackIds)
-            } else it
-        })
-    }
-
-    fun remove(name: String, trackId: String) {
-        save(load().map { if (it.name == name) it.copy(trackIds = it.trackIds - trackId) else it })
-    }
-
-    fun removeAll(name: String, trackIds: List<String>) {
-        if (trackIds.isEmpty()) return
-        val removeSet = trackIds.toHashSet()
-        save(load().map { if (it.name == name) it.copy(trackIds = it.trackIds.filterNot(removeSet::contains)) else it })
-    }
-
-    fun removeTracksEverywhere(trackIds: Collection<String>): Boolean {
-        val removeSet = trackIds.filter { it.isNotBlank() }.toHashSet()
-        if (removeSet.isEmpty()) return false
-        val current = load()
-        val cleaned = current.map { playlist ->
-            val filtered = playlist.trackIds.filterNot(removeSet::contains)
-            if (filtered == playlist.trackIds) playlist else playlist.copy(trackIds = filtered)
-        }
-        if (cleaned == current) return false
-        save(cleaned)
-        return true
-    }
-
-    fun replaceOrderInMemory(current: List<PlaylistData>, name: String, orderedIds: List<String>): List<PlaylistData> {
-        val cleanIds = orderedIds.distinct()
-        return current.map { if (it.name == name) it.copy(trackIds = cleanIds) else it }
-    }
-
-    fun persist(items: List<PlaylistData>) { save(items) }
-
-    fun exportM3u(uri: Uri, playlist: PlaylistData, tracks: List<AudioTrack>) {
-        val trackById = tracks.associateBy { it.id }
-        val text = buildString {
-            appendLine("#EXTM3U")
-            playlist.trackIds.forEach { id ->
-                val track = trackById[id] ?: return@forEach
-                val seconds = (track.durationMs / 1000L).coerceAtLeast(0L)
-                val label = listOf(track.artist, track.displayTitle()).filter { it.isNotBlank() }.joinToString(" - ")
-                appendLine("#EXTINF:$seconds,$label")
-                appendLine(exportLocation(track))
-            }
-        }
-        runCatching { context.contentResolver.openOutputStream(uri)?.use { it.write(text.toByteArray(Charsets.UTF_8)) } }
-    }
-
-    fun importM3u(uri: Uri, tracks: List<AudioTrack>): String? {
-        val text = runCatching { context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() } }.getOrNull() ?: return null
-        val entries = text.lineSequence().map { it.trim() }.filter { it.isNotBlank() && !it.startsWith("#") }.toList()
-        if (entries.isEmpty()) return null
-        val imported = entries.mapNotNull { findTrack(it, tracks) }.distinctBy { it.id }
-        if (imported.isEmpty()) return null
-        val fileName = queryDisplayName(uri)
-        val base = fileName.substringBeforeLast('.', fileName).trim().ifBlank { "Playlist importada" }
-        val name = uniqueName(base)
-        create(name, imported.map { it.id })
-        return name
-    }
-
-    private fun queryDisplayName(uri: Uri): String = runCatching {
-        context.contentResolver.query(uri, arrayOf(MediaStore.MediaColumns.DISPLAY_NAME), null, null, null)?.use { c ->
-            if (c.moveToFirst()) c.getString(0).orEmpty() else ""
-        }.orEmpty()
-    }.getOrDefault("")
-
-    private fun uniqueName(base: String): String {
-        val existing = load().map { it.name.lowercase(Locale.ROOT) }.toSet()
-        var candidate = base
-        var n = 2
-        while (candidate.lowercase(Locale.ROOT) in existing) candidate = "$base ($n)".also { n++ }
-        return candidate
-    }
-
-    private fun findTrack(line: String, tracks: List<AudioTrack>): AudioTrack? {
-        val normalized = Uri.decode(line).trim().trim('\"')
-        tracks.firstOrNull { it.id == line || it.id == normalized }?.let { return it }
-        val fileName = normalized.substringAfterLast('/').substringAfterLast('\\')
-        return tracks.firstOrNull { it.displayName.equals(fileName, true) }
-            ?: tracks.firstOrNull { it.displayTitle().equals(fileName.substringBeforeLast('.', fileName), true) }
-    }
-
-    private fun exportLocation(track: AudioTrack): String = runCatching {
-        context.contentResolver.query(Uri.parse(track.id), arrayOf(MediaStore.Audio.Media.DATA), null, null, null)?.use { c ->
-            if (c.moveToFirst()) c.getString(0).orEmpty() else ""
-        }
-    }.getOrNull()?.takeIf { it.isNotBlank() } ?: track.id
-}
-
-
 @Composable
 private fun TruePlayerIntro() {
     Box(
@@ -606,25 +442,22 @@ fun TrueTaggerPlayerApp(
 
     fun reloadPlaylists() { playlists = store.load() }
 
-    var previousLibraryTrackIds by remember { mutableStateOf<Set<String>?>(null) }
-    LaunchedEffect(tracks) {
-        val currentIds = tracks.asSequence().map { it.id }.toSet()
-        val previousIds = previousLibraryTrackIds
-        if (previousIds != null) {
-            val removedIds = previousIds.minus(currentIds)
-            if (removedIds.isNotEmpty() && store.removeTracksEverywhere(removedIds)) {
-                playlists = store.load()
-            }
-        }
-        previousLibraryTrackIds = currentIds
-    }
+    // A biblioteca mudou (ex.: arquivos movidos para songs/, varredura parcial, celular novo):
+    // as playlists guardam caminhos relativos e nunca são podadas automaticamente. Entradas sem
+    // arquivo ficam pendentes e voltam a aparecer quando o arquivo existir de novo.
+    LaunchedEffect(tracks) { playlists = store.load() }
     val exportPlaylistLauncher = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("audio/x-mpegurl")) { uri ->
         val playlist = pendingExportPlaylist
         if (uri != null && playlist != null) store.exportM3u(uri, playlist, tracks)
         pendingExportPlaylist = null
     }
-    val importPlaylistLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-        if (uri != null && store.importM3u(uri, tracks) != null) reloadPlaylists()
+    val importContract = remember { OpenPlaylistFiles() }
+    val importPlaylistLauncher = rememberLauncherForActivityResult(importContract) { uris ->
+        if (uris.map { store.importM3u(it) }.any { it != null }) reloadPlaylists()
+    }
+    fun launchPlaylistImport() {
+        importContract.initialUri = MusicFolder.playlistsFolderUri(context)
+        importPlaylistLauncher.launch(arrayOf("audio/x-mpegurl", "audio/mpegurl", "application/octet-stream", "text/plain"))
     }
     fun queueMatchesPlaylist(ids: List<String>): Boolean =
         snapshot.queue.isNotEmpty() && snapshot.queue.map { it.id }.toSet() == ids.toSet()
@@ -836,7 +669,7 @@ fun TrueTaggerPlayerApp(
                             tracks = tracks, playlists = playlists, play = ::play,
                             onAlbum = { navigateDetail(Detail.ALBUM, it) }, onArtist = { navigateDetail(Detail.ARTIST, it) },
                             onCreate = { name -> store.create(name); reloadPlaylists() },
-                            onImport = { importPlaylistLauncher.launch(arrayOf("audio/x-mpegurl", "audio/mpegurl", "text/plain")) },
+                            onImport = { launchPlaylistImport() },
                             onOpen = { navigateDetail(Detail.PLAYLIST, it) },
                             onDelete = { name -> store.delete(name); if (uiPrefs.getString("last_playlist_key", "").orEmpty() == name) uiPrefs.edit().remove("last_playlist_key").apply(); reloadPlaylists() },
                             onExport = { playlist -> pendingExportPlaylist = playlist; exportPlaylistLauncher.launch("${playlist.name}.m3u") },
@@ -849,7 +682,7 @@ fun TrueTaggerPlayerApp(
                             tracks = tracks, playlists = playlists, play = ::play,
                             onAlbum = { navigateDetail(Detail.ALBUM, it) }, onArtist = { navigateDetail(Detail.ARTIST, it) },
                             onCreate = { name -> store.create(name); reloadPlaylists() },
-                            onImport = { importPlaylistLauncher.launch(arrayOf("audio/x-mpegurl", "audio/mpegurl", "text/plain")) },
+                            onImport = { launchPlaylistImport() },
                             onOpen = { navigateDetail(Detail.PLAYLIST, it) },
                             onDelete = { name -> store.delete(name); if (uiPrefs.getString("last_playlist_key", "").orEmpty() == name) uiPrefs.edit().remove("last_playlist_key").apply(); reloadPlaylists() },
                             onExport = { playlist -> pendingExportPlaylist = playlist; exportPlaylistLauncher.launch("${playlist.name}.m3u") },
@@ -1100,6 +933,7 @@ private fun LibraryPlayerScreen(
         // a ordem de exclusão. Removemos da fila/playlist e deixamos a ContentObserver
         // atualizar a biblioteca.
         MusicPlaybackService.reconcileDeletedTracks(context, requested)
+        PlaylistStore(context).removeTracksEverywhere(requested)
         pendingDeleteIds = emptyList()
         exitSelection()
         refresh()

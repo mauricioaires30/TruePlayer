@@ -25,6 +25,10 @@ import dev.truetagger.model.AudioTrack
 import dev.truetagger.model.EditableTags
 import dev.truetagger.model.ImportStatus
 import dev.truetagger.model.TagWriteResult
+import dev.truetagger.data.MigrationPlanner
+import dev.truetagger.data.PlannedMove
+import dev.truetagger.model.TrackKeys
+import dev.truetagger.ui.FolderMigrationDialogs
 import dev.truetagger.ui.TrueTaggerPlayerApp
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineScope
@@ -49,6 +53,11 @@ class MainActivity : ComponentActivity() {
     private var downloadFolderLabel by mutableStateOf("")
     private var importStatus by mutableStateOf<ImportStatus?>(null)
     private var settings by mutableStateOf(AppSettings())
+    private var migrationPreview by mutableStateOf<FolderMigrator.Preview?>(null)
+    private var migrationProgress by mutableStateOf<Pair<Int, Int>?>(null)
+    private var migrationReport by mutableStateOf<FolderMigrator.Report?>(null)
+    private var migrationRunning = false
+    private var folderChecked = false
     private var pendingSharedUrl: String? = null
     private var shouldCloseAfterFolderPick = false
     private var writeContinuation: CancellableContinuation<Boolean>? = null
@@ -61,6 +70,8 @@ class MainActivity : ComponentActivity() {
     private companion object {
         /** Intervalo mínimo entre varreduras completas do MediaStore. */
         const val MIN_REFRESH_INTERVAL_MS = 1_500L
+        const val PREF_MIGRATION_DECLINED_AT = "migration_declined_at"
+        const val MIGRATION_ASK_AGAIN_MS = 24L * 60 * 60 * 1000
     }
 
     private val permissionsLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
@@ -79,6 +90,9 @@ class MainActivity : ComponentActivity() {
         }
         prefs.edit().putString(ShareContract.PREF_DOWNLOAD_TREE, uri.toString()).apply()
         downloadFolderLabel = folderLabel(uri)
+        folderChecked = false
+        lastLibraryTrackIds = null
+        refreshLibrary()
 
         pendingSharedUrl?.let { url ->
             pendingSharedUrl = null
@@ -124,6 +138,17 @@ class MainActivity : ComponentActivity() {
                 appVersion = runCatching { packageManager.getPackageInfo(packageName, 0).versionName.orEmpty() }.getOrDefault(""),
                 importStatus = importStatus,
                 onDismissImportStatus = { importStatus = null },
+            )
+            FolderMigrationDialogs(
+                preview = migrationPreview,
+                progress = migrationProgress,
+                report = migrationReport,
+                onConfirm = ::runMigration,
+                onLater = {
+                    prefs.edit().putLong(PREF_MIGRATION_DECLINED_AT, System.currentTimeMillis()).apply()
+                    migrationPreview = null
+                },
+                onReportDismiss = { migrationReport = null },
             )
         }
 
@@ -227,9 +252,11 @@ class MainActivity : ComponentActivity() {
         lastRefreshAtMs = android.os.SystemClock.elapsedRealtime()
         libraryLoading = true
         appScope.launch {
-            val refreshedTracks = withContext(Dispatchers.IO) {
-                runCatching { audioService.scanLibrary(savedDownloadTree()) }.getOrDefault(emptyList())
-            }
+            val scan = withContext(Dispatchers.IO) { runCatching { audioService.scanLibrary(savedDownloadTree()) } }
+            // Se a varredura falhar, a biblioteca anterior continua valendo: nada pode parecer "removido".
+            val refreshedTracks = scan.getOrNull() ?: tracks
+            val reliable = scan.isSuccess && refreshedTracks.isNotEmpty()
+            LibraryIndex.update(refreshedTracks, reliable)
             val refreshedIds = refreshedTracks.asSequence().map { it.id }.toSet()
             val removedIds = lastLibraryTrackIds?.minus(refreshedIds).orEmpty()
             lastLibraryTrackIds = refreshedIds
@@ -252,7 +279,72 @@ class MainActivity : ComponentActivity() {
             lastRefreshAtMs = android.os.SystemClock.elapsedRealtime()
             libraryLoading = false
             refreshInFlight = false
+            if (reliable) onReliableScan()
         }
+    }
+
+    /** Depois de uma varredura que deu certo: acerta chaves das playlists e confere o layout da pasta. */
+    private fun onReliableScan() {
+        PlaylistStore(this).upgradeKeys()
+        if (folderChecked || migrationRunning) return
+        val tree = MusicFolder.tree(this) ?: return
+        folderChecked = true
+        appScope.launch {
+            val preview = withContext(Dispatchers.IO) {
+                runCatching {
+                    val migrator = FolderMigrator(this@MainActivity, tree)
+                    if (migrator.ensureLayout() == null) null else migrator.preview()
+                }.getOrNull()
+            }
+            PlaylistFolderSync.importFromFolder(this@MainActivity)
+            PlaylistFolderSync.exportAllNow(this@MainActivity)
+            val declinedAt = prefs.getLong(PREF_MIGRATION_DECLINED_AT, 0L)
+            val recentlyDeclined = System.currentTimeMillis() - declinedAt < MIGRATION_ASK_AGAIN_MS
+            if (preview != null && preview.plan.isNotEmpty() && !recentlyDeclined) migrationPreview = preview
+        }
+    }
+
+    private fun runMigration() {
+        val tree = MusicFolder.tree(this) ?: return
+        migrationPreview = null
+        migrationRunning = true
+        migrationProgress = 0 to 1
+        MusicPlaybackService.releaseFileHandles(this)
+        appScope.launch {
+            val outcome = withContext(Dispatchers.IO) {
+                runCatching {
+                    FolderMigrator(this@MainActivity, tree).run(
+                        beforeMove = { plan -> prepareForMigration(tree, plan) },
+                        onProgress = { done, total -> migrationProgress = done to total },
+                    )
+                }
+            }
+            migrationProgress = null
+            migrationRunning = false
+            outcome.onSuccess { migrationReport = it }.onFailure {
+                android.widget.Toast.makeText(
+                    this@MainActivity,
+                    "Não foi possível organizar a pasta: ${it.message}. Nada foi apagado.",
+                    android.widget.Toast.LENGTH_LONG,
+                ).show()
+            }
+            PlaylistFolderSync.importFromFolder(this@MainActivity)
+            lastRefreshAtMs = 0L
+            refreshLibrary()
+        }
+    }
+
+    /** Antes de mover: backup das playlists do app e gravação delas em playlists/ já com os caminhos finais. */
+    private fun prepareForMigration(tree: SafTree, plan: List<PlannedMove>) {
+        val store = PlaylistStore(this)
+        val backupDir = tree.ensureDirPath("${MigrationPlanner.META_DIR}/backup") ?: error("sem pasta de backup")
+        val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
+        tree.writeTextFile(backupDir, "playlists-$stamp.json", store.rawBackup(), "application/json")
+            ?: error("não foi possível gravar o backup das playlists")
+        store.remapKeys(
+            plan.filter { it.kind == PlannedMove.Kind.SONG }.associate { TrackKeys.compareKey(it.from) to it.to },
+        )
+        PlaylistFolderSync.exportBlocking(this)
     }
 
     private fun selectTrack(summary: AudioTrack) {
@@ -263,6 +355,7 @@ class MainActivity : ComponentActivity() {
             }
             if (detailed != null && selectedTrack?.id == summary.id) {
                 selectedTrack = detailed.copy(
+                    relPath = summary.relPath,
                     durationMs = detailed.durationMs.takeIf { it > 0 } ?: summary.durationMs,
                     modifiedAtSeconds = summary.modifiedAtSeconds,
                     sizeBytes = summary.sizeBytes,
@@ -283,6 +376,7 @@ class MainActivity : ComponentActivity() {
             }.also { result ->
                 result.updatedTrack?.let { updatedRaw ->
                     val updated = updatedRaw.copy(
+                        relPath = track.relPath,
                         modifiedAtSeconds = System.currentTimeMillis() / 1000L,
                         sizeBytes = track.sizeBytes,
                         location = track.location,
@@ -380,7 +474,9 @@ class MainActivity : ComponentActivity() {
         prefs.edit().remove(ShareContract.PREF_DOWNLOAD_TREE).apply()
         downloadFolderLabel = ""
         tracks = emptyList()
+        LibraryIndex.update(emptyList(), false)
         lastLibraryTrackIds = null
+        folderChecked = false
     }
 
     /**

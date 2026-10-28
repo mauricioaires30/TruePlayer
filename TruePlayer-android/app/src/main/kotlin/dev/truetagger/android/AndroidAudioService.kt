@@ -12,6 +12,7 @@ import dev.truetagger.model.AudioTrack
 import dev.truetagger.model.EditableTags
 import dev.truetagger.model.MetadataResult
 import dev.truetagger.model.TagWriteResult
+import dev.truetagger.model.TrackKeys
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.images.ArtworkFactory
@@ -37,6 +38,12 @@ class AndroidAudioService(private val context: Context) {
             listOf(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI)
         }
 
+        val pathColumn = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            MediaStore.Audio.Media.RELATIVE_PATH
+        } else {
+            MediaStore.Audio.Media.DATA
+        }
+
         collections.forEach { collection ->
             val projection = arrayOf(
                 MediaStore.Audio.Media._ID,
@@ -50,6 +57,7 @@ class AndroidAudioService(private val context: Context) {
                 MediaStore.Audio.Media.DURATION,
                 MediaStore.Audio.Media.DATE_MODIFIED,
                 MediaStore.Audio.Media.SIZE,
+                pathColumn,
             )
             val selection: String
             val selectionArgs: Array<String>?
@@ -79,15 +87,23 @@ class AndroidAudioService(private val context: Context) {
                 val duration = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
                 val modified = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DATE_MODIFIED)
                 val size = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.SIZE)
+                val path = cursor.getColumnIndexOrThrow(pathColumn)
 
                 while (cursor.moveToNext()) {
                     val itemUri = ContentUris.withAppendedId(collection, cursor.getLong(id))
+                    val displayName = cursor.getString(name).orEmpty().ifBlank { "audio" }
+                    val relPath = TrackKeys.relPath(
+                        rootRelativePath = rootRelativePath,
+                        mediaPath = cursor.getString(path).orEmpty(),
+                        displayName = displayName,
+                    )
                     val trackValue = cursor.getInt(track).takeIf { it > 0 }?.let { raw ->
                         if (raw >= 1000) (raw % 1000).toString() else raw.toString()
                     }.orEmpty()
                     tracks += AudioTrack(
                         id = itemUri.toString(),
-                        displayName = cursor.getString(name).orEmpty().ifBlank { "audio" },
+                        relPath = relPath,
+                        displayName = displayName,
                         title = cursor.getString(title).orEmpty(),
                         artist = cursor.getString(artist).orEmpty().takeUnless { it == "<unknown>" }.orEmpty(),
                         album = cursor.getString(album).orEmpty().takeUnless { it == "<unknown>" }.orEmpty(),

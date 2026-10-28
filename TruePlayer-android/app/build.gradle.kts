@@ -96,4 +96,6 @@ dependencies {
     implementation(libs.jaudiotagger)
     implementation(libs.youtubedl.android)
     implementation(libs.youtubedl.ffmpeg)
+
+    testImplementation(libs.junit)
 }

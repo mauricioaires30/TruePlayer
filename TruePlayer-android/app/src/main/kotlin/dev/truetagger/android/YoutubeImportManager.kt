@@ -11,6 +11,7 @@ import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import com.yausername.youtubedl_android.mapper.VideoInfo
+import dev.truetagger.data.MigrationPlanner
 import dev.truetagger.model.ImportStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -127,9 +128,9 @@ class YoutubeImportManager(private val context: Context) {
 
         val cleanOutput = cleanedOutputFile(output, mediaTitle)
         onStatus(ImportStatus(url, "Salvando arquivo...", 100, mediaTitle = mediaTitle))
-        copyIntoTree(cleanOutput, destinationTree)
-        scanPrimaryTreeFile(destinationTree, cleanOutput.name)
-        val finalName = cleanOutput.name
+        val savedName = copyIntoTree(cleanOutput, destinationTree)
+        scanPrimaryTreeFile(destinationTree, "${MigrationPlanner.SONGS_DIR}/$savedName")
+        val finalName = savedName
         output.delete()
         workDir.deleteRecursively()
         return finalName
@@ -237,15 +238,17 @@ class YoutubeImportManager(private val context: Context) {
         return "Processando vídeo..."
     }
 
-    private fun copyIntoTree(source: File, treeUri: Uri) {
+    /** Salva em `songs/` (criada se faltar). Devolve o nome final, já que o SAF renomeia duplicatas. */
+    private fun copyIntoTree(source: File, treeUri: Uri): String {
         val resolver = context.contentResolver
-        val treeId = DocumentsContract.getTreeDocumentId(treeUri)
-        val parent = DocumentsContract.buildDocumentUriUsingTree(treeUri, treeId)
-        val destination = DocumentsContract.createDocument(resolver, parent, "audio/mpeg", source.name)
+        val tree = SafTree(context, treeUri)
+        val parentDocId = tree.ensureDir(tree.rootDocId, MigrationPlanner.SONGS_DIR) ?: tree.rootDocId
+        val destinationId = tree.create(parentDocId, "audio/mpeg", source.name)
             ?: error("Não foi possível criar o arquivo na pasta escolhida.")
-        resolver.openOutputStream(destination, "w")!!.use { output ->
+        resolver.openOutputStream(tree.docUri(destinationId), "w")!!.use { output ->
             source.inputStream().use { input -> input.copyTo(output) }
         }
+        return tree.children(parentDocId).firstOrNull { it.docId == destinationId }?.name ?: source.name
     }
 
     private fun scanPrimaryTreeFile(treeUri: Uri, fileName: String) {
