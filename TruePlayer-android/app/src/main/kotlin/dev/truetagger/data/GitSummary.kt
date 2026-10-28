@@ -17,10 +17,11 @@ data class GitSummary(
     val playlistsRemoved: List<String>,
     val statsChanged: Boolean,
     val other: Int,
+    val settingsChanged: Boolean = false,
 ) {
     val isEmpty: Boolean
         get() = songsAdded.isEmpty() && songsRemoved.isEmpty() && tagsEdited.isEmpty() && playlistsAdded.isEmpty() &&
-            playlistsChanged.isEmpty() && playlistsRemoved.isEmpty() && !statsChanged && other == 0
+            playlistsChanged.isEmpty() && playlistsRemoved.isEmpty() && !statsChanged && !settingsChanged && other == 0
 
     companion object {
         fun from(changes: List<GitChange>): GitSummary {
@@ -31,6 +32,7 @@ data class GitSummary(
             val playlistsChanged = ArrayList<String>()
             val playlistsRemoved = ArrayList<String>()
             var stats = false
+            var settings = false
             var other = 0
             for (change in changes.distinctBy { it.path }) {
                 val path = change.path.replace('\\', '/')
@@ -51,11 +53,12 @@ data class GitSummary(
                         }
                     }
                     path == "${MigrationPlanner.META_DIR}/stats.json" -> stats = true
-                    // configurações, backups e a lixeira não entram na mensagem, mas contam como mudança
+                    path == "${MigrationPlanner.META_DIR}/settings.json" -> settings = true
+                    // backups e a lixeira não entram na mensagem, mas contam como mudança
                     else -> other++
                 }
             }
-            return GitSummary(songsAdded, songsRemoved, tagsEdited, playlistsAdded, playlistsChanged, playlistsRemoved, stats, other)
+            return GitSummary(songsAdded, songsRemoved, tagsEdited, playlistsAdded, playlistsChanged, playlistsRemoved, stats, other, settings)
         }
     }
 }
@@ -81,6 +84,7 @@ object CommitMessage {
         if (summary.tagsEdited.isNotEmpty()) {
             parts += "${summary.tagsEdited.size} " + plural(summary.tagsEdited.size, "tag editada", "tags editadas")
         }
+        if (summary.settingsChanged) parts += "configurações atualizadas"
         if (minutesListened > 0L) parts += "$minutesListened min ouvidos"
         if (parts.isEmpty()) parts += "atualização da pasta"
         return "$date: " + parts.joinToString(", ")

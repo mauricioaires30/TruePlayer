@@ -35,6 +35,7 @@ import dev.truetagger.model.TrackKeys
 import dev.truetagger.ui.FolderCleanupDialog
 import dev.truetagger.ui.UpdateDialogs
 import dev.truetagger.ui.FolderMigrationDialogs
+import dev.truetagger.ui.OnboardingDialog
 import dev.truetagger.ui.TrueTaggerPlayerApp
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.CoroutineScope
@@ -43,6 +44,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -68,6 +70,7 @@ class MainActivity : ComponentActivity() {
     private var folderAccessNeeded by mutableStateOf(false)
     private var accessPromptDismissed = false
     private var permissionsRevision by mutableStateOf(0)
+    private var showTutorial by mutableStateOf(false)
     private var openSettingsIfDenied = false
     private var migrationRunning = false
     private var folderChecked = false
@@ -141,9 +144,11 @@ class MainActivity : ComponentActivity() {
         ConnectivityObserver.start(this)
         whatsNew = UpdateManager.takeWhatsNew(this)
         UpdateWorker.schedule(this, settings.autoCheckUpdates)
-        // Confere ao abrir e sempre que a internet volta (no máximo a cada 6 horas).
+        // Ao abrir o app: confere sem aviso, só aparece algo se houver versão nova.
+        if (settings.autoCheckUpdates && savedInstanceState == null) UpdateManager.check(this, manual = false, force = true)
+        // E de novo sempre que a internet volta (no máximo a cada 6 horas).
         appScope.launch {
-            ConnectivityObserver.reconnects.collect {
+            ConnectivityObserver.reconnects.drop(1).collect {
                 if (settings.autoCheckUpdates) UpdateManager.check(this@MainActivity, manual = false)
             }
         }
@@ -151,6 +156,8 @@ class MainActivity : ComponentActivity() {
         checkFolderAccess()
         registerMediaObserver()
         YoutubeDownloadService.resumePending(this)
+        // Tutorial só para instalação nova e sem pasta; quem atualizou nunca vê.
+        showTutorial = OnboardingState.shouldShow(this)
 
         setContent {
             TrueTaggerPlayerApp(
@@ -189,6 +196,14 @@ class MainActivity : ComponentActivity() {
                 onDismiss = UpdateManager::dismiss,
                 onWhatsNewDismiss = { whatsNew = null },
             )
+            if (showTutorial) {
+                OnboardingDialog(
+                    folderLabel = downloadFolderLabel,
+                    permissions = permissionItems(),
+                    onChooseFolder = { folderPicker.launch(savedDownloadTree()) },
+                    onFinish = { OnboardingState.finish(this@MainActivity); showTutorial = false },
+                )
+            }
             FolderMigrationDialogs(
                 preview = migrationPreview,
                 progress = migrationProgress,
@@ -220,6 +235,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onStop() {
         PlayStatsState.flush(this)
+        SettingsBackup.scheduleWrite(this, settings)
         super.onStop()
     }
 
@@ -448,6 +464,9 @@ class MainActivity : ComponentActivity() {
             PermissionItem("Pasta de músicas", savedFolder != null && MusicFolder.hasPermission(this, savedFolder)) {
                 folderPicker.launch(savedDownloadTree())
             },
+            PermissionItem("Instalar atualizações", UpdateManager.canInstallPackages(this)) {
+                UpdateManager.openInstallPermissionSettings(this)
+            },
         )
     }
 
@@ -560,6 +579,7 @@ class MainActivity : ComponentActivity() {
             if (detailed != null && selectedTrack?.id == summary.id) {
                 selectedTrack = detailed.copy(
                     relPath = summary.relPath,
+                    trackNumber = detailed.trackNumber.ifBlank { summary.trackNumber },
                     durationMs = detailed.durationMs.takeIf { it > 0 } ?: summary.durationMs,
                     modifiedAtSeconds = summary.modifiedAtSeconds,
                     sizeBytes = summary.sizeBytes,

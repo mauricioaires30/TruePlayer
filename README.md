@@ -9,7 +9,7 @@ Player de músicas e editor de tags para Android. Toca os arquivos da sua pasta 
 - **Ajuste automático de tags:** depois do download, procura a música no Apple Music, no Deezer e no Genius e preenche título, artista, álbum e capa. Se não achar com certeza, não mexe nas tags.
 - **Estatísticas:** tempo ouvido e vezes tocadas por música, álbum e artista (semana, mês, 6 meses, ano e sempre).
 - **Pasta organizada e portátil:** tudo fica na pasta que você escolher (`songs/` para músicas, `playlists/` para as playlists em `.m3u`, `.trueplayer/` para estatísticas e configurações). Trocar de celular não perde nada.
-- **Git:** se a pasta tem um repositório `.git`, o app mostra o que mudou, monta a mensagem do commit e envia ao GitHub. Se não tem, pode criar um.
+- **Git:** se a pasta tem um repositório `.git`, o app mostra o que mudou, monta a mensagem do commit e envia ao GitHub (junto vão as estatísticas, as configurações e as capas dos álbuns). Se não tem, pode criar um. Só envia: nada do GitHub vem para a pasta.
 - **Atualização automática:** confere as versões novas em [Releases](https://github.com/mauricioaires30/TruePlayer/releases), mostra as novidades e instala depois da sua confirmação.
 
 ## Instalar

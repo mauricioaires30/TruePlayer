@@ -237,6 +237,14 @@ object PlayStatsState {
         scheduleFolderWrite(context)
     }
 
+    /** Como [flush], mas só volta depois de gravar o `stats.json` na pasta. Usado antes de um commit do Git (fora da thread principal). */
+    fun flushNow(context: android.content.Context) {
+        val app = context.applicationContext
+        if (!initialized) return
+        synchronized(this) { saveLocal(app) }
+        kotlinx.coroutines.runBlocking { folderLock.withLock { runCatching { syncFolder(app, write = true) } } }
+    }
+
     /** Junta o `.trueplayer/stats.json` da pasta com o que há no aparelho. Chame depois de uma varredura confiável. */
     suspend fun loadFromFolder(context: android.content.Context) {
         val app = context.applicationContext

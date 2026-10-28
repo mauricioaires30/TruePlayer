@@ -43,6 +43,9 @@ internal object LibraryIndex {
 
     fun track(id: String): AudioTrack? = byId[id]
 
+    /** Todas as músicas da última varredura. */
+    fun all(): List<AudioTrack> = byId.values.toList()
+
     fun resolve(entry: PlaylistEntry): AudioTrack? {
         val key = entry.key
         if (key.startsWith("content:")) return byId[key]

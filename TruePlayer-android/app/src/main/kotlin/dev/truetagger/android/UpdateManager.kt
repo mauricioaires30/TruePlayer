@@ -54,6 +54,9 @@ object UpdateManager {
     const val ACTION_INSTALL_RESULT = "dev.truetagger.action.UPDATE_INSTALL_RESULT"
     private const val MIN_CHECK_INTERVAL_MS = 6L * 60L * 60L * 1000L
 
+    /** Ao abrir o app o intervalo é curto, só para não bater na API do GitHub a cada abertura seguida. */
+    private const val MIN_START_CHECK_INTERVAL_MS = 5L * 60L * 1000L
+
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _ui = MutableStateFlow<UpdateUi>(UpdateUi.Idle)
     val ui: StateFlow<UpdateUi> = _ui.asStateFlow()
@@ -68,12 +71,17 @@ object UpdateManager {
         _ui.value = UpdateUi.Idle
     }
 
-    /** Consulta o GitHub. [manual] mostra "você já está na versão mais recente" e erros. */
-    fun check(context: Context, manual: Boolean) {
+    /**
+     * Consulta o GitHub. [manual] mostra "você já está na versão mais recente" e erros. Sem [manual],
+     * a conferência é silenciosa: só aparece algo se existir versão nova. [force] ignora o intervalo
+     * mínimo entre conferências (usado ao abrir o app).
+     */
+    fun check(context: Context, manual: Boolean, force: Boolean = false) {
         val app = context.applicationContext
         if (!manual) {
             val last = prefs(app).getLong(KEY_LAST_CHECK, 0L)
-            if (System.currentTimeMillis() - last < MIN_CHECK_INTERVAL_MS) return
+            val minimum = if (force) MIN_START_CHECK_INTERVAL_MS else MIN_CHECK_INTERVAL_MS
+            if (System.currentTimeMillis() - last < minimum) return
         }
         if (_ui.value is UpdateUi.Downloading) return
         if (manual) _ui.value = UpdateUi.Checking
@@ -267,6 +275,15 @@ object UpdateManager {
 
     // ---- notificação
 
+    /** Primeiras linhas das novidades, sem os símbolos do Markdown, para o corpo da notificação. */
+    private fun notesPreview(notes: String): String {
+        val lines = dev.truetagger.data.SimpleMarkdown.parse(notes, dropLeadingHeading = true)
+            .filter { it.kind != dev.truetagger.data.MdKind.BLANK }
+            .take(4)
+            .map { line -> (if (line.kind == dev.truetagger.data.MdKind.BULLET) "• " else "") + line.spans.joinToString("") { it.text } }
+        return if (lines.isEmpty()) "Toque para ver as novidades e atualizar" else lines.joinToString("\n")
+    }
+
     private fun notifyAvailable(context: Context, release: ReleaseInfo) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -278,8 +295,9 @@ object UpdateManager {
         )
         val notification = Notification.Builder(context, CHANNEL)
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
-            .setContentTitle("Atualização disponível")
-            .setContentText("TruePlayer ${release.version} — toque para ver as novidades")
+            .setContentTitle("TruePlayer ${release.version} disponível")
+            .setContentText("Toque para ver as novidades e atualizar")
+            .setStyle(Notification.BigTextStyle().bigText(notesPreview(release.notes)))
             .setContentIntent(open)
             .setAutoCancel(true)
             .build()

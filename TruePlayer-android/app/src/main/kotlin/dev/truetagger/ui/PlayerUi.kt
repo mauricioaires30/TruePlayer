@@ -459,7 +459,7 @@ private fun TruePlayerIntro() {
                 color = Color(0xFFF7F0FF),
             )
             Text(
-                text = "Carregando app...",
+                text = "Carregando app…",
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color(0xFFBDB1C8),
             )
@@ -795,6 +795,9 @@ fun TrueTaggerPlayerApp(
                 when {
                     editorOpen -> CurrentTrackScreen(
                         track = selectedTrack,
+                        albumTracks = remember(tracks, selectedTrack?.id, selectedTrack?.album, selectedTrack?.artist, selectedTrack?.albumArtist) {
+                            selectedTrack?.let { sel -> sameAlbumTracks(tracks, sel) }.orEmpty()
+                        },
                         draft = selectedTrack?.let { drafts[it.id] },
                         settings = settings,
                         onDraftChange = { id, draft -> drafts[id] = draft },
@@ -1894,23 +1897,36 @@ private fun InfoDialog(track: AudioTrack, onArtist: () -> Unit, onAlbum: () -> U
         onDismissRequest = onDismiss,
         title = { Text(track.displayTitle()) },
         text = {
-            Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(UiTokens.itemSpacing)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Artista: ")
-                    TextButton(onClick = onArtist, contentPadding = PaddingValues(0.dp), enabled = track.artist.isNotBlank()) { Text(track.artist.ifBlank { "—" }, color = MaterialTheme.colorScheme.primary) }
-                }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Álbum: ")
-                    TextButton(onClick = onAlbum, contentPadding = PaddingValues(0.dp), enabled = track.album.isNotBlank()) { Text(track.album.ifBlank { "—" }, color = MaterialTheme.colorScheme.primary) }
-                }
-                Text("Ano: ${track.year.ifBlank { "—" }}")
-                Text("Gênero: ${track.genre.ifBlank { "—" }}")
-                Text("Faixa: ${track.trackNumber.ifBlank { "—" }}")
-                Text("Duração: ${formatDuration(track.durationMs)}")
+            Column(Modifier.fillMaxWidth()) {
+                InfoRow("Artista", track.artist, onArtist)
+                InfoRow("Álbum", track.album, onAlbum)
+                InfoRow("Ano", track.year)
+                InfoRow("Gênero", track.genre)
+                InfoRow("Faixa", track.trackNumber)
+                InfoRow("Duração", formatDuration(track.durationMs))
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Fechar") } },
     )
+}
+
+/** Uma linha da ficha da música: rótulo apagado à esquerda, valor ao lado. Com [onClick], o valor abre a tela correspondente. */
+@Composable
+private fun InfoRow(label: String, value: String, onClick: (() -> Unit)? = null) {
+    val clickable = onClick != null && value.isNotBlank()
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .then(if (clickable) Modifier.clickable { onClick?.invoke() } else Modifier)
+            .padding(vertical = 5.dp),
+    ) {
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(76.dp))
+        Text(
+            value.ifBlank { "—" },
+            color = if (clickable) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f),
+        )
+    }
 }
 
 @Composable
@@ -2885,6 +2901,20 @@ private fun formatDuration(ms: Long): String {
     return if (hours > 0) String.format(Locale.getDefault(), "%02d:%02d:%s", hours, minutes, rest) else "$minutes:$rest"
 }
 private fun AudioTrack.displayTitle(): String = title.ifBlank { displayName.substringBeforeLast('.').ifBlank { "Sem título" } }
+/** Artista principal, sem "feat.", vírgulas ou "&": serve para juntar as faixas de um mesmo álbum. */
+private fun primaryArtist(name: String): String =
+    name.lowercase().split(" feat", " ft.", ",", " & ", ";", " x ").first().trim()
+
+/** Músicas do mesmo álbum que [sel]: mesmo nome e mesmo artista principal (ou artista do álbum). */
+private fun sameAlbumTracks(all: List<AudioTrack>, sel: AudioTrack): List<AudioTrack> {
+    if (sel.album.isBlank()) return emptyList()
+    val owners = listOf(sel.artist, sel.albumArtist).map(::primaryArtist).filter { it.isNotBlank() }.toSet()
+    return all.filter { other ->
+        other.album.equals(sel.album, ignoreCase = true) &&
+            (owners.isEmpty() || primaryArtist(other.artist) in owners || other.id == sel.id)
+    }
+}
+
 private fun AudioTrack.toEditableTags() = EditableTags(title = title.ifBlank { displayName.substringBeforeLast('.') }, artist = artist, album = album, albumArtist = albumArtist, trackNumber = trackNumber, trackTotal = trackTotal, discNumber = discNumber, discTotal = discTotal, year = year, genre = genre, isrc = isrc, artworkBytes = artworkBytes)
 
 @Composable

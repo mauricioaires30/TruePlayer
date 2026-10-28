@@ -1,6 +1,7 @@
 package dev.truetagger.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -10,6 +11,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.FolderOff
+import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -23,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
@@ -40,6 +44,8 @@ fun GitSection() {
     val state by GitController.ui.collectAsState()
     var showSetup by remember { mutableStateOf(false) }
     var showSync by remember { mutableStateOf(false) }
+    var showChange by remember { mutableStateOf(false) }
+    var showUndo by remember { mutableStateOf(false) }
 
     // Mantém a tela ligada enquanto o git trabalha (o primeiro envio pode demorar).
     val view = LocalView.current
@@ -66,7 +72,7 @@ fun GitSection() {
 
             GitUi.Availability.NO_REPO -> GitAction(
                 "Criar repositório Git", Icons.Rounded.CloudUpload,
-                "A pasta ainda não tem git. Liga a um repositório do GitHub e envia.",
+                "A pasta ainda não tem git. Liga a um repositório do GitHub e envia a pasta.",
             ) {
                 if (GitController.hasAllFilesAccess()) showSetup = true else GitController.requestAllFilesAccess(context)
             }
@@ -97,6 +103,16 @@ fun GitSection() {
                     "Mostra o que mudou, faz o commit e envia ao GitHub se você quiser.",
                     enabled = summary != null,
                 ) { showSync = true }
+                GitAction(
+                    "Trocar repositório", Icons.Rounded.SwapHoriz,
+                    "Aponta a pasta para outro repositório do GitHub.",
+                ) { showChange = true }
+                if (state.copiedFromGithub > 0) {
+                    GitAction(
+                        "Tirar arquivos copiados do GitHub (${state.copiedFromGithub})", Icons.Rounded.FolderOff,
+                        "Uma ligação antiga trouxe esses arquivos do GitHub para a pasta. Eles vão para a _lixeira.",
+                    ) { showUndo = true }
+                }
             }
         }
     }
@@ -110,7 +126,15 @@ fun GitSection() {
                     Column {
                         Text(text)
                         Spacer(Modifier.height(12.dp))
-                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                        val fraction = state.busyFraction
+                        if (fraction == null) {
+                            LinearProgressIndicator(Modifier.fillMaxWidth())
+                        } else {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                LinearProgressIndicator(progress = { fraction }, modifier = Modifier.weight(1f))
+                                Text("${(fraction * 100).toInt()}%", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 12.dp))
+                            }
+                        }
                         Spacer(Modifier.height(12.dp))
                         Text("Não feche o app.", style = MaterialTheme.typography.bodySmall)
                     }
@@ -141,8 +165,86 @@ fun GitSection() {
     if (showSync && state.summary != null) {
         SyncDialog(state = state, onClose = { showSync = false }) { message, name, email, push, token, remoteUrl ->
             showSync = false
-            GitController.commit(context, message, name, email, push, token, remoteUrl)
+            // Sem mudanças novas, "Enviar" só manda o que já foi commitado.
+            if (push && state.summary?.isEmpty == true) {
+                GitController.push(context, token, remoteUrl)
+            } else {
+                GitController.commit(context, message, name, email, push, token, remoteUrl)
+            }
         }
+    }
+    if (showChange) {
+        ChangeRemoteDialog(
+            hasToken = state.hasToken,
+            onCancel = { showChange = false },
+            onConfirm = { url, token -> showChange = false; GitController.changeRemote(context, url, token) },
+        )
+    }
+    if (showUndo) {
+        MaterialTheme(colorScheme = TruePlayerDarkScheme) {
+            AlertDialog(
+                onDismissRequest = { showUndo = false },
+                title = { Text("Tirar os arquivos copiados?") },
+                text = {
+                    Text(
+                        "${state.copiedFromGithub} arquivo(s) vieram do GitHub para a pasta. Vão para a _lixeira, sem apagar. " +
+                            "Suas outras músicas não mudam.",
+                    )
+                },
+                confirmButton = { TextButton(onClick = { showUndo = false; GitController.undoGithubCopy(context) }) { Text("Mover") } },
+                dismissButton = { TextButton(onClick = { showUndo = false }) { Text("Cancelar") } },
+            )
+        }
+    }
+    state.replaceBranch?.let { branch ->
+        MaterialTheme(colorScheme = TruePlayerDarkScheme) {
+            AlertDialog(
+                onDismissRequest = GitController::cancelReplace,
+                title = { Text("Substituir o que está no GitHub?") },
+                text = {
+                    Text(
+                        "A branch $branch do GitHub tem outro histórico. Se continuar, ela fica só com o que está na pasta " +
+                            "e o que estava lá se perde. Isso não dá para desfazer.",
+                    )
+                },
+                confirmButton = { TextButton(onClick = GitController::confirmReplace) { Text("Substituir") } },
+                dismissButton = { TextButton(onClick = GitController::cancelReplace) { Text("Cancelar") } },
+            )
+        }
+    }
+}
+
+@Composable
+private fun ChangeRemoteDialog(hasToken: Boolean, onCancel: () -> Unit, onConfirm: (url: String, token: String) -> Unit) {
+    var url by remember { mutableStateOf("") }
+    var token by remember { mutableStateOf("") }
+    MaterialTheme(colorScheme = TruePlayerDarkScheme) {
+        AlertDialog(
+            onDismissRequest = onCancel,
+            title = { Text("Trocar repositório") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    Text(
+                        "Cole o endereço do outro repositório. O app confere o endereço e o token antes de trocar.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(url, { url = it.trim() }, label = { Text("Endereço do repositório") }, placeholder = { Text("https://github.com/usuario/repo.git") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                    OutlinedTextField(
+                        token, { token = it.trim() },
+                        label = { Text(if (hasToken) "Token (vazio usa o guardado)" else "Token do GitHub") },
+                        visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = url.isNotBlank() && (hasToken || token.isNotBlank()),
+                    onClick = { onConfirm(url, token) },
+                ) { Text("Trocar") }
+            },
+            dismissButton = { TextButton(onClick = onCancel) { Text("Cancelar") } },
+        )
     }
 }
 
@@ -155,6 +257,7 @@ private fun describe(summary: dev.truetagger.data.GitSummary): String {
     }
     if (summary.tagsEdited.isNotEmpty()) parts += "${summary.tagsEdited.size} tag(s) editada(s)"
     if (summary.statsChanged) parts += "estatísticas atualizadas"
+    if (summary.settingsChanged) parts += "configurações atualizadas"
     if (parts.isEmpty()) parts += "${summary.other} arquivo(s) de apoio"
     return "Mudou desde o último commit: " + parts.joinToString(", ") + "."
 }
@@ -192,7 +295,7 @@ private fun SetupDialog(initialUser: String, onCancel: () -> Unit, onConfirm: (G
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     Text(
-                        "Cole o endereço do repositório, novo ou já com arquivos. O que só existir no GitHub vem para a pasta, e se um arquivo for diferente vale o da pasta. O primeiro envio pode ser grande, use Wi-Fi.",
+                        "Cole o endereço do repositório, novo ou já com arquivos. Nada do GitHub vem para a pasta. Se a branch já existir lá, o app pergunta antes de substituir. O primeiro envio pode ser grande, use Wi-Fi.",
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Spacer(Modifier.height(8.dp))
@@ -267,7 +370,7 @@ private fun SyncDialog(
                         )
                     }
                     Text(
-                        "Arquivos acima de 100 MB ficam de fora. Se o GitHub tiver algo que você não tem, o envio para.",
+                        "Arquivos acima de 100 MB ficam de fora. Se a branch do GitHub tiver outro histórico, o app pergunta antes de substituir.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp),
@@ -279,9 +382,9 @@ private fun SyncDialog(
                 Column {
                     TextButton(enabled = identityOk && !summary.isEmpty, onClick = { onCommit(message, name, email, false, token, remoteUrl) }) { Text("Só commit") }
                     TextButton(
-                        enabled = identityOk && !summary.isEmpty && (!needsToken || token.isNotBlank()) && (!needsRemote || remoteUrl.isNotBlank()),
+                        enabled = (summary.isEmpty || identityOk) && (!needsToken || token.isNotBlank()) && (!needsRemote || remoteUrl.isNotBlank()),
                         onClick = { onCommit(message, name, email, true, token, remoteUrl) },
-                    ) { Text("Commit e enviar") }
+                    ) { Text(if (summary.isEmpty) "Enviar" else "Commit e enviar") }
                 }
             },
             dismissButton = { TextButton(onClick = onClose) { Text("Fechar") } },

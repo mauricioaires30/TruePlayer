@@ -4,10 +4,13 @@ import dev.truetagger.data.GitChange
 import dev.truetagger.data.GitLimits
 import dev.truetagger.data.GitRemote
 import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.api.ResetCommand
-import org.eclipse.jgit.lib.Constants
+import org.eclipse.jgit.lib.ObjectId
+import org.eclipse.jgit.revwalk.RevWalk
+import org.eclipse.jgit.storage.file.WindowCacheConfig
+import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.lib.ProgressMonitor
+import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.RemoteRefUpdate
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
 import java.io.File
@@ -15,10 +18,14 @@ import java.io.File
 /** Operações de git (JGit) na pasta de músicas. Todas bloqueiam: chame fora da thread principal. */
 internal object GitManager {
     /** Mostra em português o andamento que o JGit informa em inglês. */
-    class TextMonitor(private val onText: (String) -> Unit) : ProgressMonitor {
+    class TextMonitor(
+        private val onFraction: (Float?) -> Unit = {},
+        private val onText: (String) -> Unit,
+    ) : ProgressMonitor {
         private var title = ""
         private var total = 0
         private var done = 0
+        private var lastPercent = -1
 
         override fun start(totalTasks: Int) {}
 
@@ -26,12 +33,20 @@ internal object GitManager {
             this.title = translate(title)
             total = totalWork
             done = 0
-            onText(this.title)
+            lastPercent = -1
+            onFraction(if (totalWork > 0) 0f else null)
+            onText(if (totalWork > 0) "${this.title}: 0 de $totalWork (0%)" else this.title)
         }
 
         override fun update(completed: Int) {
             done += completed
-            if (total > 0) onText("$title ${(done * 100L / total).coerceAtMost(100)}%")
+            if (total <= 0) return
+            val percent = (done * 100L / total).coerceAtMost(100).toInt()
+            // Só avisa quando a porcentagem muda, para não atualizar a tela a cada arquivo.
+            if (percent == lastPercent) return
+            lastPercent = percent
+            onFraction(percent / 100f)
+            onText("$title: ${done.coerceAtMost(total)} de $total ($percent%)")
         }
 
         override fun endTask() {}
@@ -43,13 +58,42 @@ internal object GitManager {
             text.contains("Compressing", true) -> "Compactando"
             text.contains("Writing", true) -> "Enviando"
             text.contains("Finding sources", true) -> "Preparando"
+            text.contains("Receiving", true) -> "Baixando do GitHub"
+            text.contains("Resolving", true) -> "Montando o histórico"
+            text.contains("Checking out", true) -> "Atualizando a pasta"
             else -> text
         }
     }
 
+    init {
+        // O Android dá ~256 MB ao app. Com o padrão do JGit, uma música de 40 MB era lida inteira para a
+        // memória (e comprimida), e algumas músicas seguidas estouravam o limite. Aqui os arquivos grandes
+        // passam em fluxo e as janelas de leitura ficam pequenas.
+        runCatching {
+            val cache = WindowCacheConfig()
+            cache.packedGitLimit = 8L shl 20
+            cache.packedGitWindowSize = 1 shl 20
+            cache.setPackedGitMMAP(false)
+            cache.deltaBaseCacheLimit = 2 shl 20
+            cache.streamFileThreshold = 1 shl 20
+            @Suppress("DEPRECATION")
+            cache.install()
+        }
+    }
+
+    /**
+     * Abre o repositório para operações pesadas (status, commit, envio) com limites de memória só nesta
+     * sessão. Não use para quem grava a configuração: estes ajustes não devem ir para o `.git/config`.
+     */
+    private fun openRepo(dir: File): Git = Git.open(dir).also { git ->
+        val config = git.repository.config
+        config.setLong("core", null, "bigFileThreshold", 1L shl 20)
+        config.setInt("pack", null, "threads", 1)
+    }
+
     fun hasRepo(dir: File) = File(dir, ".git").exists()
 
-    fun status(dir: File): List<GitChange> = Git.open(dir).use { git ->
+    fun status(dir: File): List<GitChange> = openRepo(dir).use { git ->
         val st = git.status().call()
         val out = ArrayList<GitChange>()
         st.added.forEach { out += GitChange(it, GitChange.Kind.ADDED) }
@@ -108,25 +152,41 @@ internal object GitManager {
     }
 
     fun commitAll(dir: File, message: String, name: String, email: String, monitor: ProgressMonitor? = null) {
-        Git.open(dir).use { git ->
+        openRepo(dir).use { git ->
             val author = PersonIdent(name, email)
-            git.add().addFilepattern(".").call()
+            if (monitor != null) {
+                // Registra em lotes para poder mostrar quantos arquivos já foram.
+                val paths = status(dir).filter { it.kind != GitChange.Kind.REMOVED }.map { it.path }.distinct()
+                if (paths.isNotEmpty()) {
+                    monitor.beginTask("Registrando arquivos", paths.size)
+                    paths.chunked(50).forEach { chunk ->
+                        val add = git.add()
+                        chunk.forEach { add.addFilepattern(it) }
+                        add.call()
+                        monitor.update(chunk.size)
+                    }
+                    monitor.endTask()
+                }
+            }
+            // Com andamento, os arquivos novos e alterados já entraram em lotes acima; sem ele, entra tudo de uma vez.
+            if (monitor == null) git.add().addFilepattern(".").call()
             // Segunda passada: registra os arquivos que sumiram.
             git.add().setUpdate(true).addFilepattern(".").call()
             git.commit().setMessage(message).setAuthor(author).setCommitter(author).setAllowEmpty(false).call()
         }
     }
 
-    /** Endereço do repositório remoto; link SSH é trocado por https (o envio é feito com token). Nunca força o envio. */
-    fun push(dir: File, remoteUrl: String, user: String, token: String, monitor: ProgressMonitor) {
+    /** Endereço do repositório remoto; link SSH é trocado por https (o envio é feito com token). Só força o envio (substitui a branch do GitHub) quando [replace] vem confirmado pelo usuário. */
+    fun push(dir: File, remoteUrl: String, user: String, token: String, monitor: ProgressMonitor, replace: Boolean = false) {
         val target = GitRemote.toHttps(remoteUrl)
         check(target.isNotBlank()) { "este repositório não tem um endereço de envio (origin)" }
-        Git.open(dir).use { git ->
+        openRepo(dir).use { git ->
             val branch = git.repository.fullBranch.orEmpty()
             check(branch.startsWith("refs/heads/")) { "o repositório está sem branch ativa (HEAD solto)" }
             val results = git.push()
                 .setRemote(target)
-                .add(branch)
+                // Com [replace] o "+" troca a branch do GitHub pelo histórico daqui (o histórico de lá se perde).
+                .setRefSpecs(RefSpec((if (replace) "+" else "") + "$branch:$branch"))
                 .setCredentialsProvider(UsernamePasswordCredentialsProvider(user, token))
                 .setProgressMonitor(monitor)
                 .call()
@@ -134,7 +194,7 @@ internal object GitManager {
                 when (update.status) {
                     RemoteRefUpdate.Status.OK, RemoteRefUpdate.Status.UP_TO_DATE -> Unit
                     RemoteRefUpdate.Status.REJECTED_NONFASTFORWARD, RemoteRefUpdate.Status.REJECTED_REMOTE_CHANGED ->
-                        error("o repositório no GitHub tem mudanças que não estão aqui. Nada foi sobrescrito.")
+                        error("a branch do GitHub tem outro histórico. Nada foi sobrescrito.")
                     RemoteRefUpdate.Status.REJECTED_OTHER_REASON ->
                         error(update.message ?: "o GitHub recusou o envio (confira se algum arquivo passa de 100 MB)")
                     else -> error("o envio falhou (${update.status})")
@@ -175,52 +235,123 @@ internal object GitManager {
             .call()
             .isNotEmpty()
 
-    /** Resultado de [adoptRemote]: branch usada e quantos arquivos só existiam no GitHub e vieram para a pasta. */
-    data class Adopted(val branch: String, val restored: Int)
+    /** Branches do repositório remoto com o commit de cada uma. Não baixa nada. */
+    fun remoteHeads(url: String, user: String, token: String): Map<String, String> =
+        Git.lsRemoteRepository()
+            .setRemote(url)
+            .setHeads(true)
+            .setCredentialsProvider(UsernamePasswordCredentialsProvider(user, token))
+            .call()
+            .filter { it.name.startsWith("refs/heads/") }
+            .associate { it.name.removePrefix("refs/heads/") to it.objectId.name }
+
+    /** O commit [remoteId] do GitHub está no histórico local? Então o envio é um avanço normal. */
+    fun isAncestorOfHead(dir: File, remoteId: String): Boolean {
+        val result = runCatching {
+            openRepo(dir).use { git ->
+                val repo = git.repository
+                val head = repo.resolve("HEAD")
+                if (head == null) {
+                    false
+                } else {
+                    RevWalk(repo).use { walk ->
+                        walk.isMergedInto(walk.parseCommit(ObjectId.fromString(remoteId)), walk.parseCommit(head))
+                    }
+                }
+            }
+        }
+        // Commit que não existe aqui (alguém enviou de outro lugar) conta como "não é ancestral".
+        return result.getOrDefault(false)
+    }
 
     /**
-     * Liga uma pasta recém-iniciada (sem commits) a um repositório que já tem conteúdo.
-     * Baixa o histórico, aponta a branch para o último commit de lá e mantém a pasta como está:
-     * - arquivo só na pasta: entra no próximo commit;
-     * - arquivo só no GitHub: é trazido para a pasta (nunca sobrescreve nada);
-     * - arquivo nos dois com conteúdo diferente: vale o da pasta, e a versão do GitHub fica no histórico.
-     * Como o próximo commit parte do último de lá, o envio é um avanço normal, sem forçar.
+     * A branch atual já existe no GitHub com um histórico que não é o da pasta? Nesse caso o envio só
+     * é possível substituindo a branch do GitHub, o que o app só faz depois de perguntar.
      */
-    fun adoptRemote(dir: File, preferredBranch: String, user: String, token: String, monitor: ProgressMonitor): Adopted =
-        Git.open(dir).use { git ->
-            git.fetch()
-                .setRemote("origin")
-                .setCredentialsProvider(UsernamePasswordCredentialsProvider(user, token))
-                .setProgressMonitor(monitor)
-                .call()
-            val repo = git.repository
-            val prefix = "refs/remotes/origin/"
-            val remotes = repo.refDatabase.getRefsByPrefix(prefix).filter { !it.name.endsWith("/HEAD") }
-            val chosen = listOf(preferredBranch, "main", "master")
-                .firstNotNullOfOrNull { wanted -> remotes.firstOrNull { it.name == prefix + wanted } }
-                ?: remotes.firstOrNull()
-                ?: error("não achei nenhuma branch no repositório do GitHub")
-            val name = chosen.name.removePrefix(prefix)
+    fun sendNeedsReplace(dir: File, url: String, user: String, token: String): Boolean {
+        val heads = remoteHeads(GitRemote.toHttps(url), user, token)
+        val current = branch(dir) ?: return false
+        val remoteId = heads[current] ?: return false
+        return !isAncestorOfHead(dir, remoteId)
+    }
 
-            val create = repo.updateRef("refs/heads/$name")
-            create.setNewObjectId(chosen.objectId)
-            create.setForceUpdate(true)
-            create.update()
-            repo.updateRef(Constants.HEAD).link("refs/heads/$name")
-            val config = repo.config
-            if (name != preferredBranch) {
-                config.unsetSection("branch", preferredBranch)
+    /**
+     * Arquivos que uma ligação antiga (versão 1.6.1) copiou do GitHub para a pasta: estão no último
+     * commit baixado, não foram alterados e têm a data de gravação logo depois do download. Só serve
+     * para pastas em que o app baixou o histórico; sem isso, devolve vazio.
+     */
+    fun copiedFromRemote(dir: File): List<String> {
+        val fetchHead = File(dir, ".git/FETCH_HEAD")
+        if (!fetchHead.isFile) return emptyList()
+        val from = fetchHead.lastModified() - 2 * 60_000L
+        val until = fetchHead.lastModified() + 60 * 60_000L
+        val result = runCatching {
+            openRepo(dir).use { git ->
+                val repo = git.repository
+                val remoteRef = repo.branch?.let { repo.exactRef("refs/remotes/origin/$it") }
+                if (remoteRef == null) {
+                    emptyList()
+                } else {
+                    val st = git.status().call()
+                    val touched = (st.modified + st.changed + st.added + st.removed + st.missing).toSet()
+                    val out = ArrayList<String>()
+                    RevWalk(repo).use { walk ->
+                        TreeWalk(repo).use { tw ->
+                            tw.addTree(walk.parseCommit(remoteRef.objectId).tree)
+                            tw.isRecursive = true
+                            while (tw.next()) {
+                                val path = tw.pathString
+                                val file = File(dir, path)
+                                if (file.isFile && file.lastModified() in from..until && path !in touched) out += path
+                            }
+                        }
+                    }
+                    out
+                }
             }
-            config.setString("branch", name, "remote", "origin")
-            config.setString("branch", name, "merge", "refs/heads/$name")
-            config.save()
-
-            // Índice igual ao do GitHub, pasta intocada: o que difere aparece como mudança.
-            git.reset().setMode(ResetCommand.ResetType.MIXED).setRef("HEAD").call()
-            val missing = git.status().call().missing.toList()
-            if (missing.isNotEmpty()) git.checkout().addPaths(missing).call()
-            Adopted(name, missing.size)
         }
+        return result.getOrDefault(emptyList())
+    }
+
+    /** Move os arquivos para `_lixeira/<carimbo>/` (mesmos caminhos). Nunca sobrescreve nem apaga: devolve quantos foram. */
+    fun moveToTrash(dir: File, paths: List<String>, stamp: String): Int {
+        val trash = File(dir, "_lixeira/$stamp")
+        var moved = 0
+        paths.forEach { path ->
+            val from = File(dir, path)
+            val to = File(trash, path)
+            if (!from.isFile || to.exists()) return@forEach
+            to.parentFile?.mkdirs()
+            if (from.renameTo(to)) {
+                moved++
+                // Tira as pastas que ficaram vazias (File.delete só funciona em pasta vazia).
+                var parent = from.parentFile
+                while (parent != null && parent != dir && parent.delete()) parent = parent.parentFile
+            }
+        }
+        return moved
+    }
+
+    /**
+     * Deixa o repositório sem commits (como recém-criado), mantendo endereço, nome e e-mail.
+     * Só faz se o último commit é exatamente o que veio do GitHub: assim nenhum commit seu se perde.
+     * Devolve false quando não fez.
+     */
+    fun resetToFreshRepo(dir: File): Boolean = Git.open(dir).use { git ->
+        val repo = git.repository
+        val branch = repo.branch ?: return false
+        val head = repo.resolve("HEAD") ?: return false
+        val remote = repo.exactRef("refs/remotes/origin/$branch")?.objectId ?: return false
+        if (head != remote) return false
+        // O JGit recusa apagar a branch atual; o arquivo da referência é solto e some junto com o índice.
+        val ref = File(dir, ".git/refs/heads/$branch")
+        if (!ref.isFile || !ref.delete()) return false
+        File(dir, ".git/index").delete()
+        File(dir, ".git/FETCH_HEAD").delete()
+        repo.refDatabase.getRefsByPrefix("refs/remotes/").forEach { r -> File(dir, ".git/${r.name}").delete() }
+        repo.refDatabase.refresh()
+        repo.exactRef("refs/heads/$branch") == null
+    }
 
     /** True se não há nada para registrar (pasta igual ao último commit). */
     fun isClean(dir: File): Boolean = Git.open(dir).use { it.status().call().isClean }

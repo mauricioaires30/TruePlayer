@@ -349,13 +349,15 @@ class MusicPlaybackService : Service() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             ))
             // Sem isso o Android não sabe quem chamar quando o app está fechado e o botão de mídia é apertado.
+            // Precisa ser mutável: é o Android quem acrescenta ao intent a tecla apertada (EXTRA_KEY_EVENT).
+            // Com FLAG_IMMUTABLE o receiver era chamado sem tecla nenhuma e não fazia nada.
             setMediaButtonReceiver(PendingIntent.getBroadcast(
                 this@MusicPlaybackService, 2,
                 Intent(Intent.ACTION_MEDIA_BUTTON).setComponent(ComponentName(this@MusicPlaybackService, MediaButtonReceiver::class.java)),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_UPDATE_CURRENT or if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
             ))
             setCallback(object : MediaSession.Callback() {
-                override fun onPlay() { resume() }
+                override fun onPlay() { if (queue.isEmpty()) restoreSavedPlaybackState(shouldPlay = true) else resume() }
                 override fun onPause() { pause() }
                 override fun onSkipToNext() { next() }
                 override fun onSkipToPrevious() { previous() }
@@ -633,6 +635,8 @@ class MusicPlaybackService : Service() {
         }
 
         val generation = ++playerGeneration
+        // stopPlayback() desativa a sessão; sem reativar, o sistema deixa de mandar os botões para cá.
+        if (shouldPlay) runCatching { session.isActive = true }
         pendingPlay = shouldPlay
         mediaPrepared = false
         detachedPositionMs = -1L
@@ -756,8 +760,11 @@ class MusicPlaybackService : Service() {
             // Player solto por ociosidade (ou nunca carregado): recarrega a faixa
             // atual exatamente na posição em que parou.
             if (queue.isEmpty()) {
-                pendingPlay = true
-                updateStateAndNotification()
+                // Nada carregado (serviço recém-criado ou fila limpa): volta para a última música tocada.
+                if (!restoreSavedPlaybackState(shouldPlay = true)) {
+                    pendingPlay = true
+                    updateStateAndNotification()
+                }
                 return
             }
             val startAt = detachedPositionMs.coerceAtLeast(0L)
@@ -915,10 +922,11 @@ class MusicPlaybackService : Service() {
         } to 0
     }
 
-    private fun restoreSavedPlaybackState(shouldPlay: Boolean = false) {
+    /** Devolve false quando não há música guardada para retomar. */
+    private fun restoreSavedPlaybackState(shouldPlay: Boolean = false): Boolean {
         val prefs = getSharedPreferences(PREFS_LAST, MODE_PRIVATE)
         val trackId = prefs.getString("track_id", "").orEmpty()
-        if (trackId.isBlank()) return
+        if (trackId.isBlank()) return false
         val track = AudioTrack(
             id = trackId,
             displayName = prefs.getString("track_title", "").orEmpty(),
@@ -937,6 +945,7 @@ class MusicPlaybackService : Service() {
         queue = rebuilt.first
         index = rebuilt.second
         loadCurrent(shouldPlay = shouldPlay, startPositionMs = prefs.getLong("position_ms", 0L))
+        return true
     }
 
     private fun persistPlaybackState() {

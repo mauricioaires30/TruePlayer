@@ -72,7 +72,7 @@ fun UpdateDialogs(
                     }
                 },
                 confirmButton = { TextButton(onClick = { onUpdate(state.release) }) { Text("Atualizar") } },
-                dismissButton = { TextButton(onClick = onDismiss) { Text("Depois") } },
+                dismissButton = { TextButton(onClick = onDismiss) { Text("Agora não") } },
             )
 
             is UpdateUi.Downloading -> AlertDialog(

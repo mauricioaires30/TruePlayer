@@ -101,6 +101,8 @@ val TruePlayerDarkScheme = darkColorScheme(
 @Composable
 fun CurrentTrackScreen(
     track: AudioTrack?,
+    /** Músicas do mesmo álbum que o app conhece (inclui a atual). */
+    albumTracks: List<AudioTrack> = emptyList(),
     draft: EditableTags?,
     settings: AppSettings,
     onDraftChange: (String, EditableTags) -> Unit,
@@ -136,6 +138,7 @@ fun CurrentTrackScreen(
     LaunchedEffect(
         track.id,
         track.albumArtist,
+        track.trackNumber,
         track.trackTotal,
         track.discNumber,
         track.discTotal,
@@ -239,6 +242,39 @@ fun CurrentTrackScreen(
         item {
             SectionTitle("Organização do álbum")
             FormCard {
+                if (albumTracks.size > 1) {
+                    // Ordem do álbum como o app mostra na tela do álbum (disco, faixa, título).
+                    val ordered = remember(albumTracks, track.id) {
+                        albumTracks.sortedWith(
+                            compareBy({ it.discNumber.toIntOrNull() ?: 0 }, { it.trackNumber.toIntOrNull() ?: Int.MAX_VALUE }, { it.title.lowercase() }),
+                        )
+                    }
+                    val position = ordered.indexOfFirst { it.id == track.id } + 1
+                    val libraryNumber = track.trackNumber.ifBlank { if (position > 0) position.toString() else "" }
+                    val total = albumTracks.size.toString()
+                    // Só completa o que está vazio: o total do álbum no arquivo pode ser maior que o que o app conhece.
+                    val fillNumber = editor.trackNumber.isBlank() && libraryNumber.isNotBlank()
+                    val fillTotal = editor.trackTotal.isBlank()
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text(
+                            "Este álbum tem ${albumTracks.size} músicas no app" + if (position > 0) " • esta é a $position" + "ª" else "",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.weight(1f),
+                        )
+                        TextButton(
+                            enabled = fillNumber || fillTotal,
+                            onClick = {
+                                updateEditor(
+                                    editor.copy(
+                                        trackNumber = if (fillNumber) libraryNumber else editor.trackNumber,
+                                        trackTotal = if (fillTotal) total else editor.trackTotal,
+                                    ),
+                                )
+                            },
+                        ) { Text("Preencher vazios") }
+                    }
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
                     Box(Modifier.weight(1f)) { EditableField("Faixa", editor.trackNumber) { updateEditor(editor.copy(trackNumber = it)) } }
                     Box(Modifier.weight(1f)) { EditableField("Total de faixas", editor.trackTotal) { updateEditor(editor.copy(trackTotal = it)) } }
@@ -270,8 +306,8 @@ fun CurrentTrackScreen(
         item {
             Button(
                 enabled = !saving && editor.title.isNotBlank(),
-                modifier = Modifier.fillMaxWidth().height(52.dp),
-                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth().height(UiTokens.controlHeight),
+                shape = RoundedCornerShape(UiTokens.buttonRadius),
                 onClick = {
                     saving = true
                     message = null
@@ -285,7 +321,7 @@ fun CurrentTrackScreen(
             ) {
                 Icon(Icons.Rounded.Save, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text(if (saving) "Salvando..." else "Salvar alterações")
+                Text(if (saving) "Salvando…" else "Salvar alterações")
             }
         }
     }
@@ -428,7 +464,7 @@ private fun SuggestionStrip(
     Column(verticalArrangement = Arrangement.spacedBy(UiTokens.sectionSpacing)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("Sugestões", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            if (loading) Text("Buscando...", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            if (loading) Text("Buscando…", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
         val suggestionState = rememberLazyListState()
         LazyRow(
@@ -510,7 +546,7 @@ private fun CurrentTrackPreviewDialog(track: AudioTrack, onDismiss: () -> Unit) 
                 if (track.artist.isNotBlank()) Text(track.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (track.album.isNotBlank()) Text(track.album, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (track.durationMs > 0) Text(formatDuration(track.durationMs), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Button(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("Fechar") }
+                TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("Fechar") }
             }
         }
     }
@@ -534,7 +570,11 @@ private fun SuggestionPreviewDialog(result: MetadataResult, onDismiss: () -> Uni
                 if (details.isNotBlank()) Text(details, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(horizontalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
                     TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Fechar") }
-                    Button(onClick = onUse, modifier = Modifier.weight(1f)) { Text("Usar") }
+                    Button(
+                        onClick = onUse,
+                        modifier = Modifier.weight(1f).height(UiTokens.controlHeight),
+                        shape = RoundedCornerShape(UiTokens.buttonRadius),
+                    ) { Text("Usar") }
                 }
             }
         }

@@ -27,7 +27,8 @@ class GitSummaryTest {
         assertEquals(listOf("Estudo"), summary.playlistsChanged)
         assertEquals(listOf("Velha"), summary.playlistsRemoved)
         assertTrue(summary.statsChanged)
-        assertEquals(2, summary.other)
+        assertEquals(1, summary.other) // a lixeira conta como "outros"
+        assertTrue(summary.settingsChanged) // settings.json tem categoria própria
         assertFalse(summary.isEmpty)
     }
 

@@ -39,6 +39,11 @@ class YoutubeDownloadService : Service() {
     /** Itens que entraram e ainda não terminaram, inclusive o que está baixando agora. */
     private val unfinished = AtomicInteger(0)
 
+    /** Músicas do lote atual (zera quando a fila esvazia): "Música 2 de 5" na notificação. */
+    private val batchLock = Any()
+    private val batchTotal = AtomicInteger(0)
+    private val batchDone = AtomicInteger(0)
+
     override fun onCreate() {
         super.onCreate()
         importer = YoutubeImportManager(this)
@@ -51,7 +56,10 @@ class YoutubeDownloadService : Service() {
                 // Se o serviço foi encerrado no meio, o item continua na fila para a próxima vez.
                 currentCoroutineContext().ensureActive()
                 queue.remove(item.id)
-                unfinished.decrementAndGet()
+                synchronized(batchLock) {
+                    if (!item.expand) batchDone.incrementAndGet()
+                    unfinished.decrementAndGet()
+                }
                 finishBatchIfIdle()
             }
         }
@@ -60,8 +68,15 @@ class YoutubeDownloadService : Service() {
     }
 
     private fun enqueue(item: QueuedDownload) {
+        synchronized(batchLock) {
+            if (unfinished.get() == 0) {
+                batchTotal.set(0)
+                batchDone.set(0)
+            }
+            if (!item.expand) batchTotal.incrementAndGet()
+            unfinished.incrementAndGet()
+        }
         queuedDownloads.incrementAndGet()
-        unfinished.incrementAndGet()
         downloadChannel.trySend(item)
     }
 
@@ -92,7 +107,7 @@ class YoutubeDownloadService : Service() {
         runCatching {
             startForeground(
                 ShareContract.NOTIFICATION_ID,
-                buildNotification(title = "Lendo a playlist", text = "Pegando a lista de músicas do link...", indeterminate = true),
+                buildNotification(title = "Lendo a playlist", text = "Pegando a lista de músicas do link…", indeterminate = true),
             )
             MusicFolder.treeUri(this) ?: error("Libere a pasta de músicas em Configurações antes de baixar.")
         }.onFailure { error ->
@@ -128,15 +143,19 @@ class YoutubeDownloadService : Service() {
         val url = task.url
         val job = task.playlist
         var videoTitle = ""
-        val queuedAfterCurrent = queuedDownloads.get()
-        val position = job?.let { "Playlist $it (${task.position}/${task.total})" }
+        val position = when {
+            job != null -> "Playlist $job • ${task.position} de ${task.total}"
+            batchTotal.get() > 1 -> "Música ${batchDone.get() + 1} de ${batchTotal.get()}"
+            else -> null
+        }
 
         runCatching {
             startForeground(
                 ShareContract.NOTIFICATION_ID,
                 buildNotification(
-                    title = position ?: "Preparando download",
-                    text = if (queuedAfterCurrent > 0) "Lendo informações... • $queuedAfterCurrent na fila" else "Lendo informações...",
+                    title = "Preparando download",
+                    text = "Lendo as informações do link…",
+                    subText = position,
                     indeterminate = true,
                 ),
             )
@@ -147,19 +166,18 @@ class YoutubeDownloadService : Service() {
             importer.downloadAudio(url, tree) { status ->
                 if (status.mediaTitle.isNotBlank()) videoTitle = status.mediaTitle
                 val progress = status.progress?.coerceIn(0, 100)
-                val queued = queuedDownloads.get()
-                val queueText = if (queued > 0) " • $queued na fila" else ""
-                val shownTitle = when {
-                    videoTitle.isNotBlank() && progress != null && progress > 0 -> "$videoTitle • $progress%"
-                    videoTitle.isNotBlank() -> videoTitle
-                    progress != null && progress > 0 -> "Baixando música • $progress%"
-                    else -> "Preparando download"
-                }
+                val waiting = queuedDownloads.get()
+                val step = status.message.ifBlank { "Processando…" }.trimEnd('.', '…')
                 startForeground(
                     ShareContract.NOTIFICATION_ID,
                     buildNotification(
-                        title = position ?: shownTitle,
-                        text = (if (position != null) "$shownTitle — " else "") + status.message.ifBlank { "Processando..." } + queueText,
+                        title = videoTitle.ifBlank { "Baixando música" },
+                        text = buildString {
+                            append(step)
+                            if (progress != null && progress > 0) append(" • $progress%")
+                            if (waiting > 0) append(" • $waiting na fila")
+                        },
+                        subText = position,
                         progress = progress,
                         indeterminate = progress == null || progress == 0,
                     ),
@@ -197,7 +215,7 @@ class YoutubeDownloadService : Service() {
         val counts = queue.finishJob(name)
         val missing = if (counts.failed > 0) " (${counts.failed} não baixaram)" else ""
         finishWithNotification(
-            title = "Playlist baixada",
+            title = if (counts.done == total) "Playlist baixada" else "Playlist baixada com falhas",
             text = "$name: ${counts.done} de $total músicas$missing",
             completed = counts.done > 0,
             failed = counts.done == 0,
@@ -241,6 +259,7 @@ class YoutubeDownloadService : Service() {
     private fun buildNotification(
         title: String,
         text: String,
+        subText: String? = null,
         progress: Int? = null,
         indeterminate: Boolean = false,
         ongoing: Boolean = true,
@@ -265,6 +284,9 @@ class YoutubeDownloadService : Service() {
                     else -> android.R.drawable.stat_sys_download
                 }
             )
+            .setSubText(subText)
+            .setCategory(if (ongoing) NotificationCompat.CATEGORY_PROGRESS else NotificationCompat.CATEGORY_STATUS)
+            .setShowWhen(false)
             .setOnlyAlertOnce(true)
             .setOngoing(ongoing)
             .setAutoCancel(completed || failed)

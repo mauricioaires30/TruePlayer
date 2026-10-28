@@ -28,7 +28,7 @@ class GitManagerTest {
         File(it, "playlists/Treino.m3u").writeText("#EXTM3U\n../songs/a.mp3\n")
     }
 
-    private fun bareRemote(): File = temp.newFolder("remoto.git").also { Git.init().setBare(true).setDirectory(it).setInitialBranch("main").call().close() }
+    private fun bareRemote(name: String = "remoto.git"): File = temp.newFolder(name).also { Git.init().setBare(true).setDirectory(it).setInitialBranch("main").call().close() }
 
     private fun summaryOf(dir: File) = GitSummary.from(GitManager.status(dir))
 
@@ -155,8 +155,36 @@ class GitManagerTest {
         assertTrue(summaryOf(dir).songsAdded.isEmpty())
     }
 
-    @Test fun adoptingARemoteWithContentKeepsEverythingAndPushesForward() {
-        // GitHub já tem a.mp3 (igual), b.mp3 (diferente do local), so-no-github.mp3 e um .gitignore.
+    @Test fun commitWithProgressRegistersEverythingAndReportsNumbers() {
+        val dir = music()
+        GitManager.init(dir, "main", "https://github.com/x/y.git", "Fulano", "f@x.com")
+        GitManager.updateGitignore(dir, emptyList())
+        val first = ArrayList<String>()
+        GitManager.commitAll(dir, "Primeiro", "Fulano", "f@x.com", GitManager.TextMonitor { first += it })
+        assertTrue(GitManager.isClean(dir))
+        assertTrue(first.first().startsWith("Registrando arquivos: 0 de "))
+        assertTrue(first.last().endsWith("(100%)"))
+
+        // pasta nova com subpastas, arquivo alterado e arquivo apagado
+        File(dir, "songs/Artista/Album").mkdirs()
+        File(dir, "songs/Artista/Album/nova.mp3").writeText("nova")
+        File(dir, "songs/a.mp3").writeText("a editada")
+        File(dir, "songs/b.mp3").delete()
+        GitManager.commitAll(dir, "Segundo", "Fulano", "f@x.com", GitManager.TextMonitor { })
+        assertTrue(GitManager.isClean(dir))
+        Git.open(dir).use { git ->
+            val head = git.repository.resolve("HEAD^{tree}")
+            val names = org.eclipse.jgit.treewalk.TreeWalk(git.repository).use { walk ->
+                walk.addTree(head); walk.isRecursive = true
+                generateSequence { if (walk.next()) walk.pathString else null }.toList()
+            }
+            assertTrue("songs/Artista/Album/nova.mp3" in names)
+            assertFalse("songs/b.mp3" in names)
+        }
+    }
+
+    /** Cria um "GitHub" com um histórico próprio (a.mp3, b.mp3 e so-no-github.mp3) e devolve a pasta bare. */
+    private fun remoteWithOtherHistory(): File {
         val remote = bareRemote()
         val seed = temp.newFolder("semente")
         Git.init().setDirectory(seed).setInitialBranch("main").call().use { git ->
@@ -168,49 +196,115 @@ class GitManagerTest {
             git.commit().setMessage("Antigo").setAuthor("Outro", "o@x.com").setCommitter("Outro", "o@x.com").call()
             git.push().setRemote(remote.toURI().toString()).add("refs/heads/main").call()
         }
-
-        val dir = music() // local: a.mp3 igual, b.mp3 "audio b", playlist
-        val url = remote.toURI().toString()
-        GitManager.init(dir, "main", url, "Fulano", "f@x.com")
-        val adopted = GitManager.adoptRemote(dir, "main", "Fulano", "", GitManager.TextMonitor { })
-        assertEquals("main", adopted.branch)
-        assertEquals(1, adopted.restored)
-        assertEquals("so la", File(dir, "songs/so-no-github.mp3").readText())
-        assertEquals("audio b", File(dir, "songs/b.mp3").readText()) // a pasta vale
-
-        // mudanças em relação ao GitHub: b.mp3 diferente e playlist nova; a.mp3 e a música que veio de lá não aparecem
-        val summary = summaryOf(dir)
-        assertEquals(listOf("b.mp3"), summary.tagsEdited)
-        assertEquals(listOf("Treino"), summary.playlistsAdded)
-        assertTrue(summary.songsRemoved.isEmpty())
-
-        GitManager.updateGitignore(dir, emptyList())
-        GitManager.commitAll(dir, "Pasta de músicas do TruePlayer", "Fulano", "f@x.com")
-        GitManager.push(dir, url, "Fulano", "", GitManager.TextMonitor { })
-
-        // o remoto avançou sem perder o commit antigo nem a música que só existia lá
-        Git.open(remote).use { git ->
-            val log = git.log().call().map { it.fullMessage.trim() }
-            assertEquals(listOf("Pasta de músicas do TruePlayer", "Antigo"), log)
-        }
-        assertTrue(GitManager.isClean(dir))
+        return remote
     }
 
-    @Test fun adoptingPicksTheRemoteBranchWhenTheNameDiffers() {
-        val remote = temp.newFolder("remoto-master.git").also { Git.init().setBare(true).setDirectory(it).setInitialBranch("master").call().close() }
-        val seed = temp.newFolder("semente2")
-        Git.init().setDirectory(seed).setInitialBranch("master").call().use { git ->
-            File(seed, "x.txt").writeText("x")
-            git.add().addFilepattern(".").call()
-            git.commit().setMessage("Antigo").setAuthor("Outro", "o@x.com").setCommitter("Outro", "o@x.com").call()
-            git.push().setRemote(remote.toURI().toString()).add("refs/heads/master").call()
+    @Test fun remoteHeadsListsBranchesWithoutDownloadingAnything() {
+        val remote = remoteWithOtherHistory()
+        val heads = GitManager.remoteHeads(remote.toURI().toString(), "x", "")
+        assertEquals(setOf("main"), heads.keys)
+        assertEquals(40, heads.getValue("main").length)
+        assertTrue(GitManager.remoteHeads(bareRemote("vazio.git").toURI().toString(), "x", "").isEmpty())
+    }
+
+    @Test fun sendNeedsReplaceOnlyWhenTheGithubBranchHasAnotherHistory() {
+        val url = remoteWithOtherHistory().toURI().toString()
+        val dir = music()
+        GitManager.init(dir, "main", url, "Fulano", "f@x.com")
+        GitManager.updateGitignore(dir, emptyList())
+        GitManager.commitAll(dir, "Nosso", "Fulano", "f@x.com")
+        // histórico diferente do de lá
+        assertTrue(GitManager.sendNeedsReplace(dir, url, "x", ""))
+
+        // depois de enviar (substituindo), um novo commit é um avanço normal
+        GitManager.push(dir, url, "x", "", GitManager.TextMonitor { }, replace = true)
+        File(dir, "songs/c.mp3").writeText("c")
+        GitManager.commitAll(dir, "Mais um", "Fulano", "f@x.com")
+        assertFalse(GitManager.sendNeedsReplace(dir, url, "x", ""))
+
+        // remoto vazio nunca pede para substituir
+        val empty = bareRemote("vazio.git").toURI().toString()
+        assertFalse(GitManager.sendNeedsReplace(dir, empty, "x", ""))
+    }
+
+    @Test fun replacingMakesTheGithubEqualToTheFolderAndPlainPushStillRefuses() {
+        val remote = remoteWithOtherHistory()
+        val url = remote.toURI().toString()
+        val dir = music()
+        GitManager.init(dir, "main", url, "Fulano", "f@x.com")
+        GitManager.updateGitignore(dir, emptyList())
+        GitManager.commitAll(dir, "Nosso", "Fulano", "f@x.com")
+
+        try {
+            GitManager.push(dir, url, "x", "", GitManager.TextMonitor { })
+            fail("o envio sem confirmar não pode sobrescrever")
+        } catch (expected: IllegalStateException) {
+            assertTrue(expected.message.orEmpty().contains("outro histórico"))
         }
-        val dir = temp.newFolder("local")
-        GitManager.init(dir, "main", remote.toURI().toString(), "Fulano", "f@x.com")
-        val adopted = GitManager.adoptRemote(dir, "main", "Fulano", "", GitManager.TextMonitor { })
-        assertEquals("master", adopted.branch)
-        assertEquals("master", GitManager.branch(dir))
-        assertEquals("x", File(dir, "x.txt").readText())
+        Git.open(remote).use { assertEquals(listOf("Antigo"), it.log().call().map { c -> c.fullMessage.trim() }) }
+
+        GitManager.push(dir, url, "x", "", GitManager.TextMonitor { }, replace = true)
+        Git.open(remote).use { assertEquals(listOf("Nosso"), it.log().call().map { c -> c.fullMessage.trim() }) }
+    }
+
+    /** Reproduz o que a ligação antiga da 1.6.1 fazia: baixava o histórico e copiava para a pasta o que só existia no GitHub. */
+    private fun legacyAdopt(dir: File) {
+        Git.open(dir).use { git ->
+            git.fetch().setRemote("origin").call()
+            val repo = git.repository
+            val ref = repo.exactRef("refs/remotes/origin/main")
+            val update = repo.updateRef("refs/heads/main")
+            update.setNewObjectId(ref.objectId)
+            update.setForceUpdate(true)
+            update.update()
+            repo.updateRef("HEAD").link("refs/heads/main")
+            git.reset().setMode(org.eclipse.jgit.api.ResetCommand.ResetType.MIXED).setRef("HEAD").call()
+            git.checkout().addPaths(git.status().call().missing.toList()).call()
+        }
+    }
+
+    @Test fun filesCopiedByTheOldLinkAreFoundMovedAndTheRepoStartsOver() {
+        val url = remoteWithOtherHistory().toURI().toString()
+        val dir = music()
+        // as músicas de verdade da pasta são antigas; só o que a ligação copiou tem a data de agora
+        val longAgo = System.currentTimeMillis() - 3L * 24 * 3600 * 1000
+        dir.walkTopDown().filter { it.isFile }.forEach { it.setLastModified(longAgo) }
+        GitManager.init(dir, "main", url, "Fulano", "f@x.com")
+        legacyAdopt(dir)
+        assertEquals("so la", File(dir, "songs/so-no-github.mp3").readText())
+
+        assertEquals(listOf("songs/so-no-github.mp3"), GitManager.copiedFromRemote(dir))
+
+        val moved = GitManager.moveToTrash(dir, GitManager.copiedFromRemote(dir), "2026-10-28 00-34-github")
+        assertEquals(1, moved)
+        assertFalse(File(dir, "songs/so-no-github.mp3").exists())
+        assertEquals("so la", File(dir, "_lixeira/2026-10-28 00-34-github/songs/so-no-github.mp3").readText())
+        // as músicas do usuário continuam onde estavam
+        assertEquals("audio b", File(dir, "songs/b.mp3").readText())
+
+        assertTrue(GitManager.resetToFreshRepo(dir))
+        assertEquals(url, GitManager.remoteUrl(dir))
+        assertEquals("main", GitManager.branch(dir))
+        assertTrue(GitManager.copiedFromRemote(dir).isEmpty())
+        // sem commits: tudo da pasta volta a ser novo
+        assertTrue(summaryOf(dir).songsAdded.containsAll(listOf("a.mp3", "b.mp3")))
+    }
+
+    @Test fun resetToFreshRepoKeepsCommitsThatAreNotFromTheGithub() {
+        val url = remoteWithOtherHistory().toURI().toString()
+        val dir = music()
+        GitManager.init(dir, "main", url, "Fulano", "f@x.com")
+        legacyAdopt(dir)
+        File(dir, "songs/nova.mp3").writeText("nova")
+        GitManager.commitAll(dir, "Meu commit", "Fulano", "f@x.com")
+        assertFalse(GitManager.resetToFreshRepo(dir))
+        assertEquals("Meu commit", Git.open(dir).use { it.log().call().first().fullMessage.trim() })
+    }
+
+    @Test fun nothingIsReportedWithoutAnOldFetch() {
+        val dir = music()
+        GitManager.init(dir, "main", "https://github.com/x/y.git", "Fulano", "f@x.com")
+        assertTrue(GitManager.copiedFromRemote(dir).isEmpty())
     }
 
     @Test fun repoWithoutOriginCanReceiveOne() {
