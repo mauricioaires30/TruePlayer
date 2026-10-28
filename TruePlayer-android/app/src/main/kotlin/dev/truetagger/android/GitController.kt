@@ -237,6 +237,10 @@ object GitController {
     }
 
     private fun reason(error: Throwable): String {
+        if (dev.truetagger.data.GitRetry.isTransient(error)) {
+            return "o GitHub ou a conexão falharam mesmo depois de tentar de novo. O que já foi enviado fica salvo e não é reenviado: " +
+                "toque em Enviar para continuar."
+        }
         if (generateSequence(error) { it.cause }.any { it.message.orEmpty().contains("Cannot lock") }) {
             return "o repositório está travado por uma operação que ficou pela metade (arquivo .git/index.lock). Tente de novo em um minuto."
         }

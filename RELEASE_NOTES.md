@@ -1,5 +1,5 @@
-﻿## TruePlayer 1.6.6
+﻿## TruePlayer 1.6.7
 
-- Sincronizar mostra a porcentagem total, a etapa, a contagem da fase atual e o tempo decorrido.
-- Tenta corrigir o erro "Inflater has been closed" no envio ao GitHub.
-- Erros do Git mostram onde aconteceram.
+- Git: botões separados "Commitar" e "Enviar".
+- Envio ao GitHub em partes de 200 MB, com nova tentativa automática em erro 500 ou queda de conexão.
+- Se um envio falhar, o próximo continua de onde parou.

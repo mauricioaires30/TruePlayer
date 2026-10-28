@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.Folder
+import androidx.compose.material.icons.rounded.Save
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
@@ -46,7 +47,8 @@ fun GitSection() {
     val context = LocalContext.current
     val state by GitController.ui.collectAsState()
     var showSetup by remember { mutableStateOf(false) }
-    var showSync by remember { mutableStateOf(false) }
+    var showCommit by remember { mutableStateOf(false) }
+    var showSend by remember { mutableStateOf(false) }
     var showChange by remember { mutableStateOf(false) }
     var showPull by remember { mutableStateOf(false) }
 
@@ -102,10 +104,15 @@ fun GitSection() {
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 GitAction(
-                    "Sincronizar com o Git", Icons.Rounded.CloudUpload,
-                    "Mostra o que mudou, faz o commit e envia ao GitHub se você quiser.",
+                    "Commitar", Icons.Rounded.Save,
+                    "Registra as mudanças da pasta no Git. Não envia.",
+                    enabled = summary != null && !summary.isEmpty,
+                ) { showCommit = true }
+                GitAction(
+                    "Enviar", Icons.Rounded.CloudUpload,
+                    "Manda os commits para o GitHub.",
                     enabled = summary != null,
-                ) { showSync = true }
+                ) { showSend = true }
                 GitAction(
                     "Baixar do GitHub", Icons.Rounded.CloudDownload,
                     "Traz para a pasta o que só existe no GitHub. O que você mudou não é sobrescrito.",
@@ -183,15 +190,16 @@ fun GitSection() {
             onConfirm = { request -> showSetup = false; GitController.setup(context, request) },
         )
     }
-    if (showSync && state.summary != null) {
-        SyncDialog(state = state, onClose = { showSync = false }) { message, name, email, push, token, remoteUrl ->
-            showSync = false
-            // Sem mudanças novas, "Enviar" só manda o que já foi commitado.
-            if (push && state.summary?.isEmpty == true) {
-                GitController.push(context, token, remoteUrl)
-            } else {
-                GitController.commit(context, message, name, email, push, token, remoteUrl)
-            }
+    if (showCommit && state.summary != null) {
+        CommitDialog(state = state, onClose = { showCommit = false }) { message, name, email ->
+            showCommit = false
+            GitController.commit(context, message, name, email, push = false, token = "")
+        }
+    }
+    if (showSend && state.summary != null) {
+        SendDialog(state = state, onClose = { showSend = false }) { token, remoteUrl ->
+            showSend = false
+            GitController.push(context, token, remoteUrl)
         }
     }
     if (showPull) {
@@ -355,23 +363,19 @@ private fun SetupDialog(initialUser: String, onCancel: () -> Unit, onConfirm: (G
 }
 
 @Composable
-private fun SyncDialog(
+private fun CommitDialog(
     state: GitUi,
     onClose: () -> Unit,
-    onCommit: (message: String, name: String, email: String, push: Boolean, token: String, remoteUrl: String) -> Unit,
+    onCommit: (message: String, name: String, email: String) -> Unit,
 ) {
     val summary = state.summary ?: return
     var message by remember { mutableStateOf(state.suggestedMessage) }
     var name by remember { mutableStateOf(state.userName) }
     var email by remember { mutableStateOf(state.userEmail) }
-    var token by remember { mutableStateOf("") }
-    var remoteUrl by remember { mutableStateOf("") }
-    val needsToken = !state.hasToken
-    val needsRemote = state.remote.isNullOrBlank()
     MaterialTheme(colorScheme = TruePlayerDarkScheme) {
         AlertDialog(
             onDismissRequest = onClose,
-            title = { Text("Sincronizar com o Git") },
+            title = { Text("Commitar") },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     Text(
@@ -379,26 +383,12 @@ private fun SyncDialog(
                         style = MaterialTheme.typography.bodySmall,
                     )
                     OutlinedTextField(message, { message = it }, label = { Text("Mensagem do commit") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
-                    if (needsRemote) {
-                        OutlinedTextField(
-                            remoteUrl, { remoteUrl = it.trim() }, label = { Text("Endereço do repositório (só para enviar)") },
-                            placeholder = { Text("https://github.com/usuario/repo.git") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
-                        )
-                    } else {
-                        Text("Usa o repositório que já está na pasta: ${state.remote}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
-                    }
                     if (state.userName.isBlank() || state.userEmail.isBlank()) {
                         OutlinedTextField(name, { name = it }, label = { Text("Seu nome") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                         OutlinedTextField(email, { email = it.trim() }, label = { Text("Seu e-mail") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                     }
-                    if (needsToken) {
-                        OutlinedTextField(
-                            token, { token = it.trim() }, label = { Text("Token do GitHub (só para enviar)") },
-                            visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
                     Text(
-                        "Arquivos acima de 100 MB ficam de fora. Se a branch do GitHub tiver outro histórico, o app pergunta antes de substituir.",
+                        "Arquivos acima de 100 MB ficam de fora. O commit fica só neste celular até você tocar em Enviar.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 8.dp),
@@ -406,16 +396,69 @@ private fun SyncDialog(
                 }
             },
             confirmButton = {
-                val identityOk = name.isNotBlank() && email.isNotBlank()
-                Column {
-                    TextButton(enabled = identityOk && !summary.isEmpty, onClick = { onCommit(message, name, email, false, token, remoteUrl) }) { Text("Só commit") }
-                    TextButton(
-                        enabled = (summary.isEmpty || identityOk) && (!needsToken || token.isNotBlank()) && (!needsRemote || remoteUrl.isNotBlank()),
-                        onClick = { onCommit(message, name, email, true, token, remoteUrl) },
-                    ) { Text(if (summary.isEmpty) "Enviar" else "Commit e enviar") }
+                TextButton(
+                    enabled = !summary.isEmpty && name.isNotBlank() && email.isNotBlank(),
+                    onClick = { onCommit(message, name, email) },
+                ) { Text("Commitar") }
+            },
+            dismissButton = { TextButton(onClick = onClose) { Text("Cancelar") } },
+        )
+    }
+}
+
+@Composable
+private fun SendDialog(
+    state: GitUi,
+    onClose: () -> Unit,
+    onSend: (token: String, remoteUrl: String) -> Unit,
+) {
+    val summary = state.summary ?: return
+    var token by remember { mutableStateOf("") }
+    var remoteUrl by remember { mutableStateOf("") }
+    val needsToken = !state.hasToken
+    val needsRemote = state.remote.isNullOrBlank()
+    MaterialTheme(colorScheme = TruePlayerDarkScheme) {
+        AlertDialog(
+            onDismissRequest = onClose,
+            title = { Text("Enviar ao GitHub") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    if (needsRemote) {
+                        OutlinedTextField(
+                            remoteUrl, { remoteUrl = it.trim() }, label = { Text("Endereço do repositório") },
+                            placeholder = { Text("https://github.com/usuario/repo.git") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                        )
+                    } else {
+                        Text("Repositório: ${state.remote}", style = MaterialTheme.typography.bodySmall)
+                    }
+                    if (needsToken) {
+                        OutlinedTextField(
+                            token, { token = it.trim() }, label = { Text("Token do GitHub") },
+                            visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                    if (!summary.isEmpty) {
+                        Text(
+                            "Há mudanças sem commit. Elas não vão: toque em Commitar antes.",
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
+                    Text(
+                        "O envio é feito em partes e continua de onde parou se falhar. Se a branch do GitHub tiver outro histórico, o app pergunta antes de substituir.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
                 }
             },
-            dismissButton = { TextButton(onClick = onClose) { Text("Fechar") } },
+            confirmButton = {
+                TextButton(
+                    enabled = (!needsToken || token.isNotBlank()) && (!needsRemote || remoteUrl.isNotBlank()),
+                    onClick = { onSend(token, remoteUrl) },
+                ) { Text("Enviar") }
+            },
+            dismissButton = { TextButton(onClick = onClose) { Text("Cancelar") } },
         )
     }
 }

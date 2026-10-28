@@ -400,6 +400,104 @@ class GitManagerTest {
         assertEquals(0, GitManager.clearStaleLocks(dir))
     }
 
+    private fun bigFolder(name: String): File = temp.newFolder(name).also { dir ->
+        File(dir, "songs").mkdirs()
+        listOf("a", "b", "c").forEach { File(dir, "songs/$it.mp3").writeText(it.repeat(40)) }
+    }
+
+    private fun logOf(dir: File): List<String> = Git.open(dir).use { it.log().call().map { c -> c.fullMessage.trim() } }
+
+    @Test fun anOversizedUnpushedCommitIsRemadeInSmallPartsBeforeSending() {
+        val remote = bareRemote()
+        val url = remote.toURI().toString()
+        val dir = bigFolder("grande")
+        GitManager.init(dir, "main", url, "Fulano", "f@x.com")
+        GitManager.updateGitignore(dir, emptyList())
+        GitManager.commitAll(dir, "Tudo", "Fulano", "f@x.com", GitManager.TextMonitor { }, maxPartBytes = Long.MAX_VALUE)
+        assertEquals(1, logOf(dir).size)
+
+        GitManager.push(dir, url, "x", "", GitManager.TextMonitor { }, maxPartBytes = 50L, retryDelaysMs = emptyList())
+
+        val remoteLog = logOf(remote)
+        assertTrue("várias partes: $remoteLog", remoteLog.size >= 3)
+        assertTrue(remoteLog.all { it.startsWith("Tudo (parte ") })
+        assertEquals(remoteLog, logOf(dir)) // o que o GitHub tem é exatamente o histórico daqui
+        // a pasta continua igual e limpa
+        assertTrue(GitManager.isClean(dir))
+        listOf("a", "b", "c").forEach { assertEquals(it.repeat(40), File(dir, "songs/$it.mp3").readText()) }
+        // enviar de novo não faz nada
+        GitManager.push(dir, url, "x", "", GitManager.TextMonitor { }, maxPartBytes = 50L, retryDelaysMs = emptyList())
+        assertEquals(remoteLog, logOf(remote))
+    }
+
+    @Test fun whatTheGithubAlreadyHasIsKeptWhenOnlyTheNewPartIsSplit() {
+        val remote = bareRemote()
+        val url = remote.toURI().toString()
+        val dir = temp.newFolder("incremental")
+        File(dir, "um.txt").writeText("u")
+        GitManager.init(dir, "main", url, "Fulano", "f@x.com")
+        GitManager.commitAll(dir, "Primeiro", "Fulano", "f@x.com", GitManager.TextMonitor { })
+        GitManager.push(dir, url, "x", "", GitManager.TextMonitor { })
+        assertEquals(listOf("Primeiro"), logOf(remote))
+
+        File(dir, "songs").mkdirs()
+        listOf("a", "b", "c").forEach { File(dir, "songs/$it.mp3").writeText(it.repeat(40)) }
+        GitManager.commitAll(dir, "Grande", "Fulano", "f@x.com", GitManager.TextMonitor { }, maxPartBytes = Long.MAX_VALUE)
+        GitManager.push(dir, url, "x", "", GitManager.TextMonitor { }, maxPartBytes = 50L, retryDelaysMs = emptyList())
+
+        val log = logOf(remote)
+        assertEquals("Primeiro", log.last()) // o commit que já estava lá continua na base
+        assertTrue(log.size >= 4)
+        assertTrue(log.dropLast(1).all { it.startsWith("Grande (parte ") })
+        assertEquals(log, logOf(dir))
+    }
+
+    @Test fun aFolderWithUnsavedChangesIsNeverRewritten() {
+        val remote = bareRemote()
+        val url = remote.toURI().toString()
+        val dir = bigFolder("suja")
+        GitManager.init(dir, "main", url, "Fulano", "f@x.com")
+        GitManager.commitAll(dir, "Tudo", "Fulano", "f@x.com", GitManager.TextMonitor { }, maxPartBytes = Long.MAX_VALUE)
+        File(dir, "songs/nova.mp3").writeText("ainda nao registrada")
+
+        GitManager.push(dir, url, "x", "", GitManager.TextMonitor { }, maxPartBytes = 50L, retryDelaysMs = emptyList())
+
+        assertEquals(listOf("Tudo"), logOf(remote)) // enviou o commit como estava, sem dividir
+        assertEquals("ainda nao registrada", File(dir, "songs/nova.mp3").readText())
+        assertFalse(GitManager.isClean(dir)) // a música nova continua esperando o próximo commit
+    }
+
+    @Test fun replacingStillWorksWhenTheCommitIsSplit() {
+        val remote = remoteWithOtherHistory()
+        val url = remote.toURI().toString()
+        val dir = bigFolder("substitui")
+        GitManager.init(dir, "main", url, "Fulano", "f@x.com")
+        GitManager.commitAll(dir, "Tudo", "Fulano", "f@x.com", GitManager.TextMonitor { }, maxPartBytes = Long.MAX_VALUE)
+
+        GitManager.push(dir, url, "x", "", GitManager.TextMonitor { }, replace = true, maxPartBytes = 50L, retryDelaysMs = emptyList())
+
+        val log = logOf(remote)
+        assertTrue(log.none { it == "Antigo" })
+        assertTrue(log.size >= 3)
+        assertEquals(log, logOf(dir))
+        assertEquals("a".repeat(40), File(dir, "songs/a.mp3").readText())
+    }
+
+    @Test fun pushingAfterSplitAndPullOnAnotherPhoneGivesTheSameFolder() {
+        val remote = bareRemote()
+        val url = remote.toURI().toString()
+        val dir = bigFolder("origem")
+        GitManager.init(dir, "main", url, "Fulano", "f@x.com")
+        GitManager.updateGitignore(dir, emptyList())
+        GitManager.commitAll(dir, "Tudo", "Fulano", "f@x.com", GitManager.TextMonitor { }, maxPartBytes = Long.MAX_VALUE)
+        GitManager.push(dir, url, "x", "", GitManager.TextMonitor { }, maxPartBytes = 50L, retryDelaysMs = emptyList())
+
+        val other = temp.newFolder("destino")
+        GitManager.init(other, "main", url, "Fulano", "f@x.com")
+        GitManager.pull(other, url, "x", "", GitManager.TextMonitor { })
+        listOf("a", "b", "c").forEach { assertEquals(it.repeat(40), File(other, "songs/$it.mp3").readText()) }
+    }
+
     @Test fun repoWithoutOriginCanReceiveOne() {
         val dir = music()
         Git.init().setDirectory(dir).setInitialBranch("main").call().close()

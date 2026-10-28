@@ -5,12 +5,15 @@ import dev.truetagger.data.GitLimits
 import dev.truetagger.data.GitRemote
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.ResetCommand
+import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.lib.Repository
 import org.eclipse.jgit.revwalk.RevCommit
 import org.eclipse.jgit.revwalk.RevSort
 import org.eclipse.jgit.revwalk.RevWalk
+import org.eclipse.jgit.treewalk.EmptyTreeIterator
 import org.eclipse.jgit.treewalk.TreeWalk
+import dev.truetagger.data.GitRetry
 import org.eclipse.jgit.storage.file.WindowCacheConfig
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.lib.ProgressMonitor
@@ -85,6 +88,9 @@ internal object GitManager {
             }
         }
 
+        /** Mostra uma mensagem avulsa (por exemplo "tentando de novo"), sem mexer na porcentagem. */
+        fun say(text: String) = onText(prefix + text)
+
         override fun isCancelled(): Boolean = cancelled()
         override fun showDuration(enabled: Boolean) {}
 
@@ -100,8 +106,12 @@ internal object GitManager {
         }
     }
 
-    /** O GitHub recusa envios acima de ~2 GB; cada parte fica bem abaixo disso. */
-    const val MAX_PART_BYTES = 1_500L * 1024L * 1024L
+    /**
+     * Tamanho de cada parte de um envio. O GitHub recusa envios acima de ~2 GB e responde erro 500 quando um
+     * envio grande demora. Partes pequenas ficam salvas no GitHub uma a uma: se uma falha, o próximo envio
+     * continua dali, sem repetir o que já foi.
+     */
+    const val MAX_PART_BYTES = 200L * 1024L * 1024L
 
     /** Sem resposta do GitHub por tanto tempo, o envio desiste (em segundos). */
     private const val NETWORK_TIMEOUT_S = 900
@@ -295,36 +305,130 @@ internal object GitManager {
             walk.toList()
         }
 
+    /** Bytes que o commit acrescenta em relação ao pai (arquivos novos ou alterados). */
+    private fun commitBytes(repo: Repository, commit: RevCommit): Long {
+        val parentTree = commit.parents.firstOrNull()?.let { parent -> RevWalk(repo).use { it.parseCommit(parent).tree } }
+        return repo.newObjectReader().use { reader ->
+            TreeWalk(repo).use { tw ->
+                if (parentTree != null) tw.addTree(parentTree) else tw.addTree(EmptyTreeIterator())
+                tw.addTree(commit.tree)
+                tw.isRecursive = true
+                var sum = 0L
+                while (tw.next()) {
+                    val before = tw.getObjectId(0)
+                    val after = tw.getObjectId(1)
+                    if (after != ObjectId.zeroId() && before != after) sum += reader.getObjectSize(after, Constants.OBJ_BLOB)
+                }
+                sum
+            }
+        }
+    }
+
     /**
-     * Envia a branch atual. Endereço SSH é trocado por https (o envio é feito com token). Se há vários commits
-     * novos (um envio grande foi dividido em partes) manda um de cada vez, porque o GitHub recusa envios acima
-     * de ~2 GB. Só força o envio (substitui a branch do GitHub) quando [replace] vem confirmado pelo usuário.
+     * Se algum commit ainda não enviado é maior que [maxPartBytes] (por exemplo, um feito por uma versão antiga
+     * com partes grandes), refaz esses commits em partes menores. Só mexe no histórico que o GitHub ainda não
+     * tem, e só quando a pasta está igual ao último commit: assim nada do que está na pasta se perde.
+     * Devolve true se refez.
      */
-    fun push(dir: File, remoteUrl: String, user: String, token: String, monitor: ProgressMonitor, replace: Boolean = false) {
-        val target = GitRemote.toHttps(remoteUrl)
-        check(target.isNotBlank()) { "este repositório não tem um endereço de envio (origin)" }
+    fun resplitUnpushed(dir: File, remoteTip: String?, monitor: ProgressMonitor, maxPartBytes: Long = MAX_PART_BYTES): Boolean {
+        val plan = openRepo(dir).use { git ->
+            val repo = git.repository
+            val head = repo.resolve("HEAD") ?: return false
+            val commits = unpushedCommits(repo, head, remoteTip)
+            if (commits.isEmpty() || commits.none { commitBytes(repo, it) > maxPartBytes }) return false
+            if (!git.status().call().isClean) return false
+            // Ponto de partida: o último commit que o GitHub tem (se ele faz parte do nosso histórico) ou o começo.
+            val base = remoteTip?.let { runCatching { ObjectId.fromString(it) }.getOrNull() }?.takeIf { id ->
+                repo.hasObject(id) && RevWalk(repo).use { walk ->
+                    runCatching { walk.isMergedInto(walk.parseCommit(id), walk.parseCommit(head)) }.getOrDefault(false)
+                }
+            }
+            val last = commits.last()
+            val message = last.fullMessage.trim().replace(Regex(" \\(parte \\d+ de \\d+\\)$"), "")
+            Triple(base, message, last.authorIdent)
+        }
+        val (base, message, author) = plan
+
         openRepo(dir).use { git ->
             val repo = git.repository
-            val branch = repo.fullBranch.orEmpty()
-            check(branch.startsWith("refs/heads/")) { "o repositório está sem branch ativa (HEAD solto)" }
+            val branch = repo.branch ?: return false
+            if (base != null) {
+                git.reset().setMode(ResetCommand.ResetType.MIXED).setRef(base.name).call()
+            } else {
+                // Volta ao estado de repositório novo (o JGit recusa apagar a branch atual, então o arquivo da referência é solto).
+                val packed = File(dir, ".git/packed-refs")
+                if (packed.isFile && packed.readText().contains("refs/heads/$branch")) return false
+                val ref = File(dir, ".git/refs/heads/$branch")
+                if (!ref.isFile || !ref.delete()) return false
+                File(dir, ".git/index").delete()
+                repo.refDatabase.refresh()
+            }
+        }
+        commitAll(dir, message, author.name, author.emailAddress, monitor, maxPartBytes)
+        return true
+    }
+
+    /**
+     * Envia a branch atual. Endereço SSH é trocado por https (o envio é feito com token). Commits grandes são
+     * refeitos em partes menores e as partes vão uma de cada vez (o GitHub recusa envios acima de ~2 GB e falha
+     * com erro 500 em envios longos). Falhas passageiras do GitHub ou da conexão são repetidas sozinhas.
+     * Só força o envio (substitui a branch do GitHub) quando [replace] vem confirmado pelo usuário.
+     */
+    fun push(
+        dir: File,
+        remoteUrl: String,
+        user: String,
+        token: String,
+        monitor: ProgressMonitor,
+        replace: Boolean = false,
+        maxPartBytes: Long = MAX_PART_BYTES,
+        retryDelaysMs: List<Long> = listOf(5_000L, 20_000L, 60_000L),
+    ) {
+        val target = GitRemote.toHttps(remoteUrl)
+        check(target.isNotBlank()) { "este repositório não tem um endereço de envio (origin)" }
+        val branch = Git.open(dir).use { it.repository.fullBranch.orEmpty() }
+        check(branch.startsWith("refs/heads/")) { "o repositório está sem branch ativa (HEAD solto)" }
+        val remoteTip = remoteHeads(target, user, token)[branch.removePrefix("refs/heads/")]
+        val textMonitor = monitor as? TextMonitor
+
+        textMonitor?.prefix = "Dividindo em partes menores • "
+        resplitUnpushed(dir, remoteTip, monitor, maxPartBytes)
+        textMonitor?.prefix = ""
+
+        openRepo(dir).use { git ->
+            val repo = git.repository
             val head = repo.resolve("HEAD") ?: error("não há commits para enviar")
-            val remoteTip = remoteHeads(target, user, token)[branch.removePrefix("refs/heads/")]
             val commits = unpushedCommits(repo, head, remoteTip).map { it.name }.ifEmpty { listOf(head.name) }
             commits.forEachIndexed { index, id ->
-                (monitor as? TextMonitor)?.let {
+                textMonitor?.let {
                     it.prefix = if (commits.size > 1) "Parte ${index + 1} de ${commits.size} • " else ""
                     it.partIndex = index
                     it.partCount = commits.size
                 }
                 // Com [replace] o "+" troca a branch do GitHub pelo histórico daqui (o histórico de lá se perde).
                 val force = if (replace && index == 0) "+" else ""
-                val results = git.push()
-                    .setRemote(target)
-                    .setRefSpecs(RefSpec("$force$id:$branch"))
-                    .setCredentialsProvider(UsernamePasswordCredentialsProvider(user, token))
-                    .setProgressMonitor(monitor)
-                    .setTimeout(NETWORK_TIMEOUT_S)
-                    .call()
+                val results = GitRetry.run(
+                    delaysMs = retryDelaysMs,
+                    shouldRetry = { GitRetry.isTransient(it) && !monitor.isCancelled },
+                    onRetry = { attempt, delay, error ->
+                        textMonitor?.say("O GitHub falhou (${GitRetry.brief(error)}). Tentando de novo em ${delay / 1000} s ($attempt de ${retryDelaysMs.size})…")
+                    },
+                    sleep = { ms ->
+                        var left = ms
+                        while (left > 0 && !monitor.isCancelled) {
+                            Thread.sleep(minOf(500L, left))
+                            left -= 500L
+                        }
+                    },
+                ) {
+                    git.push()
+                        .setRemote(target)
+                        .setRefSpecs(RefSpec("$force$id:$branch"))
+                        .setCredentialsProvider(UsernamePasswordCredentialsProvider(user, token))
+                        .setProgressMonitor(monitor)
+                        .setTimeout(NETWORK_TIMEOUT_S)
+                        .call()
+                }
                 results.flatMap { it.remoteUpdates }.forEach { update ->
                     when (update.status) {
                         RemoteRefUpdate.Status.OK, RemoteRefUpdate.Status.UP_TO_DATE -> Unit
@@ -336,7 +440,7 @@ internal object GitManager {
                     }
                 }
             }
-            (monitor as? TextMonitor)?.let { it.prefix = ""; it.partIndex = 0; it.partCount = 1 }
+            textMonitor?.let { it.prefix = ""; it.partIndex = 0; it.partCount = 1 }
         }
     }
 
