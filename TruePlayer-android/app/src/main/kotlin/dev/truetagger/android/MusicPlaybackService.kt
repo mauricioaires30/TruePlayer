@@ -9,6 +9,9 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.BroadcastReceiver
+import android.content.ComponentName
+import android.media.AudioFocusRequest
+import android.view.KeyEvent
 import android.content.IntentFilter
 import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
@@ -29,6 +32,8 @@ class MusicPlaybackService : Service() {
     companion object {
         const val ACTION_PLAY = "dev.truetagger.player.PLAY"
         const val ACTION_TOGGLE = "dev.truetagger.player.TOGGLE"
+        const val ACTION_MEDIA_BUTTON = "dev.truetagger.player.MEDIA_BUTTON"
+        const val EXTRA_KEY_CODE = "key_code"
         const val ACTION_NEXT = "dev.truetagger.player.NEXT"
         const val ACTION_PREVIOUS = "dev.truetagger.player.PREVIOUS"
         const val ACTION_SEEK = "dev.truetagger.player.SEEK"
@@ -156,6 +161,88 @@ class MusicPlaybackService : Service() {
     private lateinit var session: MediaSession
     private lateinit var handler: android.os.Handler
     private lateinit var audioManager: AudioManager
+    private var focusRequest: AudioFocusRequest? = null
+    private var resumeOnFocusGain = false
+
+    private fun isPlayingNow() = runCatching { player?.isPlaying == true }.getOrDefault(false)
+
+    private val focusListener = AudioManager.OnAudioFocusChangeListener { change ->
+        when (change) {
+            AudioManager.AUDIOFOCUS_LOSS -> {
+                // Outro app assumiu de vez (ex.: Spotify): pausa e não volta sozinho.
+                resumeOnFocusGain = false
+                if (isPlayingNow()) pause()
+            }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                // Ligação, alarme, assistente: pausa e retoma quando acabar.
+                resumeOnFocusGain = isPlayingNow()
+                if (resumeOnFocusGain) pause()
+            }
+            AudioManager.AUDIOFOCUS_GAIN -> if (resumeOnFocusGain) {
+                resumeOnFocusGain = false
+                resume()
+            }
+        }
+    }
+
+    private fun requestAudioFocus() {
+        if (!::audioManager.isInitialized) return
+        val request = focusRequest ?: AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+            .setAudioAttributes(AudioAttributes.Builder().setContentType(AudioAttributes.CONTENT_TYPE_MUSIC).setUsage(AudioAttributes.USAGE_MEDIA).build())
+            .setOnAudioFocusChangeListener(focusListener, handler)
+            .build()
+            .also { focusRequest = it }
+        runCatching { audioManager.requestAudioFocus(request) }
+    }
+
+    private fun abandonAudioFocus() {
+        resumeOnFocusGain = false
+        focusRequest?.let { runCatching { audioManager.abandonAudioFocusRequest(it) } }
+    }
+
+    /** O Android derruba o app se um startForegroundService não virar foreground em poucos segundos. */
+    private fun ensureForegroundStarted() {
+        val placeholder = Notification.Builder(this, CHANNEL)
+            .setSmallIcon(R.drawable.truetagger_status)
+            .setContentTitle("TruePlayer")
+            .setOngoing(true)
+            .build()
+        runCatching { startForeground(NOTIFICATION_ID, placeholder) }
+    }
+
+    private fun handleMediaButton(keyCode: Int) {
+        ensureForegroundStarted()
+        when (keyCode) {
+            KeyEvent.KEYCODE_MEDIA_PLAY -> if (!isPlayingNow()) togglePlayback()
+            KeyEvent.KEYCODE_MEDIA_PAUSE -> pause()
+            KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE, KeyEvent.KEYCODE_HEADSETHOOK -> togglePlayback()
+            KeyEvent.KEYCODE_MEDIA_NEXT -> next()
+            KeyEvent.KEYCODE_MEDIA_PREVIOUS -> previous()
+            KeyEvent.KEYCODE_MEDIA_STOP -> stopPlayback()
+        }
+        // Nada para tocar (nunca tocou nada): não deixa o serviço preso em primeiro plano.
+        if (queue.isEmpty() && !restoringLastPlayback) {
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
+        }
+    }
+
+    private fun togglePlayback() {
+        val p = player
+        if (p == null || !mediaPrepared) {
+            if (queue.isEmpty()) {
+                restoreSavedPlaybackState(shouldPlay = true)
+            } else {
+                // O player pode ter sido solto por ociosidade: recarrega
+                // a faixa na posição guardada em vez de só marcar pendência.
+                resume()
+            }
+        } else if (runCatching { p.isPlaying }.getOrDefault(false)) {
+            pause()
+        } else {
+            resume()
+        }
+    }
     private var resumeAfterAudioRouteReturn = false
 
     private val noisyReceiver = object : BroadcastReceiver() {
@@ -261,6 +348,12 @@ class MusicPlaybackService : Service() {
                 this@MusicPlaybackService, 1, Intent(this@MusicPlaybackService, MainActivity::class.java),
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             ))
+            // Sem isso o Android não sabe quem chamar quando o app está fechado e o botão de mídia é apertado.
+            setMediaButtonReceiver(PendingIntent.getBroadcast(
+                this@MusicPlaybackService, 2,
+                Intent(Intent.ACTION_MEDIA_BUTTON).setComponent(ComponentName(this@MusicPlaybackService, MediaButtonReceiver::class.java)),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            ))
             setCallback(object : MediaSession.Callback() {
                 override fun onPlay() { resume() }
                 override fun onPause() { pause() }
@@ -324,20 +417,11 @@ class MusicPlaybackService : Service() {
             }
             ACTION_TOGGLE -> {
                 if (restoringLastPlayback) return START_STICKY
-                val p = player
-                if (p == null || !mediaPrepared) {
-                    if (queue.isEmpty()) {
-                        restoreSavedPlaybackState(shouldPlay = true)
-                    } else {
-                        // O player pode ter sido solto por ociosidade: recarrega
-                        // a faixa na posição guardada em vez de só marcar pendência.
-                        resume()
-                    }
-                } else if (runCatching { p.isPlaying }.getOrDefault(false)) {
-                    pause()
-                } else {
-                    resume()
-                }
+                togglePlayback()
+            }
+            ACTION_MEDIA_BUTTON -> {
+                if (restoringLastPlayback) return START_STICKY
+                handleMediaButton(intent?.getIntExtra(EXTRA_KEY_CODE, 0) ?: 0)
             }
             ACTION_RELEASE_FILE_HANDLES -> {
                 cancelIdleRelease()
@@ -554,6 +638,7 @@ class MusicPlaybackService : Service() {
         detachedPositionMs = -1L
         cancelIdleRelease()
         releaseCurrentPlayer()
+        if (shouldPlay) requestAudioFocus()
 
         notificationArtwork = loadNotificationArtwork(track)
         notificationArtworkTrackId = track.id
@@ -665,6 +750,7 @@ class MusicPlaybackService : Service() {
 
     private fun resume() {
         cancelIdleRelease()
+        requestAudioFocus()
         val p = player
         if (p == null) {
             // Player solto por ociosidade (ou nunca carregado): recarrega a faixa
@@ -796,6 +882,7 @@ class MusicPlaybackService : Service() {
         sessionMetadataTrackId = null
         sessionMetadataDurationMs = -1L
         runCatching { session.setMetadata(null) }
+        abandonAudioFocus()
         session.isActive = false
         PlayerState.snapshot = PlayerSnapshot()
         AppEvents.bump()
@@ -839,6 +926,7 @@ class MusicPlaybackService : Service() {
             artist = prefs.getString("track_artist", "").orEmpty(),
             album = prefs.getString("track_album", "").orEmpty(),
             durationMs = prefs.getLong("track_duration", 0L),
+            relPath = prefs.getString("track_relpath", "").orEmpty(),
         )
         shuffle = prefs.getBoolean("shuffle", false)
         repeat = if (prefs.getBoolean("repeat_one", false)) RepeatMode.ONE else RepeatMode.OFF
@@ -864,6 +952,7 @@ class MusicPlaybackService : Service() {
             .putString("track_artist", track.artist)
             .putString("track_album", track.album)
             .putLong("track_duration", track.durationMs)
+            .putString("track_relpath", track.relPath)
             .putBoolean("shuffle", shuffle)
             .putBoolean("repeat_one", repeat == RepeatMode.ONE)
             .putString("source_type", playbackSourceType)
@@ -890,7 +979,7 @@ class MusicPlaybackService : Service() {
         if (track != null) persistPlaybackState()
 
         val state = if (playing) PlaybackState.STATE_PLAYING else PlaybackState.STATE_PAUSED
-        val actions = PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or
+        val actions = PlaybackState.ACTION_PLAY or PlaybackState.ACTION_PAUSE or PlaybackState.ACTION_PLAY_PAUSE or
             PlaybackState.ACTION_SKIP_TO_NEXT or PlaybackState.ACTION_SKIP_TO_PREVIOUS or
             PlaybackState.ACTION_SEEK_TO or PlaybackState.ACTION_STOP
         val playbackState = PlaybackState.Builder()
@@ -1077,6 +1166,7 @@ class MusicPlaybackService : Service() {
         cancelIdleRelease()
         ++playerGeneration
         releaseCurrentPlayer()
+        abandonAudioFocus()
         session.isActive = false
         session.release()
         super.onDestroy()

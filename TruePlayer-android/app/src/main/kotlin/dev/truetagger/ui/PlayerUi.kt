@@ -14,6 +14,7 @@ import androidx.compose.foundation.rememberScrollState
 import dev.truetagger.data.StatValue
 import dev.truetagger.data.StatsRange
 import java.text.NumberFormat
+import dev.truetagger.android.ConnectivityObserver
 import dev.truetagger.android.PlaylistData
 import dev.truetagger.android.PlaylistStore
 import dev.truetagger.android.LibraryIndex
@@ -126,14 +127,23 @@ private val artistPhotoCache = object : LruCache<String, Bitmap>((cacheBudgetKb 
 private val artistPhotoUrlCache = mutableMapOf<String, String?>()
 private val artistPhotoLock = Any()
 
+/** Falhas de rede (não "sem resultado"): guarda quando foi e em qual "reconexão", para tentar de novo quando a internet voltar. */
+private val artistPhotoFailures = mutableMapOf<String, Pair<Int, Long>>()
+
 private suspend fun fetchArtistPhoto(artist: String): Bitmap? = withContext(Dispatchers.IO) {
     if (artist.isBlank()) return@withContext null
     val normalized = Normalizer.normalize(artist, Normalizer.Form.NFKC).trim().replace(Regex("\\s+"), " ").lowercase(Locale.ROOT)
     artistPhotoCache.get(normalized)?.let { return@withContext it }
+    val reconnects = ConnectivityObserver.reconnects.value
     synchronized(artistPhotoLock) {
         if (artistPhotoUrlCache.containsKey(normalized) && artistPhotoUrlCache[normalized].isNullOrBlank()) return@withContext null
+        // Já falhou há pouco sem a rede ter voltado: não fica tentando a cada rolagem da lista.
+        artistPhotoFailures[normalized]?.let { (failedAtReconnect, failedAt) ->
+            if (failedAtReconnect == reconnects && System.currentTimeMillis() - failedAt < 30_000L) return@withContext null
+        }
     }
 
+    var networkFailure = false
     val result = runCatching {
         val query = URLEncoder.encode(artist.trim(), Charsets.UTF_8.name())
         val searchUrl = URL("https://api.deezer.com/search/artist?q=$query&limit=1")
@@ -174,12 +184,19 @@ private suspend fun fetchArtistPhoto(artist: String): Bitmap? = withContext(Disp
         imageConnection.disconnect()
         if (bitmap != null) artistPhotoCache.put(normalized, bitmap)
         bitmap
-    }.getOrNull()
+    }.onFailure { networkFailure = true }.getOrNull()
 
-    // Falha de rede também vira cache negativo: sem isso, cada rolagem da lista
-    // disparava uma nova tentativa para o mesmo artista.
     if (result == null) {
-        synchronized(artistPhotoLock) { artistPhotoUrlCache[normalized] = null }
+        synchronized(artistPhotoLock) {
+            if (networkFailure) {
+                // Sem internet ou erro de rede: não é "esse artista não tem foto". Tenta de novo quando a rede voltar.
+                artistPhotoFailures[normalized] = reconnects to System.currentTimeMillis()
+            } else {
+                artistPhotoUrlCache[normalized] = null
+            }
+        }
+    } else {
+        synchronized(artistPhotoLock) { artistPhotoFailures.remove(normalized) }
     }
     result
 }
@@ -341,6 +358,8 @@ fun TrueTaggerPlayerApp(
     onSettingsChange: (AppSettings) -> Unit,
     appVersion: String,
     onOrganizeFolder: (() -> Unit)? = null,
+    onCleanFolder: (() -> Unit)? = null,
+    permissions: List<dev.truetagger.model.PermissionItem> = emptyList(),
     importStatus: dev.truetagger.model.ImportStatus?,
     onDismissImportStatus: () -> Unit,
 ) {
@@ -722,7 +741,7 @@ fun TrueTaggerPlayerApp(
                             onExport = { playlist -> pendingExportPlaylist = playlist; exportPlaylistLauncher.launch("${playlist.name}.m3u") },
                             onRename = { oldName, newName -> if (store.rename(oldName, newName)) { reloadPlaylists(); if (uiPrefs.getString("last_playlist_key", "").orEmpty() == oldName) uiPrefs.edit().putString("last_playlist_key", newName).apply() } },
                         )
-                        HomeTab.SETTINGS -> SettingsTab(settings, onSettingsChange, downloadFolderLabel, onChooseDownloadFolder, onReleaseDownloadFolder, appVersion, onOrganizeFolder)
+                        HomeTab.SETTINGS -> SettingsTab(settings, onSettingsChange, downloadFolderLabel, onChooseDownloadFolder, onReleaseDownloadFolder, appVersion, onOrganizeFolder, onCleanFolder, permissions)
                     }
                 }
             }
@@ -1923,7 +1942,9 @@ private fun ArtistsScreen(tracks: List<AudioTrack>, open: (String) -> Unit) {
 private fun rememberArtistPhotoBitmap(artist: String): Bitmap? {
     val normalized = remember(artist) { Normalizer.normalize(artist, Normalizer.Form.NFKC).trim().replace(Regex("\\s+"), " ").lowercase(Locale.ROOT) }
     var bitmap by remember(artist) { mutableStateOf<Bitmap?>(artistPhotoCache.get(normalized)) }
-    LaunchedEffect(artist) {
+    // Volta a tentar sozinho quando a internet reconecta.
+    val reconnects by ConnectivityObserver.reconnects.collectAsState()
+    LaunchedEffect(artist, reconnects) {
         if (bitmap == null) bitmap = fetchArtistPhoto(artist)
     }
     return bitmap
@@ -2397,7 +2418,7 @@ private fun ScrollingText(
 }
 
 @Composable
-private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, downloadFolderLabel: String, onChooseDownloadFolder: (() -> Unit)?, onReleaseDownloadFolder: (() -> Unit)?, appVersion: String, onOrganizeFolder: (() -> Unit)? = null) {
+private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, downloadFolderLabel: String, onChooseDownloadFolder: (() -> Unit)?, onReleaseDownloadFolder: (() -> Unit)?, appVersion: String, onOrganizeFolder: (() -> Unit)? = null, onCleanFolder: (() -> Unit)? = null, permissions: List<dev.truetagger.model.PermissionItem> = emptyList()) {
     val context = LocalContext.current
     val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     var confirmReleaseFolder by remember { mutableStateOf(false) }
@@ -2467,6 +2488,27 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                                 Modifier.weight(1f),
                                 enabled = downloadFolderLabel.isNotBlank(),
                             )
+                            ActionButton(
+                                "Limpar pasta",
+                                Icons.Rounded.FolderOff,
+                                { onCleanFolder?.invoke() },
+                                Modifier.weight(1f),
+                                enabled = downloadFolderLabel.isNotBlank(),
+                            )
+                        }
+                        if (permissions.isNotEmpty()) {
+                            Spacer(Modifier.height(UiTokens.sectionSpacing))
+                            Text("Permissões", fontWeight = FontWeight.SemiBold)
+                            permissions.forEach { item ->
+                                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                                    Text(item.label, modifier = Modifier.weight(1f))
+                                    if (item.granted) {
+                                        Text("OK", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
+                                    } else {
+                                        TextButton(onClick = item.onGrant) { Text("Conceder") }
+                                    }
+                                }
+                            }
                         }
                         Spacer(Modifier.height(UiTokens.space2))
                         Text(

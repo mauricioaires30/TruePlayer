@@ -83,3 +83,6 @@ data class AppSettings(
     val autoUpdateDownloader: Boolean = true,
     val geniusAccessToken: String = "",
 )
+
+/** Uma permissão que o app precisa, para o checklist de Configurações. */
+data class PermissionItem(val label: String, val granted: Boolean, val onGrant: () -> Unit)

@@ -25,10 +25,12 @@ import dev.truetagger.model.AppSettings
 import dev.truetagger.model.AudioTrack
 import dev.truetagger.model.EditableTags
 import dev.truetagger.model.ImportStatus
+import dev.truetagger.model.PermissionItem
 import dev.truetagger.model.TagWriteResult
 import dev.truetagger.data.MigrationPlanner
 import dev.truetagger.data.PlannedMove
 import dev.truetagger.model.TrackKeys
+import dev.truetagger.ui.FolderCleanupDialog
 import dev.truetagger.ui.FolderMigrationDialogs
 import dev.truetagger.ui.TrueTaggerPlayerApp
 import kotlinx.coroutines.CancellableContinuation
@@ -58,8 +60,11 @@ class MainActivity : ComponentActivity() {
     private var migrationProgress by mutableStateOf<FolderMigrator.Progress?>(null)
     private var migrationReport by mutableStateOf<FolderMigrator.Report?>(null)
     private var migrationMessage by mutableStateOf<String?>(null)
+    private var cleanupScan by mutableStateOf<FolderOrganizer.Scan?>(null)
     private var folderAccessNeeded by mutableStateOf(false)
     private var accessPromptDismissed = false
+    private var permissionsRevision by mutableStateOf(0)
+    private var openSettingsIfDenied = false
     private var migrationRunning = false
     private var folderChecked = false
     private var pendingSharedUrl: String? = null
@@ -79,10 +84,15 @@ class MainActivity : ComponentActivity() {
     }
 
     private val permissionsLauncher = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        permissionsRevision++
+        if (!hasAudioPermission()) openAppSettingsIfAsked()
         refreshLibrary()
     }
 
-    private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) { }
+    private val notificationPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission()) {
+        permissionsRevision++
+        if (!notificationsGranted()) openAppSettingsIfAsked()
+    }
 
     private val folderPicker = registerForActivityResult(ActivityResultContracts.OpenDocumentTree()) { uri: Uri? ->
         if (uri == null) return@registerForActivityResult
@@ -95,6 +105,7 @@ class MainActivity : ComponentActivity() {
         prefs.edit().putString(ShareContract.PREF_DOWNLOAD_TREE, uri.toString()).apply()
         downloadFolderLabel = folderLabel(uri)
         folderAccessNeeded = false
+        permissionsRevision++
         folderChecked = false
         lastLibraryTrackIds = null
         refreshLibrary()
@@ -123,6 +134,7 @@ class MainActivity : ComponentActivity() {
         audioService = AndroidAudioService(this)
         downloadFolderLabel = savedDownloadTree()?.let(::folderLabel).orEmpty()
         settings = loadSettings()
+        ConnectivityObserver.start(this)
         releaseStalePermissions()
         checkFolderAccess()
         registerMediaObserver()
@@ -142,10 +154,19 @@ class MainActivity : ComponentActivity() {
                 onReleaseDownloadFolder = ::releaseDownloadFolder,
                 onSettingsChange = ::updateSettings,
                 onOrganizeFolder = ::organizeFolderNow,
+                onCleanFolder = ::cleanFolderNow,
+                permissions = permissionItems(),
                 appVersion = runCatching { packageManager.getPackageInfo(packageName, 0).versionName.orEmpty() }.getOrDefault(""),
                 importStatus = importStatus,
                 onDismissImportStatus = { importStatus = null },
             )
+            cleanupScan?.let { scan ->
+                FolderCleanupDialog(
+                    scan = scan,
+                    onConfirm = { selected -> cleanupScan = null; runCleanup(selected) },
+                    onCancel = { cleanupScan = null },
+                )
+            }
             FolderMigrationDialogs(
                 preview = migrationPreview,
                 progress = migrationProgress,
@@ -199,6 +220,7 @@ class MainActivity : ComponentActivity() {
         // inclusive ao sair de um diálogo. Agora só revarre se passou tempo
         // suficiente desde a última varredura.
         checkFolderAccess()
+        permissionsRevision++
         val now = android.os.SystemClock.elapsedRealtime()
         if (::audioService.isInitialized && hasAudioPermission() &&
             now - lastRefreshAtMs >= MIN_REFRESH_INTERVAL_MS
@@ -321,6 +343,7 @@ class MainActivity : ComponentActivity() {
                     if (migrator.ensureLayout() == null) null else migrator.preview()
                 }.getOrNull()
             }
+            restoreSettingsFromFolder()
             Log.i("TruePlayer", "checagem da pasta: plano=${preview?.plan?.size}")
             PlaylistFolderSync.importFromFolder(this@MainActivity)
             PlaylistFolderSync.exportAllNow(this@MainActivity)
@@ -358,6 +381,101 @@ class MainActivity : ComponentActivity() {
                     "Pastas songs e playlists: " + if (diagnosis.layoutOk) "ok" else "não consegui criar"
             }
         }
+    }
+
+    private fun notificationsGranted(): Boolean =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+        } else {
+            getSystemService(android.app.NotificationManager::class.java).areNotificationsEnabled()
+        }
+
+    /** Se o Android não abrir mais o pedido (negado antes), leva o usuário direto para os ajustes do app. */
+    private fun openAppSettingsIfAsked() {
+        if (!openSettingsIfDenied) return
+        openSettingsIfDenied = false
+        runCatching {
+            startActivity(
+                Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", packageName, null)),
+            )
+        }
+    }
+
+    /** Checklist de Configurações; reler `permissionsRevision` faz a lista atualizar quando algo muda. */
+    private fun permissionItems(): List<PermissionItem> {
+        @Suppress("UNUSED_VARIABLE") val refresh = permissionsRevision
+        val savedFolder = MusicFolder.savedUri(this)
+        return listOf(
+            PermissionItem("Arquivos de áudio", hasAudioPermission()) {
+                openSettingsIfDenied = true
+                permissionsLauncher.launch(requiredPermissions())
+            },
+            PermissionItem("Notificações", notificationsGranted()) {
+                openSettingsIfDenied = true
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                } else {
+                    openAppSettingsIfAsked()
+                }
+            },
+            PermissionItem("Pasta de músicas", savedFolder != null && MusicFolder.hasPermission(this, savedFolder)) {
+                folderPicker.launch(savedDownloadTree())
+            },
+        )
+    }
+
+    /** Botão "Limpar pasta": mostra o que não é música/playlist para o usuário decidir. */
+    private fun cleanFolderNow() {
+        val tree = MusicFolder.tree(this)
+        if (tree == null) {
+            if (MusicFolder.savedUri(this) != null) {
+                accessPromptDismissed = false
+                folderAccessNeeded = true
+            } else {
+                migrationMessage = "Você ainda não escolheu a pasta de músicas. Escolha uma em Configurações."
+            }
+            return
+        }
+        appScope.launch {
+            val scan = withContext(Dispatchers.IO) { runCatching { FolderOrganizer(tree).scan() } }
+            scan.onSuccess {
+                if (it.candidates.isEmpty()) {
+                    migrationMessage = "Não tem nada pra limpar. Só sobraram músicas, playlists e arquivos do app." +
+                        if (it.foldersWithMusic.isNotEmpty()) "\n\nPastas com música fora de songs: ${it.foldersWithMusic.joinToString(", ")}. Use \"Organizar pasta\"." else ""
+                } else {
+                    cleanupScan = it
+                }
+            }.onFailure { migrationMessage = "Não consegui ler a pasta: ${it.message}" }
+        }
+    }
+
+    private fun runCleanup(selected: List<FolderOrganizer.Candidate>) {
+        val tree = MusicFolder.tree(this) ?: return
+        appScope.launch {
+            val outcome = withContext(Dispatchers.IO) { runCatching { FolderOrganizer(tree).moveToTrash(selected) } }
+            migrationMessage = outcome.fold(
+                onSuccess = { r ->
+                    "${r.moved} item(ns) movido(s) para a pasta _lixeira." +
+                        if (r.failed.isNotEmpty()) "\n\nNão consegui mover: ${r.failed.joinToString(", ")}." else ""
+                },
+                onFailure = { "Não deu pra limpar a pasta: ${it.message}. Nada foi apagado." },
+            )
+            lastRefreshAtMs = 0L
+            refreshLibrary()
+        }
+    }
+
+    /** Reinstalou ou trocou de celular (sem configurações salvas)? Traz de volta as da pasta; senão só garante que o arquivo existe. */
+    private suspend fun restoreSettingsFromFolder() {
+        val fresh = !prefs.contains(ShareContract.PREF_AUTO_REFRESH_LIBRARY)
+        val restored = withContext(Dispatchers.IO) {
+            if (fresh) SettingsBackup.read(this@MainActivity)
+            else {
+                if (!SettingsBackup.exists(this@MainActivity)) SettingsBackup.write(this@MainActivity, settings)
+                null
+            }
+        }
+        if (restored != null) updateSettings(restored.copy(geniusAccessToken = settings.geniusAccessToken))
     }
 
     private fun runMigration() {
@@ -502,6 +620,7 @@ class MainActivity : ComponentActivity() {
 
     private fun updateSettings(newSettings: AppSettings) {
         settings = newSettings
+        SettingsBackup.scheduleWrite(this, newSettings)
         prefs.edit()
             .putBoolean(ShareContract.PREF_AUTO_REFRESH_LIBRARY, newSettings.autoRefreshLibrary)
             .putBoolean(ShareContract.PREF_EMBED_YOUTUBE_THUMBNAIL, newSettings.embedYoutubeThumbnail)

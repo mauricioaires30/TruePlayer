@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.truetagger.android.FolderMigrator
+import dev.truetagger.android.FolderOrganizer
 import dev.truetagger.data.PlannedMove
 
 /** Avisos da organização da pasta (songs/ e playlists/) e do acesso à pasta. */
@@ -135,5 +136,71 @@ fun FolderMigrationDialogs(
                 confirmButton = { TextButton(onClick = onReportDismiss) { Text("OK") } },
             )
         }
+    }
+}
+
+/** Lista o que a limpeza vai mover para `_lixeira`; o usuário desmarca o que quiser manter. */
+@Composable
+fun FolderCleanupDialog(
+    scan: FolderOrganizer.Scan,
+    onConfirm: (List<FolderOrganizer.Candidate>) -> Unit,
+    onCancel: () -> Unit,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val checked = androidx.compose.runtime.remember(scan) {
+        androidx.compose.runtime.mutableStateMapOf<String, Boolean>().apply { scan.candidates.forEach { put(it.name, true) } }
+    }
+    MaterialTheme(colorScheme = TruePlayerDarkScheme) {
+        AlertDialog(
+            onDismissRequest = onCancel,
+            title = { Text("Limpar a pasta") },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState())) {
+                    Text(
+                        "Estes itens não são música nem playlist. Eles vão para a pasta _lixeira, " +
+                            "não são apagados e dá pra desfazer pelo gerenciador de arquivos.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    scan.candidates.forEach { item ->
+                        androidx.compose.foundation.layout.Row(
+                            verticalAlignment = Alignment.Top,
+                            modifier = Modifier.padding(vertical = 4.dp),
+                        ) {
+                            androidx.compose.material3.Checkbox(
+                                checked = checked[item.name] == true,
+                                onCheckedChange = { checked[item.name] = it },
+                            )
+                            Column(Modifier.padding(start = 4.dp, top = 12.dp)) {
+                                Text(item.name, fontWeight = FontWeight.SemiBold)
+                                val size = android.text.format.Formatter.formatShortFileSize(context, item.sizeBytes)
+                                Text(
+                                    if (item.isDir) "${item.files} arquivo(s), $size" else size,
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                item.samples.forEach {
+                                    Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
+                        }
+                    }
+                    if (scan.foldersWithMusic.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            "Não mexi em ${scan.foldersWithMusic.joinToString(", ")}: tem música dentro. " +
+                                "Use \"Organizar pasta\" para levar essas músicas para songs.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                val selected = scan.candidates.filter { checked[it.name] == true }
+                TextButton(enabled = selected.isNotEmpty(), onClick = { onConfirm(selected) }) {
+                    Text("Mover ${selected.size} para a lixeira")
+                }
+            },
+            dismissButton = { TextButton(onClick = onCancel) { Text("Cancelar") } },
+        )
     }
 }

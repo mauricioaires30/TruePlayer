@@ -113,7 +113,7 @@ class SafTree(context: Context, val treeUri: Uri) {
      * Lista todos os arquivos da pasta (recursivo). Pastas cujo nome (no nível indicado em
      * [skipDirs], comparado sem caixa) coincida são ignoradas por inteiro — use para `.git`.
      */
-    fun walk(skipDirs: Set<String> = emptySet()): List<Entry> {
+    fun walk(skipDirs: Set<String> = emptySet(), startDocId: String = rootDocId): List<Entry> {
         val skip = skipDirs.mapTo(HashSet()) { it.lowercase() }
         val out = ArrayList<Entry>()
         fun visit(dirDocId: String, prefix: String) {
@@ -126,7 +126,7 @@ class SafTree(context: Context, val treeUri: Uri) {
                 }
             }
         }
-        visit(rootDocId, "")
+        visit(startDocId, "")
         return out
     }
 
