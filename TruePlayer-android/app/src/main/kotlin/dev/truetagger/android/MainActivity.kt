@@ -118,6 +118,11 @@ class MainActivity : ComponentActivity() {
         permissionsRevision++
         folderChecked = false
         lastLibraryTrackIds = null
+        // Cria songs/, playlists/ e .trueplayer/ já ao escolher a pasta, mesmo vazia (só cria, não move nada;
+        // mover música solta para dentro delas continua pedindo confirmação).
+        MusicFolder.tree(this)?.let { tree ->
+            appScope.launch(Dispatchers.IO) { runCatching { FolderMigrator(this@MainActivity, tree).ensureLayout() } }
+        }
         refreshLibrary()
 
         pendingSharedUrl?.let { url ->
@@ -163,6 +168,10 @@ class MainActivity : ComponentActivity() {
         checkFolderAccess()
         registerMediaObserver()
         YoutubeDownloadService.resumePending(this)
+        // Garante songs/, playlists/ e .trueplayer/ na pasta já escolhida (só cria o que falta, não move nada).
+        MusicFolder.tree(this)?.let { tree ->
+            appScope.launch(Dispatchers.IO) { runCatching { FolderMigrator(this@MainActivity, tree).ensureLayout() } }
+        }
         // Depois de "Baixar do GitHub": relê a biblioteca, as playlists e as estatísticas da pasta.
         GitController.onFolderChanged = {
             runOnUiThread { lastRefreshAtMs = 0L; refreshLibrary() }

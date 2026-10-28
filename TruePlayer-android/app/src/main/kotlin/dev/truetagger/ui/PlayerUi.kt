@@ -432,7 +432,7 @@ private data class NavEntry(
 @Composable
 private fun TruePlayerIntro() {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color(0xFF050307)),
+        modifier = Modifier.fillMaxSize().background(Color(0xFF050307)).appInsetsPadding(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -722,7 +722,7 @@ fun TrueTaggerPlayerApp(
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
             // Barras do sistema e recorte da câmera: o conteúdo nunca fica por baixo deles.
-            contentWindowInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout),
+            contentWindowInsets = AppInsets,
             bottomBar = {
                 Column {
                     if (snapshot.current != null && !editorOpen && playerScreen == PlayerScreen.NONE) {
@@ -794,7 +794,7 @@ fun TrueTaggerPlayerApp(
                 }
             }
         ) { pad ->
-            Column(Modifier.fillMaxSize().padding(pad)) {
+            Column(Modifier.fillMaxSize().padding(pad).consumeWindowInsets(pad).imePadding()) {
                 importStatus?.let { ImportBanner(it, onDismissImportStatus) }
                 when {
                     editorOpen -> CurrentTrackScreen(
@@ -901,14 +901,19 @@ fun TrueTaggerPlayerApp(
                 }
             }
         }
+        // FullPlayer e Fila ficam fora do Scaffold: o fundo vai até a borda da tela, e o conteúdo respeita as
+        // barras do sistema e o recorte da câmera (senão o horário sobrepõe o título e o mini player cobre os botões).
         if (playerScreen == PlayerScreen.FULL) Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-            FullPlayer(snapshot, { goBack() }, { navigatePlayer(PlayerScreen.QUEUE) }, {
-                snapshot.current?.artist?.takeIf { it.isNotBlank() }?.let { navigateDetail(Detail.ARTIST, it) }
-            }, {
-                snapshot.current?.album?.takeIf { it.isNotBlank() }?.let { navigateDetail(Detail.ALBUM, it) }
-            })
+            Box(Modifier.fillMaxSize().appInsetsPadding()) {
+                FullPlayer(snapshot, { goBack() }, { navigatePlayer(PlayerScreen.QUEUE) }, {
+                    snapshot.current?.artist?.takeIf { it.isNotBlank() }?.let { navigateDetail(Detail.ARTIST, it) }
+                }, {
+                    snapshot.current?.album?.takeIf { it.isNotBlank() }?.let { navigateDetail(Detail.ALBUM, it) }
+                })
+            }
         }
         if (playerScreen == PlayerScreen.QUEUE) Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+          Box(Modifier.fillMaxSize().appInsetsPadding()) {
             QueueScreen(
                 s = snapshot,
                 onBack = { goBack() },
@@ -924,6 +929,7 @@ fun TrueTaggerPlayerApp(
                 onShuffle = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_SHUFFLE) },
                 onRepeat = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_REPEAT) },
             )
+          }
         }
         }
     }

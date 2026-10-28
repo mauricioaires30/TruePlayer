@@ -7,6 +7,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.displayCutout
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -109,6 +114,17 @@ internal fun ScrollingText(
         )
     }
 }
+
+/**
+ * Espaço das barras do sistema (status e navegação) e do recorte da câmera. O app desenha em tela cheia: toda tela
+ * que não está dentro do Scaffold (player completo, fila, abertura...) precisa usar isto para o conteúdo não ficar
+ * por baixo do horário ou dos botões do Android. O fundo continua até a borda.
+ */
+internal val AppInsets: WindowInsets
+    @Composable get() = WindowInsets.systemBars.union(WindowInsets.displayCutout)
+
+@Composable
+internal fun Modifier.appInsetsPadding(): Modifier = windowInsetsPadding(AppInsets)
 
 /** "1 música", "3 músicas". */
 internal fun plural(n: Int, one: String, many: String): String = "$n ${if (n == 1) one else many}"
