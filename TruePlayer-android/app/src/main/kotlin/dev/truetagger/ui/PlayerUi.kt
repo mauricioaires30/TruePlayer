@@ -558,7 +558,16 @@ fun TrueTaggerPlayerApp(
                                 },
                             )
                         },
-                        selectedIndex = HomeTab.entries.filter { it != HomeTab.PLAYLISTS }.indexOf(tab).takeIf { it >= 0 && !editorOpen && detail == Detail.NONE && playerScreen == PlayerScreen.NONE } ?: -1,
+                        // Dentro de álbum/artista/gênero/playlist a aba de origem continua marcada
+                        // (também ao voltar ao app, quando só o detalhe foi restaurado).
+                        selectedIndex = when (detail) {
+                            Detail.ALBUM -> HomeTab.ALBUMS
+                            Detail.ARTIST -> HomeTab.ARTISTS
+                            Detail.GENRE -> HomeTab.GENRES
+                            Detail.PLAYLIST -> HomeTab.MOST_PLAYED
+                            Detail.NONE -> tab
+                        }.let { shown -> HomeTab.entries.filter { it != HomeTab.PLAYLISTS }.indexOf(shown) }
+                            .takeIf { it >= 0 && !editorOpen && playerScreen == PlayerScreen.NONE } ?: -1,
                         onSelected = { index ->
                             val t = HomeTab.entries.filter { it != HomeTab.PLAYLISTS }[index]
                             val alreadyHere = tab == t && detail == Detail.NONE && playerScreen == PlayerScreen.NONE && !editorOpen
