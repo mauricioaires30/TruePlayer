@@ -159,14 +159,14 @@ class GitManagerTest {
         // GitHub já tem a.mp3 (igual), b.mp3 (diferente do local), so-no-github.mp3 e um .gitignore.
         val remote = bareRemote()
         val seed = temp.newFolder("semente")
-        Git.cloneRepository().setURI(remote.toURI().toString()).setDirectory(seed).call().use { git ->
+        Git.init().setDirectory(seed).setInitialBranch("main").call().use { git ->
             File(seed, "songs").mkdirs()
             File(seed, "songs/a.mp3").writeText("audio a")
             File(seed, "songs/b.mp3").writeText("b antigo do github")
             File(seed, "songs/so-no-github.mp3").writeText("so la")
             git.add().addFilepattern(".").call()
             git.commit().setMessage("Antigo").setAuthor("Outro", "o@x.com").setCommitter("Outro", "o@x.com").call()
-            git.push().setRemote("origin").add("refs/heads/main").call()
+            git.push().setRemote(remote.toURI().toString()).add("refs/heads/main").call()
         }
 
         val dir = music() // local: a.mp3 igual, b.mp3 "audio b", playlist
