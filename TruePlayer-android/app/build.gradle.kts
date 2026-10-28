@@ -64,6 +64,13 @@ android {
                 "META-INF/LICENSE.txt",
                 "META-INF/NOTICE",
                 "META-INF/NOTICE.txt",
+                "META-INF/*.SF",
+                "META-INF/*.DSA",
+                "META-INF/*.RSA",
+                "META-INF/INDEX.LIST",
+                "META-INF/versions/**",
+                "META-INF/services/org.eclipse.jgit*",
+                "plugin.properties",
             )
         }
     }
@@ -94,6 +101,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.core)
 
     implementation(libs.androidx.work.runtime)
+    implementation(libs.jgit)
     implementation(libs.jaudiotagger)
     implementation(libs.youtubedl.android)
     implementation(libs.youtubedl.ffmpeg)

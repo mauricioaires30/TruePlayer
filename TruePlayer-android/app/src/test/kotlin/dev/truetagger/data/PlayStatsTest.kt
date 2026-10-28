@@ -98,6 +98,11 @@ class PlayStatsTest {
         assertTrue(s.totals(StatsRange.ALL, today).isEmpty())
     }
 
+    @Test fun totalForOneDay() {
+        assertEquals(120_000L, stats().totalMsOn(today))
+        assertEquals(0L, stats().totalMsOn(today.minusDays(1)))
+    }
+
     @Test fun allTimeIsTheFirstRange() {
         assertEquals(StatsRange.ALL, StatsRange.entries.first())
     }

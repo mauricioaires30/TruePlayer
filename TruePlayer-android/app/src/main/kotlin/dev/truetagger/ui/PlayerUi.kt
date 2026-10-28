@@ -2732,6 +2732,7 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                         ) { confirmReleaseFolder = true }
                     }
                 }
+                item { GitSection() }
                 item {
                     Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.space2)) {
                         Text("Estatísticas", fontWeight = FontWeight.SemiBold)

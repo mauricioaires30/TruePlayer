@@ -68,6 +68,9 @@ class PlayStats {
         perTrack[key] = (perTrack[key] ?: StatValue()) + StatValue(maxOf(ms, 0L), maxOf(plays, 0L))
     }
 
+    /** Tempo total ouvido em um dia, somando todas as músicas. */
+    fun totalMsOn(date: LocalDate): Long = days[date.toString()]?.values?.sumOf { it.ms } ?: 0L
+
     /** Zera tudo (usado pelo botão de resetar estatísticas). */
     fun clear() {
         days.clear()

@@ -184,6 +184,13 @@ object PlayStatsState {
         if (bump) _revision.value = _revision.value + 1L
     }
 
+    /** Minutos ouvidos hoje (para a mensagem de commit). */
+    @Synchronized
+    fun minutesToday(context: android.content.Context): Long {
+        initialize(context)
+        return stats.totalMsOn(LocalDate.now()) / 60_000L
+    }
+
     @Synchronized
     fun totals(context: android.content.Context, range: StatsRange): Map<String, StatValue> {
         initialize(context)

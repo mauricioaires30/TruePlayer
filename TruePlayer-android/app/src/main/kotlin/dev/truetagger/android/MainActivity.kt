@@ -242,6 +242,7 @@ class MainActivity : ComponentActivity() {
         // suficiente desde a última varredura.
         checkFolderAccess()
         permissionsRevision++
+        GitController.refresh(this)
         // Voltou da tela de "instalar apps desconhecidos" com a permissão dada: continua a atualização.
         (UpdateManager.ui.value as? UpdateUi.NeedsInstallPermission)?.let {
             if (UpdateManager.canInstallPackages(this)) UpdateManager.downloadAndInstall(this, it.release)
