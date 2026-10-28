@@ -21,6 +21,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -36,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import dev.truetagger.android.GitController
 import dev.truetagger.android.GitSetupRequest
 import dev.truetagger.android.GitUi
+import kotlinx.coroutines.delay
 
 /** Parte de Configurações que cuida do git da pasta de músicas. */
 @Composable
@@ -122,20 +125,39 @@ fun GitSection() {
                 onDismissRequest = {},
                 title = { Text("Git") },
                 text = {
+                    // Tempo desde que a operação começou, atualizado a cada segundo.
+                    var elapsedS by remember { mutableLongStateOf(0L) }
+                    LaunchedEffect(Unit) {
+                        val start = System.currentTimeMillis()
+                        while (true) {
+                            elapsedS = (System.currentTimeMillis() - start) / 1000
+                            delay(1000)
+                        }
+                    }
+                    // Porcentagem do total: etapas já feitas mais o quanto da atual já foi.
+                    val steps = state.busySteps
+                    val overall = if (steps > 0) {
+                        (((state.busyStep - 1).coerceAtLeast(0) + (state.busyFraction ?: 0f)) / steps).coerceIn(0f, 1f)
+                    } else {
+                        null
+                    }
                     Column {
-                        Text(text)
-                        Spacer(Modifier.height(12.dp))
-                        val fraction = state.busyFraction
-                        if (fraction == null) {
+                        if (steps > 0) {
+                            Text("Etapa ${state.busyStep} de $steps", fontWeight = FontWeight.SemiBold)
+                            Spacer(Modifier.height(8.dp))
+                        }
+                        if (overall == null) {
                             LinearProgressIndicator(Modifier.fillMaxWidth())
                         } else {
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                LinearProgressIndicator(progress = { fraction }, modifier = Modifier.weight(1f))
-                                Text("${(fraction * 100).toInt()}%", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 12.dp))
+                                LinearProgressIndicator(progress = { overall }, modifier = Modifier.weight(1f))
+                                Text("${(overall * 100).toInt()}%", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 12.dp))
                             }
                         }
+                        Spacer(Modifier.height(8.dp))
+                        Text(text)
                         Spacer(Modifier.height(12.dp))
-                        Text("Não feche o app.", style = MaterialTheme.typography.bodySmall)
+                        Text("Tempo: ${elapsedText(elapsedS)} • Não feche o app.", style = MaterialTheme.typography.bodySmall)
                     }
                 },
                 confirmButton = { TextButton(onClick = GitController::cancel) { Text("Cancelar") } },
@@ -245,6 +267,13 @@ private fun ChangeRemoteDialog(hasToken: Boolean, onCancel: () -> Unit, onConfir
             dismissButton = { TextButton(onClick = onCancel) { Text("Cancelar") } },
         )
     }
+}
+
+/** "45 s", "2 min 05 s", "1 h 02 min". */
+private fun elapsedText(seconds: Long): String = when {
+    seconds < 60 -> "$seconds s"
+    seconds < 3600 -> "${seconds / 60} min ${(seconds % 60).toString().padStart(2, '0')} s"
+    else -> "${seconds / 3600} h ${((seconds % 3600) / 60).toString().padStart(2, '0')} min"
 }
 
 private fun describe(summary: dev.truetagger.data.GitSummary): String {

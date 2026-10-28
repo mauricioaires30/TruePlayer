@@ -1,3 +1,5 @@
-## TruePlayer 1.6.5
+﻿## TruePlayer 1.6.6
 
-- Corrige o erro "Cannot lock .git/index" no Git: o app remove sozinho a trava antiga.
+- Sincronizar mostra a porcentagem total, a etapa, a contagem da fase atual e o tempo decorrido.
+- Tenta corrigir o erro "Inflater has been closed" no envio ao GitHub.
+- Erros do Git mostram onde aconteceram.

@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.time.LocalDate
 
@@ -37,6 +39,9 @@ data class GitUi(
     val busy: String? = null,
     /** Andamento de 0 a 1 da etapa atual; null quando não dá para medir. */
     val busyFraction: Float? = null,
+    /** Etapa atual e total de etapas (0 quando a operação não tem etapas). */
+    val busyStep: Int = 0,
+    val busySteps: Int = 0,
     /** Branch do GitHub que o envio vai substituir; enquanto não for null a tela pergunta se pode. */
     val replaceBranch: String? = null,
     /** Resultado ou erro para mostrar uma vez. */
@@ -66,6 +71,11 @@ object GitController {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _ui = MutableStateFlow(GitUi())
     val ui: StateFlow<GitUi> = _ui.asStateFlow()
+
+    /** Só uma operação do JGit por vez: ler o status e enviar ao mesmo tempo mexiam nos mesmos buffers internos. */
+    private val gitLock = Mutex()
+
+    private fun launchGit(block: suspend () -> Unit) = scope.launch { gitLock.withLock { block() } }
 
     private fun prefs(context: Context) = context.applicationContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
@@ -110,16 +120,16 @@ object GitController {
     fun refresh(context: Context) {
         val app = context.applicationContext
         if (_ui.value.busy != null) return
-        scope.launch {
+        launchGit {
             val tree = MusicFolder.tree(app)
             if (tree == null) {
                 _ui.update { it.copy(availability = GitUi.Availability.NO_FOLDER, summary = null) }
-                return@launch
+                return@launchGit
             }
             val dir = realDir(tree)
             if (dir == null) {
                 _ui.update { it.copy(availability = GitUi.Availability.UNSUPPORTED, summary = null) }
-                return@launch
+                return@launchGit
             }
             // A pasta .git é detectada pelo seletor de pastas, mesmo sem o acesso a todos os arquivos.
             val hasGit = runCatching { tree.child(tree.rootDocId, ".git") != null }.getOrDefault(false)
@@ -158,7 +168,7 @@ object GitController {
 
     /** Mostra "Etapa n de total" e o texto da etapa; [fraction] nulo deixa a barra sem medida. */
     private fun show(n: Int, total: Int, text: String, fraction: Float? = null) {
-        _ui.update { it.copy(busy = "Etapa $n de $total\n$text", busyFraction = fraction) }
+        _ui.update { it.copy(busy = text, busyStep = n, busySteps = total, busyFraction = fraction) }
     }
 
     /** Acompanha o JGit (contagem e porcentagem) dentro da etapa [n] de [total]. */
@@ -196,7 +206,7 @@ object GitController {
         }
         pendingReplace = retry
         cancelRequested = false
-        _ui.update { it.copy(busy = null, busyFraction = null, replaceBranch = need.branch) }
+        _ui.update { it.copy(busy = null, busyFraction = null, busyStep = 0, busySteps = 0, replaceBranch = need.branch) }
     }
 
     /** O usuário aceitou substituir a branch do GitHub: repete o envio já com permissão. */
@@ -213,6 +223,19 @@ object GitController {
     }
 
     /** Texto do erro com a causa de dentro (o JGit só diz "exception caught during execution of add command"). */
+    /** Onde o erro aconteceu (primeiras chamadas do JGit/zip/app no rastro da causa de dentro). */
+    private fun whereIs(error: Throwable): String {
+        val root = generateSequence(error) { it.cause }.last()
+        return root.stackTrace
+            .filter { it.className.startsWith("org.eclipse.jgit") || it.className.startsWith("java.util.zip") || it.className.startsWith("dev.truetagger") }
+            .take(4)
+            .joinToString(" < ") { it.className.substringAfterLast('.') + "." + it.methodName }
+    }
+
+    private fun saveError(app: Context, error: Throwable) {
+        runCatching { File(app.filesDir, "last-git-error.txt").writeText(error.stackTraceToString()) }
+    }
+
     private fun reason(error: Throwable): String {
         if (generateSequence(error) { it.cause }.any { it.message.orEmpty().contains("Cannot lock") }) {
             return "o repositório está travado por uma operação que ficou pela metade (arquivo .git/index.lock). Tente de novo em um minuto."
@@ -232,8 +255,12 @@ object GitController {
         val cancelled = cancelRequested
         cancelRequested = false
         val text = if (cancelled && outcome.isFailure) "Cancelado."
-        else outcome.fold({ ok -> ok }, { e -> "Não deu certo: ${reason(e)}" })
-        _ui.update { it.copy(busy = null, busyFraction = null, message = text) }
+        else outcome.fold({ ok -> ok }, { e ->
+            saveError(app, e)
+            val where = whereIs(e)
+            "Não deu certo: ${reason(e)}" + if (where.isNotBlank()) "\n\nOnde: $where" else ""
+        })
+        _ui.update { it.copy(busy = null, busyFraction = null, busyStep = 0, busySteps = 0, message = text) }
         refresh(app)
     }
 
@@ -266,7 +293,7 @@ object GitController {
         val steps = if (push) 3 else 2
         show(1, steps, "Conferindo o que mudou…")
         _ui.update { it.copy(message = null) }
-        scope.launch {
+        launchGit {
             val outcome = runCatching {
                 val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("pasta não suportada")
                 require(name.isNotBlank() && email.isNotBlank()) { "informe nome e e-mail para o commit" }
@@ -318,7 +345,7 @@ object GitController {
         if (_ui.value.busy != null) return
         show(1, 2, "Conectando ao GitHub…")
         _ui.update { it.copy(message = null) }
-        scope.launch {
+        launchGit {
             val outcome = runCatching {
                 val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("pasta não suportada")
                 if (remoteUrl.isNotBlank() && GitManager.remoteUrl(dir).isNullOrBlank()) GitManager.setRemote(dir, remoteUrl.trim())
@@ -345,7 +372,7 @@ object GitController {
         if (_ui.value.busy != null) return
         show(1, 4, "Conferindo o repositório no GitHub…")
         _ui.update { it.copy(message = null) }
-        scope.launch {
+        launchGit {
             val outcome = runCatching {
                 val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("a pasta precisa estar no armazenamento interno do celular")
                 require(request.url.startsWith("https://")) { "use o endereço https do repositório (https://github.com/usuario/repo.git)" }
@@ -383,7 +410,7 @@ object GitController {
         val app = context.applicationContext
         if (_ui.value.busy != null) return
         _ui.update { it.copy(busy = "Conferindo o repositório no GitHub…", busyFraction = null, message = null) }
-        scope.launch {
+        launchGit {
             val outcome = runCatching {
                 val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("pasta não suportada")
                 val target = url.trim()
@@ -408,7 +435,7 @@ object GitController {
         if (_ui.value.busy != null) return
         show(1, 2, "Conectando ao GitHub…")
         _ui.update { it.copy(message = null) }
-        scope.launch {
+        launchGit {
             val outcome = runCatching {
                 val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("pasta não suportada")
                 GitManager.clearStaleLocks(dir)

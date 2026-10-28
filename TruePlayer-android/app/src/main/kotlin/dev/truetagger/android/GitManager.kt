@@ -35,6 +35,19 @@ internal object GitManager {
         /** Texto antes da mensagem, para envios em várias partes ("Parte 2 de 3 • "). */
         @Volatile var prefix = ""
 
+        /** Parte atual e total de partes de um envio dividido; a fração da etapa leva isso em conta. */
+        @Volatile var partIndex = 0
+        @Volatile var partCount = 1
+
+        // Cada fase do envio ocupa uma faixa da etapa: contar 10%, compactar 20%, enviar 70%.
+        private var from = 0f
+        private var span = 1f
+
+        private fun emit(phase: Float) {
+            val inPart = (from + span * phase).coerceIn(0f, 1f)
+            onFraction(((partIndex + inPart) / partCount.coerceAtLeast(1)).coerceIn(0f, 1f))
+        }
+
         override fun start(totalTasks: Int) {}
 
         override fun beginTask(title: String, totalWork: Int) {
@@ -42,7 +55,13 @@ internal object GitManager {
             total = totalWork
             done = 0
             lastPercent = -1
-            onFraction(if (totalWork > 0) 0f else null)
+            when (this.title) {
+                "Contando arquivos" -> { from = 0f; span = 0.1f }
+                "Compactando" -> { from = 0.1f; span = 0.2f }
+                "Enviando" -> { from = 0.3f; span = 0.7f }
+                else -> { from = 0f; span = 1f }
+            }
+            if (totalWork > 0) emit(0f) else onFraction(null)
             onText(prefix + if (totalWork > 0) "${this.title}: 0 de $totalWork (0%)" else this.title)
         }
 
@@ -53,14 +72,15 @@ internal object GitManager {
             // Só avisa quando a porcentagem muda, para não atualizar a tela a cada arquivo.
             if (percent == lastPercent) return
             lastPercent = percent
-            onFraction(percent / 100f)
+            emit(percent / 100f)
             onText(prefix + "$title: ${done.coerceAtMost(total)} de $total ($percent%)")
         }
 
         override fun endTask() {
             // Depois de enviar tudo o GitHub ainda confere e monta o que recebeu; isso pode levar minutos.
             if (title == "Enviando") {
-                onFraction(null)
+                // Quase no fim da etapa, mas ainda falta o GitHub confirmar: não mostra 100%.
+                onFraction(((partIndex + 0.95f) / partCount.coerceAtLeast(1)).coerceIn(0f, 0.99f))
                 onText(prefix + "Aguardando o GitHub confirmar…")
             }
         }
@@ -96,7 +116,8 @@ internal object GitManager {
             cache.packedGitWindowSize = 1 shl 20
             cache.setPackedGitMMAP(false)
             cache.deltaBaseCacheLimit = 2 shl 20
-            cache.streamFileThreshold = 1 shl 20
+            // Músicas comuns (até 24 MB) seguem o caminho normal do JGit; só arquivos maiores são lidos em fluxo.
+            cache.streamFileThreshold = 24 shl 20
             @Suppress("DEPRECATION")
             cache.install()
         }
@@ -290,7 +311,11 @@ internal object GitManager {
             val remoteTip = remoteHeads(target, user, token)[branch.removePrefix("refs/heads/")]
             val commits = unpushedCommits(repo, head, remoteTip).map { it.name }.ifEmpty { listOf(head.name) }
             commits.forEachIndexed { index, id ->
-                (monitor as? TextMonitor)?.prefix = if (commits.size > 1) "Parte ${index + 1} de ${commits.size} • " else ""
+                (monitor as? TextMonitor)?.let {
+                    it.prefix = if (commits.size > 1) "Parte ${index + 1} de ${commits.size} • " else ""
+                    it.partIndex = index
+                    it.partCount = commits.size
+                }
                 // Com [replace] o "+" troca a branch do GitHub pelo histórico daqui (o histórico de lá se perde).
                 val force = if (replace && index == 0) "+" else ""
                 val results = git.push()
@@ -311,7 +336,7 @@ internal object GitManager {
                     }
                 }
             }
-            (monitor as? TextMonitor)?.prefix = ""
+            (monitor as? TextMonitor)?.let { it.prefix = ""; it.partIndex = 0; it.partCount = 1 }
         }
     }
 
@@ -435,6 +460,7 @@ internal object GitManager {
             .setRemote(url)
             .setHeads(true)
             .setCredentialsProvider(UsernamePasswordCredentialsProvider(user, token))
+            .setTimeout(60)
             .call()
             .filter { it.name.startsWith("refs/heads/") }
             .associate { it.name.removePrefix("refs/heads/") to it.objectId.name }
