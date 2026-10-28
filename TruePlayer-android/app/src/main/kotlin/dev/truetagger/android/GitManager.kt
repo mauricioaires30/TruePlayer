@@ -4,8 +4,13 @@ import dev.truetagger.data.GitChange
 import dev.truetagger.data.GitLimits
 import dev.truetagger.data.GitRemote
 import org.eclipse.jgit.api.Git
+import org.eclipse.jgit.api.ResetCommand
 import org.eclipse.jgit.lib.ObjectId
+import org.eclipse.jgit.lib.Repository
+import org.eclipse.jgit.revwalk.RevCommit
+import org.eclipse.jgit.revwalk.RevSort
 import org.eclipse.jgit.revwalk.RevWalk
+import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.storage.file.WindowCacheConfig
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.lib.ProgressMonitor
@@ -19,12 +24,16 @@ internal object GitManager {
     /** Mostra em português o andamento que o JGit informa em inglês. */
     class TextMonitor(
         private val onFraction: (Float?) -> Unit = {},
+        private val cancelled: () -> Boolean = { false },
         private val onText: (String) -> Unit,
     ) : ProgressMonitor {
         private var title = ""
         private var total = 0
         private var done = 0
         private var lastPercent = -1
+
+        /** Texto antes da mensagem, para envios em várias partes ("Parte 2 de 3 • "). */
+        @Volatile var prefix = ""
 
         override fun start(totalTasks: Int) {}
 
@@ -34,7 +43,7 @@ internal object GitManager {
             done = 0
             lastPercent = -1
             onFraction(if (totalWork > 0) 0f else null)
-            onText(if (totalWork > 0) "${this.title}: 0 de $totalWork (0%)" else this.title)
+            onText(prefix + if (totalWork > 0) "${this.title}: 0 de $totalWork (0%)" else this.title)
         }
 
         override fun update(completed: Int) {
@@ -45,11 +54,18 @@ internal object GitManager {
             if (percent == lastPercent) return
             lastPercent = percent
             onFraction(percent / 100f)
-            onText("$title: ${done.coerceAtMost(total)} de $total ($percent%)")
+            onText(prefix + "$title: ${done.coerceAtMost(total)} de $total ($percent%)")
         }
 
-        override fun endTask() {}
-        override fun isCancelled(): Boolean = false
+        override fun endTask() {
+            // Depois de enviar tudo o GitHub ainda confere e monta o que recebeu; isso pode levar minutos.
+            if (title == "Enviando") {
+                onFraction(null)
+                onText(prefix + "Aguardando o GitHub confirmar…")
+            }
+        }
+
+        override fun isCancelled(): Boolean = cancelled()
         override fun showDuration(enabled: Boolean) {}
 
         private fun translate(text: String) = when {
@@ -63,6 +79,12 @@ internal object GitManager {
             else -> text
         }
     }
+
+    /** O GitHub recusa envios acima de ~2 GB; cada parte fica bem abaixo disso. */
+    const val MAX_PART_BYTES = 1_500L * 1024L * 1024L
+
+    /** Sem resposta do GitHub por tanto tempo, o envio desiste (em segundos). */
+    private const val NETWORK_TIMEOUT_S = 900
 
     init {
         // O Android dá ~256 MB ao app. Com o padrão do JGit, uma música de 40 MB era lida inteira para a
@@ -150,57 +172,209 @@ internal object GitManager {
         file.writeText(text)
     }
 
-    fun commitAll(dir: File, message: String, name: String, email: String, monitor: ProgressMonitor? = null) {
+    /**
+     * Registra tudo que mudou. Com [monitor] mostra o andamento e, se os arquivos novos passam de
+     * [maxPartBytes], divide em vários commits ("... (parte 2 de 3)") para que cada envio caiba no limite do GitHub.
+     */
+    fun commitAll(dir: File, message: String, name: String, email: String, monitor: ProgressMonitor? = null, maxPartBytes: Long = MAX_PART_BYTES): List<String> {
+        val skipped = ArrayList<String>()
         openRepo(dir).use { git ->
             val author = PersonIdent(name, email)
-            if (monitor != null) {
-                // Registra em lotes para poder mostrar quantos arquivos já foram.
-                val paths = status(dir).filter { it.kind != GitChange.Kind.REMOVED }.map { it.path }.distinct()
-                if (paths.isNotEmpty()) {
-                    monitor.beginTask("Registrando arquivos", paths.size)
-                    paths.chunked(50).forEach { chunk ->
+            if (monitor == null) {
+                git.add().addFilepattern(".").call()
+                git.add().setUpdate(true).addFilepattern(".").call()
+                git.commit().setMessage(message).setAuthor(author).setCommitter(author).setAllowEmpty(false).call()
+                return skipped
+            }
+            val paths = status(dir).filter { it.kind != GitChange.Kind.REMOVED }.map { it.path }.distinct()
+            val parts = splitBySize(paths.map { it to File(dir, it).length() }, maxPartBytes)
+            // Os arquivos que sumiram entram no primeiro commit.
+            git.add().setUpdate(true).addFilepattern(".").call()
+            if (parts.isEmpty()) {
+                git.commit().setMessage(message).setAuthor(author).setCommitter(author).setAllowEmpty(false).call()
+                return skipped
+            }
+            monitor.beginTask("Registrando arquivos", paths.size)
+            parts.forEachIndexed { index, part ->
+                part.chunked(50).forEach { chunk ->
+                    try {
                         val add = git.add()
                         chunk.forEach { add.addFilepattern(it) }
                         add.call()
-                        monitor.update(chunk.size)
+                    } catch (error: Exception) {
+                        // Um arquivo ilegível (sem permissão, sumiu no meio) não pode derrubar o commit todo:
+                        // tenta um por um e deixa de fora só o que falhar.
+                        chunk.forEach { path ->
+                            try {
+                                git.add().addFilepattern(path).call()
+                            } catch (single: Exception) {
+                                skipped += path
+                            }
+                        }
                     }
-                    monitor.endTask()
+                    monitor.update(chunk.size)
+                }
+                val text = if (parts.size > 1) "$message (parte ${index + 1} de ${parts.size})" else message
+                // Se tudo o que havia nesta parte falhou e não sobrou nada para registrar, não é erro.
+                try {
+                    git.commit().setMessage(text).setAuthor(author).setCommitter(author).setAllowEmpty(false).call()
+                } catch (empty: org.eclipse.jgit.api.errors.EmptyCommitException) {
+                    if (skipped.isEmpty()) throw empty
                 }
             }
-            // Com andamento, os arquivos novos e alterados já entraram em lotes acima; sem ele, entra tudo de uma vez.
-            if (monitor == null) git.add().addFilepattern(".").call()
-            // Segunda passada: registra os arquivos que sumiram.
-            git.add().setUpdate(true).addFilepattern(".").call()
-            git.commit().setMessage(message).setAuthor(author).setCommitter(author).setAllowEmpty(false).call()
+            monitor.endTask()
         }
+        return skipped
     }
 
-    /** Endereço do repositório remoto; link SSH é trocado por https (o envio é feito com token). Só força o envio (substitui a branch do GitHub) quando [replace] vem confirmado pelo usuário. */
+    /** Divide em grupos de até [limit] bytes, na ordem. Um arquivo maior que o limite fica sozinho no grupo. */
+    fun splitBySize(files: List<Pair<String, Long>>, limit: Long): List<List<String>> {
+        val parts = ArrayList<MutableList<String>>()
+        var size = 0L
+        for ((path, bytes) in files) {
+            if (parts.isEmpty() || (size + bytes > limit && parts.last().isNotEmpty())) {
+                parts.add(mutableListOf())
+                size = 0L
+            }
+            parts.last().add(path)
+            size += bytes
+        }
+        return parts
+    }
+
+    /** Commits locais que o GitHub ainda não tem, do mais antigo ao mais novo. */
+    private fun unpushedCommits(repo: Repository, head: ObjectId, remoteTip: String?): List<RevCommit> =
+        RevWalk(repo).use { walk ->
+            walk.sort(RevSort.TOPO)
+            walk.sort(RevSort.REVERSE, true)
+            walk.markStart(walk.parseCommit(head))
+            // Se o commit do GitHub não existe aqui, ele não tem relação com o nosso histórico: manda tudo.
+            remoteTip?.let { runCatching { walk.markUninteresting(walk.parseCommit(ObjectId.fromString(it))) } }
+            walk.toList()
+        }
+
+    /**
+     * Envia a branch atual. Endereço SSH é trocado por https (o envio é feito com token). Se há vários commits
+     * novos (um envio grande foi dividido em partes) manda um de cada vez, porque o GitHub recusa envios acima
+     * de ~2 GB. Só força o envio (substitui a branch do GitHub) quando [replace] vem confirmado pelo usuário.
+     */
     fun push(dir: File, remoteUrl: String, user: String, token: String, monitor: ProgressMonitor, replace: Boolean = false) {
         val target = GitRemote.toHttps(remoteUrl)
         check(target.isNotBlank()) { "este repositório não tem um endereço de envio (origin)" }
         openRepo(dir).use { git ->
-            val branch = git.repository.fullBranch.orEmpty()
+            val repo = git.repository
+            val branch = repo.fullBranch.orEmpty()
             check(branch.startsWith("refs/heads/")) { "o repositório está sem branch ativa (HEAD solto)" }
-            val results = git.push()
-                .setRemote(target)
+            val head = repo.resolve("HEAD") ?: error("não há commits para enviar")
+            val remoteTip = remoteHeads(target, user, token)[branch.removePrefix("refs/heads/")]
+            val commits = unpushedCommits(repo, head, remoteTip).map { it.name }.ifEmpty { listOf(head.name) }
+            commits.forEachIndexed { index, id ->
+                (monitor as? TextMonitor)?.prefix = if (commits.size > 1) "Parte ${index + 1} de ${commits.size} • " else ""
                 // Com [replace] o "+" troca a branch do GitHub pelo histórico daqui (o histórico de lá se perde).
-                .setRefSpecs(RefSpec((if (replace) "+" else "") + "$branch:$branch"))
-                .setCredentialsProvider(UsernamePasswordCredentialsProvider(user, token))
-                .setProgressMonitor(monitor)
-                .call()
-            results.flatMap { it.remoteUpdates }.forEach { update ->
-                when (update.status) {
-                    RemoteRefUpdate.Status.OK, RemoteRefUpdate.Status.UP_TO_DATE -> Unit
-                    RemoteRefUpdate.Status.REJECTED_NONFASTFORWARD, RemoteRefUpdate.Status.REJECTED_REMOTE_CHANGED ->
-                        error("a branch do GitHub tem outro histórico. Nada foi sobrescrito.")
-                    RemoteRefUpdate.Status.REJECTED_OTHER_REASON ->
-                        error(update.message ?: "o GitHub recusou o envio (confira se algum arquivo passa de 100 MB)")
-                    else -> error("o envio falhou (${update.status})")
+                val force = if (replace && index == 0) "+" else ""
+                val results = git.push()
+                    .setRemote(target)
+                    .setRefSpecs(RefSpec("$force$id:$branch"))
+                    .setCredentialsProvider(UsernamePasswordCredentialsProvider(user, token))
+                    .setProgressMonitor(monitor)
+                    .setTimeout(NETWORK_TIMEOUT_S)
+                    .call()
+                results.flatMap { it.remoteUpdates }.forEach { update ->
+                    when (update.status) {
+                        RemoteRefUpdate.Status.OK, RemoteRefUpdate.Status.UP_TO_DATE -> Unit
+                        RemoteRefUpdate.Status.REJECTED_NONFASTFORWARD, RemoteRefUpdate.Status.REJECTED_REMOTE_CHANGED ->
+                            error("a branch do GitHub tem outro histórico. Nada foi sobrescrito.")
+                        RemoteRefUpdate.Status.REJECTED_OTHER_REASON ->
+                            error(update.message ?: "o GitHub recusou o envio (confira se algum arquivo passa de 100 MB)")
+                        else -> error("o envio falhou (${update.status})")
+                    }
                 }
             }
+            (monitor as? TextMonitor)?.prefix = ""
         }
     }
+
+    /** Resultado de [pull]: arquivos baixados para a pasta. */
+    data class Pulled(val files: List<String>, val upToDate: Boolean)
+
+    /**
+     * Baixa do GitHub o que só existe lá. Nunca sobrescreve nada que você mudou: arquivo que só existe no
+     * GitHub é baixado; arquivo que o GitHub mudou e você não tocou é atualizado; arquivo que você mudou
+     * continua como está (e vai no próximo envio). A branch local passa a seguir a do GitHub, para o
+     * próximo envio ser um avanço normal.
+     */
+    fun pull(dir: File, remoteUrl: String, user: String, token: String, monitor: ProgressMonitor): Pulled {
+        val target = GitRemote.toHttps(remoteUrl)
+        check(target.isNotBlank()) { "este repositório não tem um endereço (origin)" }
+        openRepo(dir).use { git ->
+            val repo = git.repository
+            git.fetch()
+                .setRemote(target)
+                .setRefSpecs(RefSpec("+refs/heads/*:refs/remotes/origin/*"))
+                .setCredentialsProvider(UsernamePasswordCredentialsProvider(user, token))
+                .setProgressMonitor(monitor)
+                .setTimeout(NETWORK_TIMEOUT_S)
+                .call()
+            val wanted = repo.branch.orEmpty()
+            val prefix = "refs/remotes/origin/"
+            val remotes = repo.refDatabase.getRefsByPrefix(prefix).filter { !it.name.endsWith("/HEAD") }
+            val chosen = listOf(wanted, "main", "master")
+                .firstNotNullOfOrNull { name -> remotes.firstOrNull { it.name == prefix + name } }
+                ?: remotes.firstOrNull()
+                ?: error("o repositório do GitHub está vazio")
+            val name = chosen.name.removePrefix(prefix)
+            val remoteId = chosen.objectId
+
+            val oldHead = repo.resolve("HEAD")
+            RevWalk(repo).use { walk ->
+                if (oldHead != null && walk.isMergedInto(walk.parseCommit(remoteId), walk.parseCommit(oldHead))) {
+                    return Pulled(emptyList(), upToDate = true)
+                }
+            }
+            // O que o usuário mexeu desde o último commit não pode ser sobrescrito.
+            val before = git.status().call()
+            val touched = (before.modified + before.changed + before.added + before.removed).toSet()
+
+            val move = repo.updateRef("refs/heads/$name")
+            move.setNewObjectId(remoteId)
+            move.setForceUpdate(true)
+            move.update()
+            repo.updateRef(org.eclipse.jgit.lib.Constants.HEAD).link("refs/heads/$name")
+            if (name != wanted && wanted.isNotBlank()) {
+                val config = repo.config
+                config.unsetSection("branch", wanted)
+                config.setString("branch", name, "remote", "origin")
+                config.setString("branch", name, "merge", "refs/heads/$name")
+                config.save()
+            }
+            // Índice igual ao do GitHub e pasta intocada: o que difere aparece como mudança.
+            git.reset().setMode(ResetCommand.ResetType.MIXED).setRef("HEAD").call()
+
+            val toRestore = LinkedHashSet<String>()
+            toRestore += git.status().call().missing
+            if (oldHead != null) toRestore += changedUpstream(repo, oldHead, remoteId).filter { it !in touched && File(dir, it).isFile }
+            if (toRestore.isNotEmpty()) git.checkout().addPaths(toRestore.toList()).call()
+            return Pulled(toRestore.toList(), upToDate = false)
+        }
+    }
+
+    /** Arquivos que mudaram entre dois commits (caminhos). */
+    private fun changedUpstream(repo: Repository, from: ObjectId, to: ObjectId): List<String> =
+        RevWalk(repo).use { walk ->
+            TreeWalk(repo).use { tw ->
+                tw.addTree(walk.parseCommit(from).tree)
+                tw.addTree(walk.parseCommit(to).tree)
+                tw.isRecursive = true
+                val out = ArrayList<String>()
+                while (tw.next()) {
+                    val a = tw.getObjectId(0)
+                    val b = tw.getObjectId(1)
+                    // Só o que já existia no commit antigo e mudou: arquivo novo que você já tem na pasta não é tocado.
+                    if (a != ObjectId.zeroId() && b != ObjectId.zeroId() && a != b) out += tw.pathString
+                }
+                out
+            }
+        }
 
     /** Define o `origin` de um repositório que ainda não tem. */
     fun setRemote(dir: File, url: String) {

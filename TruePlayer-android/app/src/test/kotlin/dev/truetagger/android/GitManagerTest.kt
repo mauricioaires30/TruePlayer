@@ -247,6 +247,127 @@ class GitManagerTest {
         Git.open(remote).use { assertEquals(listOf("Nosso"), it.log().call().map { c -> c.fullMessage.trim() }) }
     }
 
+    @Test fun splitBySizeKeepsOrderAndRespectsTheLimit() {
+        val parts = GitManager.splitBySize(listOf("a" to 40L, "b" to 40L, "c" to 40L, "d" to 5L), 100L)
+        assertEquals(listOf(listOf("a", "b"), listOf("c", "d")), parts)
+        // arquivo maior que o limite fica sozinho, e lista vazia não gera parte
+        assertEquals(listOf(listOf("grande"), listOf("x")), GitManager.splitBySize(listOf("grande" to 500L, "x" to 1L), 100L))
+        assertTrue(GitManager.splitBySize(emptyList(), 100L).isEmpty())
+    }
+
+    @Test fun aBigFirstCommitIsSplitAndSentOnePartAtATime() {
+        val remote = bareRemote()
+        val url = remote.toURI().toString()
+        val dir = music()
+        File(dir, "songs/c.mp3").writeText("c".repeat(30))
+        GitManager.init(dir, "main", url, "Fulano", "f@x.com")
+        GitManager.updateGitignore(dir, emptyList())
+        // limite pequeno para forçar várias partes
+        GitManager.commitAll(dir, "Primeiro", "Fulano", "f@x.com", GitManager.TextMonitor { }, maxPartBytes = 20L)
+        assertTrue(GitManager.isClean(dir))
+        val messages = Git.open(dir).use { it.log().call().map { c -> c.fullMessage.trim() }.reversed() }
+        assertTrue("várias partes: $messages", messages.size > 1)
+        assertTrue(messages.first().endsWith("de ${messages.size})"))
+
+        val texts = ArrayList<String>()
+        GitManager.push(dir, url, "x", "", GitManager.TextMonitor { texts += it })
+        assertTrue(texts.any { it.startsWith("Parte 1 de ${messages.size}") })
+        Git.open(remote).use { git ->
+            assertEquals(messages.size, git.log().call().count())
+        }
+        // nada novo: o segundo envio não manda nada e não falha
+        GitManager.push(dir, url, "x", "", GitManager.TextMonitor { })
+    }
+
+    /** Faz um commit "de outro lugar" direto no GitHub de mentira. */
+    private fun pushFromElsewhere(remote: File, message: String, change: (File) -> Unit) {
+        val work = temp.newFolder("outro-" + System.nanoTime())
+        Git.cloneRepository().setURI(remote.toURI().toString()).setDirectory(work).setBranch("main").call().use { git ->
+            change(work)
+            git.add().addFilepattern(".").call()
+            git.add().setUpdate(true).addFilepattern(".").call()
+            git.commit().setMessage(message).setAuthor("Outro", "o@x.com").setCommitter("Outro", "o@x.com").call()
+            git.push().setRemote("origin").add("refs/heads/main").call()
+        }
+    }
+
+    @Test fun pullBringsWhatOnlyExistsOnGithubAndNeverOverwritesLocalChanges() {
+        val remote = remoteWithOtherHistory() // a.mp3, b.mp3 (diferente do local), so-no-github.mp3
+        val url = remote.toURI().toString()
+        val dir = music() // a.mp3 igual, b.mp3 "audio b", playlist
+        GitManager.init(dir, "main", url, "Fulano", "f@x.com")
+
+        val result = GitManager.pull(dir, url, "x", "", GitManager.TextMonitor { })
+        assertFalse(result.upToDate)
+        assertEquals(listOf("songs/so-no-github.mp3"), result.files)
+        assertEquals("so la", File(dir, "songs/so-no-github.mp3").readText())
+        assertEquals("audio b", File(dir, "songs/b.mp3").readText()) // o da pasta vale
+        assertEquals("main", GitManager.branch(dir))
+
+        // o que difere do GitHub aparece como mudança, e o próximo envio é um avanço normal (sem substituir)
+        val summary = summaryOf(dir)
+        assertEquals(listOf("b.mp3"), summary.tagsEdited)
+        assertEquals(listOf("Treino"), summary.playlistsAdded)
+        assertFalse(GitManager.sendNeedsReplace(dir, url, "x", ""))
+    }
+
+    @Test fun pullUpdatesFilesYouDidNotTouchAndKeepsTheOnesYouChanged() {
+        val remote = remoteWithOtherHistory()
+        val url = remote.toURI().toString()
+        val dir = temp.newFolder("celular-novo")
+        GitManager.init(dir, "main", url, "Fulano", "f@x.com")
+        GitManager.pull(dir, url, "x", "", GitManager.TextMonitor { })
+        assertEquals("b antigo do github", File(dir, "songs/b.mp3").readText())
+
+        // você mexe em b.mp3; no GitHub mudam a.mp3 e b.mp3 e entra new.mp3
+        File(dir, "songs/b.mp3").writeText("b editado aqui")
+        pushFromElsewhere(remote, "Mudanças de outro lugar") {
+            File(it, "songs/a.mp3").writeText("audio a v2")
+            File(it, "songs/b.mp3").writeText("b mudado la")
+            File(it, "songs/new.mp3").writeText("nova")
+        }
+
+        val second = GitManager.pull(dir, url, "x", "", GitManager.TextMonitor { })
+        assertEquals(setOf("songs/a.mp3", "songs/new.mp3"), second.files.toSet())
+        assertEquals("audio a v2", File(dir, "songs/a.mp3").readText())   // você não tinha mexido: atualizou
+        assertEquals("nova", File(dir, "songs/new.mp3").readText())       // só existia lá: baixou
+        assertEquals("b editado aqui", File(dir, "songs/b.mp3").readText()) // você mexeu: continua seu
+    }
+
+    @Test fun pullWhenAlreadyUpToDateDoesNothing() {
+        val remote = remoteWithOtherHistory()
+        val url = remote.toURI().toString()
+        val dir = temp.newFolder("em-dia")
+        GitManager.init(dir, "main", url, "Fulano", "f@x.com")
+        GitManager.pull(dir, url, "x", "", GitManager.TextMonitor { })
+        val again = GitManager.pull(dir, url, "x", "", GitManager.TextMonitor { })
+        assertTrue(again.upToDate)
+        assertTrue(again.files.isEmpty())
+    }
+
+    @Test fun whatWasSentCanBePulledOnANewPhoneAndWorksWithTheApp() {
+        // celular antigo envia a pasta
+        val remote = bareRemote()
+        val url = remote.toURI().toString()
+        val old = music()
+        File(old, ".trueplayer/stats.json").writeText("{}")
+        File(old, ".trueplayer/settings.json").writeText("{}")
+        GitManager.init(old, "main", url, "Fulano", "f@x.com")
+        GitManager.updateGitignore(old, emptyList())
+        GitManager.commitAll(old, "Tudo", "Fulano", "f@x.com", GitManager.TextMonitor { })
+        GitManager.push(old, url, "x", "", GitManager.TextMonitor { })
+
+        // celular novo, pasta vazia: baixa e fica com a mesma estrutura que o app espera
+        val fresh = temp.newFolder("novo")
+        GitManager.init(fresh, "main", url, "Fulano", "f@x.com")
+        val got = GitManager.pull(fresh, url, "x", "", GitManager.TextMonitor { }).files.toSet()
+        listOf("songs/a.mp3", "songs/b.mp3", "playlists/Treino.m3u", ".trueplayer/stats.json", ".trueplayer/settings.json").forEach {
+            assertTrue("faltou $it", it in got && File(fresh, it).isFile)
+        }
+        assertEquals("#EXTM3U\n../songs/a.mp3\n", File(fresh, "playlists/Treino.m3u").readText().replace("\r\n", "\n"))
+        assertTrue(GitManager.isClean(fresh))
+    }
+
     @Test fun repoWithoutOriginCanReceiveOne() {
         val dir = music()
         Git.init().setDirectory(dir).setInitialBranch("main").call().close()

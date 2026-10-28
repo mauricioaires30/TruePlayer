@@ -54,8 +54,8 @@ object UpdateManager {
     const val ACTION_INSTALL_RESULT = "dev.truetagger.action.UPDATE_INSTALL_RESULT"
     private const val MIN_CHECK_INTERVAL_MS = 6L * 60L * 60L * 1000L
 
-    /** Ao abrir o app o intervalo é curto, só para não bater na API do GitHub a cada abertura seguida. */
-    private const val MIN_START_CHECK_INTERVAL_MS = 5L * 60L * 1000L
+    /** Ao voltar para o app o intervalo é de 1 minuto, só para não bater na API do GitHub a cada troca rápida de app. */
+    private const val MIN_START_CHECK_INTERVAL_MS = 60L * 1000L
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val _ui = MutableStateFlow<UpdateUi>(UpdateUi.Idle)
@@ -68,8 +68,12 @@ object UpdateManager {
 
     /** Fecha o aviso atual (o usuário escolheu "Depois" ou leu o resultado). */
     fun dismiss() {
+        // "Agora não": não mostra de novo esta versão até o app ser aberto do zero.
+        (_ui.value as? UpdateUi.Available)?.let { dismissedVersion = it.release.version.toString() }
         _ui.value = UpdateUi.Idle
     }
+
+    @Volatile private var dismissedVersion: String? = null
 
     /**
      * Consulta o GitHub. [manual] mostra "você já está na versão mais recente" e erros. Sem [manual],
@@ -91,7 +95,11 @@ object UpdateManager {
             val installed = installedVersion(app)
             result.onSuccess { release ->
                 when {
-                    release != null && ReleaseParser.isNewer(release, installed) -> _ui.value = UpdateUi.Available(release)
+                    release != null && ReleaseParser.isNewer(release, installed) -> {
+                        // Quem toca em "Agora não" só vê esse aviso de novo quando for uma conferência manual.
+                        if (manual || release.version.toString() != dismissedVersion) _ui.value = UpdateUi.Available(release)
+                        else if (_ui.value is UpdateUi.Checking) _ui.value = UpdateUi.Idle
+                    }
                     manual -> _ui.value = UpdateUi.UpToDate(installed)
                     else -> if (_ui.value is UpdateUi.Checking) _ui.value = UpdateUi.Idle
                 }

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CloudDownload
 import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.SwapHoriz
@@ -44,6 +45,7 @@ fun GitSection() {
     var showSetup by remember { mutableStateOf(false) }
     var showSync by remember { mutableStateOf(false) }
     var showChange by remember { mutableStateOf(false) }
+    var showPull by remember { mutableStateOf(false) }
 
     // Mantém a tela ligada enquanto o git trabalha (o primeiro envio pode demorar).
     val view = LocalView.current
@@ -102,6 +104,11 @@ fun GitSection() {
                     enabled = summary != null,
                 ) { showSync = true }
                 GitAction(
+                    "Baixar do GitHub", Icons.Rounded.CloudDownload,
+                    "Traz para a pasta o que só existe no GitHub. O que você mudou não é sobrescrito.",
+                    enabled = state.remote != null && summary != null,
+                ) { showPull = true }
+                GitAction(
                     "Trocar repositório", Icons.Rounded.SwapHoriz,
                     "Aponta a pasta para outro repositório do GitHub.",
                 ) { showChange = true }
@@ -131,7 +138,7 @@ fun GitSection() {
                         Text("Não feche o app.", style = MaterialTheme.typography.bodySmall)
                     }
                 },
-                confirmButton = {},
+                confirmButton = { TextButton(onClick = GitController::cancel) { Text("Cancelar") } },
             )
         }
     }
@@ -163,6 +170,22 @@ fun GitSection() {
             } else {
                 GitController.commit(context, message, name, email, push, token, remoteUrl)
             }
+        }
+    }
+    if (showPull) {
+        MaterialTheme(colorScheme = TruePlayerDarkScheme) {
+            AlertDialog(
+                onDismissRequest = { showPull = false },
+                title = { Text("Baixar do GitHub?") },
+                text = {
+                    Text(
+                        "Traz para a pasta as músicas, playlists, estatísticas e configurações que só existem no GitHub, " +
+                            "e atualiza o que você não mexeu. O que você mudou continua como está. Pode usar bastante internet e espaço.",
+                    )
+                },
+                confirmButton = { TextButton(onClick = { showPull = false; GitController.pull(context) }) { Text("Baixar") } },
+                dismissButton = { TextButton(onClick = { showPull = false }) { Text("Cancelar") } },
+            )
         }
     }
     if (showChange) {

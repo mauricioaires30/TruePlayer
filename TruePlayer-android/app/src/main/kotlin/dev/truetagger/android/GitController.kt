@@ -164,8 +164,19 @@ object GitController {
     /** Acompanha o JGit (contagem e porcentagem) dentro da etapa [n] de [total]. */
     private fun monitor(n: Int, total: Int): GitManager.TextMonitor {
         var fraction: Float? = null
-        return GitManager.TextMonitor(onFraction = { fraction = it }) { text -> show(n, total, text, fraction) }
+        return GitManager.TextMonitor(onFraction = { fraction = it }, cancelled = { cancelRequested }) { text -> show(n, total, text, fraction) }
     }
+
+    @Volatile private var cancelRequested = false
+
+    /** Pede para parar o que está rodando. O envio só para entre uma etapa e outra; nada fica pela metade no GitHub. */
+    fun cancel() {
+        cancelRequested = true
+        _ui.update { it.copy(busy = "Cancelando…", busyFraction = null) }
+    }
+
+    /** Chamado depois de baixar arquivos do GitHub, para a biblioteca e as playlists lerem a pasta de novo. */
+    @Volatile var onFolderChanged: (() -> Unit)? = null
 
     fun dismissMessage() {
         _ui.update { it.copy(message = null) }
@@ -184,6 +195,7 @@ object GitController {
             return
         }
         pendingReplace = retry
+        cancelRequested = false
         _ui.update { it.copy(busy = null, busyFraction = null, replaceBranch = need.branch) }
     }
 
@@ -200,8 +212,25 @@ object GitController {
         _ui.update { it.copy(replaceBranch = null, message = "Nada foi enviado. O GitHub continua como estava.") }
     }
 
+    /** Texto do erro com a causa de dentro (o JGit só diz "exception caught during execution of add command"). */
+    private fun reason(error: Throwable): String {
+        val parts = generateSequence(error) { it.cause }
+            .take(5)
+            .map { it.message?.trim().takeUnless { text -> text.isNullOrBlank() } ?: it::class.simpleName.orEmpty() }
+            .distinct()
+            .toList()
+        return parts.joinToString(" — ")
+    }
+
+    private fun skippedNote(skipped: List<String>) =
+        if (skipped.isEmpty()) "" else "\n\n${skipped.size} arquivo(s) não puderam ser lidos e ficaram de fora: ${skipped.take(3).joinToString(", ")}."
+
     private fun finish(outcome: Result<String>, app: Context) {
-        _ui.update { it.copy(busy = null, busyFraction = null, message = outcome.fold({ text -> text }, { e -> "Não deu certo: ${e.message ?: e::class.simpleName}" })) }
+        val cancelled = cancelRequested
+        cancelRequested = false
+        val text = if (cancelled && outcome.isFailure) "Cancelado."
+        else outcome.fold({ ok -> ok }, { e -> "Não deu certo: ${reason(e)}" })
+        _ui.update { it.copy(busy = null, busyFraction = null, message = text) }
         refresh(app)
     }
 
@@ -264,7 +293,7 @@ object GitController {
                 val large = GitManager.tooLarge(dir, changes)
                 GitManager.addLocalExclude(dir, large)
                 show(2, steps, "Registrando ${changes.size} arquivo(s)…")
-                GitManager.commitAll(dir, message.ifBlank { "Atualização da pasta" }, name.trim(), email.trim(), monitor(2, steps))
+                val skipped = GitManager.commitAll(dir, message.ifBlank { "Atualização da pasta" }, name.trim(), email.trim(), monitor(2, steps))
 
                 var pushed = false
                 if (push) {
@@ -273,7 +302,7 @@ object GitController {
                     GitManager.push(dir, GitManager.remoteUrl(dir).orEmpty(), sendUser, sendSecret, monitor(3, steps), replace)
                     pushed = true
                 }
-                (if (pushed) (if (replace) "Commit feito e enviado. O GitHub agora está igual à pasta." else "Commit feito e enviado ao GitHub.") else "Commit feito.") + coversNote(covers) + largeFilesNote(large)
+                (if (pushed) (if (replace) "Commit feito e enviado. O GitHub agora está igual à pasta." else "Commit feito e enviado ao GitHub.") else "Commit feito.") + skippedNote(skipped) + coversNote(covers) + largeFilesNote(large)
             }
             finishOrAsk(outcome, app) { commit(app, message, name, email, push, token, remoteUrl, replace = true) }
         }
@@ -336,10 +365,10 @@ object GitController {
                 val changes = GitManager.status(dir)
                 val large = GitManager.tooLarge(dir, changes)
                 GitManager.updateGitignore(dir, large)
-                GitManager.commitAll(dir, "Primeiro commit do TruePlayer", request.githubUser, request.email, monitor(3, 4))
+                val skipped = GitManager.commitAll(dir, "Primeiro commit do TruePlayer", request.githubUser, request.email, monitor(3, 4))
                 show(4, 4, "Conectando ao GitHub…")
                 GitManager.push(dir, request.url, request.githubUser, request.token, monitor(4, 4), replace = replace && branch in heads)
-                (if (replace && branch in heads) "Pasta enviada. O GitHub agora está igual à pasta." else "Repositório criado e enviado ao GitHub.") + coversNote(covers) + largeFilesNote(large)
+                (if (replace && branch in heads) "Pasta enviada. O GitHub agora está igual à pasta." else "Repositório criado e enviado ao GitHub.") + skippedNote(skipped) + coversNote(covers) + largeFilesNote(large)
             }
             finishOrAsk(outcome, app) { setup(app, request, replace = true) }
         }
@@ -364,6 +393,34 @@ object GitController {
                 GitManager.setRemote(dir, target)
                 if (token.isNotBlank()) SecretStore.put(app, TOKEN, token)
                 "Repositório trocado para ${GitRemote.stripCredentials(target)}."
+            }
+            finish(outcome, app)
+        }
+    }
+
+    /** Baixa do GitHub o que só existe lá (só depois de o usuário confirmar). Nada que ele mudou é sobrescrito. */
+    fun pull(context: Context) {
+        val app = context.applicationContext
+        if (_ui.value.busy != null) return
+        show(1, 2, "Conectando ao GitHub…")
+        _ui.update { it.copy(message = null) }
+        scope.launch {
+            val outcome = runCatching {
+                val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("pasta não suportada")
+                val (user, secret) = credentials(app, dir, "")
+                require(secret.isNotBlank()) { "informe o token do GitHub (Trocar repositório)" }
+                show(2, 2, "Baixando do GitHub…")
+                val result = GitManager.pull(dir, GitManager.remoteUrl(dir).orEmpty(), user, secret, monitor(2, 2))
+                if (result.files.isNotEmpty()) {
+                    val audio = result.files
+                        .filter { dev.truetagger.data.MigrationPlanner.isAudio(it.substringAfterLast('/')) }
+                        .map { File(dir, it).absolutePath }
+                    // O sistema só enxerga as músicas novas depois de escanear os arquivos.
+                    if (audio.isNotEmpty()) android.media.MediaScannerConnection.scanFile(app, audio.toTypedArray(), null, null)
+                    onFolderChanged?.invoke()
+                }
+                if (result.upToDate) "A pasta já está em dia com o GitHub."
+                else "${result.files.size} arquivo(s) baixados do GitHub. A biblioteca atualiza sozinha em instantes."
             }
             finish(outcome, app)
         }

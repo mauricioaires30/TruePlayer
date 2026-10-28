@@ -144,8 +144,6 @@ class MainActivity : ComponentActivity() {
         ConnectivityObserver.start(this)
         whatsNew = UpdateManager.takeWhatsNew(this)
         UpdateWorker.schedule(this, settings.autoCheckUpdates)
-        // Ao abrir o app: confere sem aviso, só aparece algo se houver versão nova.
-        if (settings.autoCheckUpdates && savedInstanceState == null) UpdateManager.check(this, manual = false, force = true)
         // E de novo sempre que a internet volta (no máximo a cada 6 horas).
         appScope.launch {
             ConnectivityObserver.reconnects.drop(1).collect {
@@ -156,6 +154,14 @@ class MainActivity : ComponentActivity() {
         checkFolderAccess()
         registerMediaObserver()
         YoutubeDownloadService.resumePending(this)
+        // Depois de "Baixar do GitHub": relê a biblioteca, as playlists e as estatísticas da pasta.
+        GitController.onFolderChanged = {
+            runOnUiThread { lastRefreshAtMs = 0L; refreshLibrary() }
+            appScope.launch(Dispatchers.IO) {
+                runCatching { PlaylistFolderSync.importFromFolder(this@MainActivity) }
+                runCatching { PlayStatsState.loadFromFolder(this@MainActivity) }
+            }
+        }
         // Tutorial só para instalação nova e sem pasta; quem atualizou nunca vê.
         showTutorial = OnboardingState.shouldShow(this)
 
@@ -231,6 +237,13 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         handleIntent(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        // Toda vez que o app volta para a frente (abrir, ou voltar de outro app) confere se há versão nova.
+        // É silencioso: só aparece algo se houver.
+        if (settings.autoCheckUpdates) UpdateManager.check(this, manual = false, force = true)
     }
 
     override fun onStop() {
