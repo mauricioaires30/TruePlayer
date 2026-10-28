@@ -27,7 +27,8 @@ class UpdateWorker(context: Context, params: WorkerParameters) : CoroutineWorker
                 return
             }
             // Funciona com o app fechado: o Android roda a conferência sozinho e o app avisa por notificação.
-            val request = PeriodicWorkRequestBuilder<UpdateWorker>(6, TimeUnit.HOURS)
+            // De hora em hora (o Android pode atrasar quando o celular está parado ou economizando bateria).
+            val request = PeriodicWorkRequestBuilder<UpdateWorker>(1, TimeUnit.HOURS)
                 .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.CONNECTED).build())
                 .build()
             // UPDATE troca o intervalo de quem já tinha o agendamento antigo, sem reiniciar a contagem.

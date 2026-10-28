@@ -18,6 +18,7 @@ import dev.truetagger.data.StatValue
 import dev.truetagger.data.StatsRange
 import java.text.NumberFormat
 import dev.truetagger.android.ConnectivityObserver
+import dev.truetagger.android.UpdateManager
 import dev.truetagger.android.PlaylistData
 import dev.truetagger.model.TrackKeys
 import dev.truetagger.android.PlaylistStore
@@ -720,11 +721,14 @@ fun TrueTaggerPlayerApp(
         Box(Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
+            // Barras do sistema e recorte da câmera: o conteúdo nunca fica por baixo deles.
+            contentWindowInsets = WindowInsets.systemBars.union(WindowInsets.displayCutout),
             bottomBar = {
                 Column {
                     if (snapshot.current != null && !editorOpen && playerScreen == PlayerScreen.NONE) {
                         MiniPlayer(
                             snapshot,
+                            onQueue = { navigatePlayer(PlayerScreen.QUEUE) },
                             onOpen = { navigatePlayer(PlayerScreen.FULL) },
                             onToggle = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_TOGGLE) },
                             onPrevious = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_PREVIOUS) },
@@ -944,6 +948,8 @@ private fun MiniPlayer(
     onNext: () -> Unit,
     onShuffle: () -> Unit,
     onRepeat: () -> Unit,
+    /** Abre a fila. Só o mini player da tela principal mostra o botão; na própria tela da fila fica sem. */
+    onQueue: (() -> Unit)? = null,
 ) {
     val accent = MaterialTheme.colorScheme.primary
     Surface(
@@ -992,8 +998,8 @@ private fun MiniPlayer(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-                // Direita, em duas linhas: [anterior] [tocar/pausar] [próxima] em cima; embaixo, [aleatório] entre anterior e tocar,
-                // e [repetir] entre tocar e próxima.
+                // Direita, em duas linhas: [anterior] [tocar/pausar] [próxima] em cima; embaixo, na mesma ordem,
+                // [aleatório] [fila] [repetir].
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = onPrevious, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_MAIN_BUTTON)) {
@@ -1013,8 +1019,14 @@ private fun MiniPlayer(
                                 "Aleatório", modifier = Modifier.size(22.dp), tint = if (s.shuffle) accent else LocalContentColor.current,
                             )
                         }
-                        // Quase colados: a linha de baixo fica centralizada, então cada botão cai no vão entre dois de cima.
-                        Spacer(Modifier.width(2.dp))
+                        // No meio, o botão da fila (debaixo do tocar/pausar); sem ele, o espaço fica vazio.
+                        if (onQueue != null) {
+                            IconButton(onClick = onQueue, modifier = Modifier.size(MINI_MAIN_BUTTON, MINI_SMALL_BUTTON)) {
+                                Icon(Icons.Rounded.QueueMusic, "Ver fila", modifier = Modifier.size(22.dp))
+                            }
+                        } else {
+                            Spacer(Modifier.width(MINI_MAIN_BUTTON))
+                        }
                         IconButton(onClick = onRepeat, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_SMALL_BUTTON)) {
                             Icon(
                                 painterResource(if (s.repeat == RepeatMode.ONE) R.drawable.truetagger_repeat_on else R.drawable.truetagger_repeat_off),
@@ -2825,8 +2837,16 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                             settings.autoCheckUpdates,
                         ) { onChange(settings.copy(autoCheckUpdates = it)) }
                         SettingsDivider()
+                        val lastBackground = remember { UpdateManager.lastBackgroundCheckMs(context) }
                         SettingsRow(
-                            Icons.Rounded.SystemUpdate, "Procurar atualização", "Versão instalada: $appVersion",
+                            Icons.Rounded.SystemUpdate, "Procurar atualização",
+                            "Versão $appVersion • " + if (lastBackground > 0) {
+                                "conferiu sozinho " + android.text.format.DateUtils.getRelativeTimeSpanString(
+                                    lastBackground, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS,
+                                )
+                            } else {
+                                "ainda não conferiu sozinho"
+                            },
                         ) { onCheckUpdate?.invoke() }
                     }
                 }

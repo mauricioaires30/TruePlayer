@@ -46,6 +46,7 @@ object UpdateManager {
     private const val REPO = "mauricioaires30/TruePlayer"
     private const val PREFS = "truetagger_updates"
     private const val KEY_LAST_CHECK = "last_check"
+    private const val KEY_BG_CHECK = "last_background_check"
     private const val KEY_NOTIFIED = "notified_version"
     private const val KEY_NOTES_VERSION = "whats_new_version"
     private const val KEY_NOTES_TEXT = "whats_new_notes"
@@ -115,12 +116,20 @@ object UpdateManager {
     }
 
     /** Usado pelo agendamento em segundo plano: consulta e, se houver versão nova, avisa por notificação. */
+    /** Quando o agendamento em segundo plano rodou pela última vez (0 = nunca). Aparece em Configurações. */
+    fun lastBackgroundCheckMs(context: Context): Long = prefs(context.applicationContext).getLong(KEY_BG_CHECK, 0L)
+
     suspend fun checkAndNotify(context: Context) {
         val app = context.applicationContext
+        // Marca que rodou antes de tudo, mesmo sem internet: assim dá para ver que o agendamento está vivo.
+        prefs(app).edit().putLong(KEY_BG_CHECK, System.currentTimeMillis()).apply()
         val release = fetchLatest().getOrNull() ?: return
         prefs(app).edit().putLong(KEY_LAST_CHECK, System.currentTimeMillis()).apply()
         if (!ReleaseParser.isNewer(release, installedVersion(app))) return
         if (prefs(app).getString(KEY_NOTIFIED, "") == release.version.toString()) return
+        // Sem permissão de notificação não adianta marcar como avisado: quando ela for liberada, avisa de novo.
+        val manager = app.getSystemService(NotificationManager::class.java)
+        if (manager == null || !manager.areNotificationsEnabled()) return
         prefs(app).edit().putString(KEY_NOTIFIED, release.version.toString()).apply()
         _ui.value = UpdateUi.Available(release)
         notifyAvailable(app, release)

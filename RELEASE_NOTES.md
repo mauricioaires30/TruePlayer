@@ -1,4 +1,6 @@
-﻿## TruePlayer 1.7.1
+﻿## TruePlayer 1.7.2
 
-- Mini player: botões maiores, à direita (anterior, tocar/pausar e próxima em cima; aleatório e repetir embaixo, entre eles), com as informações da música à esquerda.
-- Nomes grandes de músicas, álbuns, artistas, playlists e gêneros rolam em loop em vez de serem cortados.
+- Mini player: botão de ver a fila entre aleatório e repetir.
+- Tela cheia explícita: barras do sistema transparentes e conteúdo respeitando o recorte da câmera.
+- Procura atualização de hora em hora com o app fechado; Configurações mostra quando conferiu pela última vez.
+- Só marca a atualização como avisada se a notificação puder ser mostrada.
