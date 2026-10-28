@@ -9,6 +9,11 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import dev.truetagger.data.StatValue
+import dev.truetagger.data.StatsRange
+import java.text.NumberFormat
 import dev.truetagger.android.PlaylistData
 import dev.truetagger.android.PlaylistStore
 import dev.truetagger.android.LibraryIndex
@@ -204,53 +209,72 @@ private class PlayStatsStore(context: Context) {
         PlayStatsState.initialize(appContext)
     }
 
-    fun count(trackId: String): Long = PlayStatsState.count(appContext, trackId)
-
-    private fun countsFor(tracks: List<AudioTrack>): Map<String, Long> {
-        val allCounts = PlayStatsState.snapshot(appContext)
-        return tracks.asSequence()
-            .map { it.id }
-            .distinct()
-            .associateWith { allCounts[it] ?: 0L }
+    private fun valuesFor(tracks: List<AudioTrack>, range: StatsRange): Map<String, StatValue> {
+        val totals = PlayStatsState.totals(appContext, range)
+        return tracks.associate { it.id to (totals[PlayStatsState.keyFor(it)] ?: StatValue()) }
     }
 
-    fun topTracks(tracks: List<AudioTrack>, limit: Int = 10): List<Pair<AudioTrack, Long>> {
-        val counts = countsFor(tracks)
+    private fun StatValue.counts() = ms > 0L || plays > 0L
+
+    private fun <T> byTime(selector: (T) -> StatValue, name: (T) -> String): Comparator<T> =
+        compareByDescending<T> { selector(it).ms }.thenByDescending { selector(it).plays }.thenBy { name(it).lowercase(Locale.ROOT) }
+
+    fun topTracks(tracks: List<AudioTrack>, range: StatsRange, limit: Int = 10): List<Pair<AudioTrack, StatValue>> {
+        val values = valuesFor(tracks, range)
         return tracks.asSequence()
-            .map { it to (counts[it.id] ?: 0L) }
-            .filter { it.second > 0L }
-            .sortedWith(compareByDescending<Pair<AudioTrack, Long>> { it.second }.thenBy { it.first.displayTitle().lowercase(Locale.ROOT) })
+            .map { it to (values[it.id] ?: StatValue()) }
+            .filter { it.second.counts() }
+            .sortedWith(byTime({ it.second }, { it.first.displayTitle() }))
             .take(limit)
             .toList()
     }
 
-    fun topAlbums(tracks: List<AudioTrack>, limit: Int = 10): List<Triple<String, String, Long>> {
-        val counts = countsFor(tracks)
+    fun topAlbums(tracks: List<AudioTrack>, range: StatsRange, limit: Int = 10): List<Triple<String, String, StatValue>> {
+        val values = valuesFor(tracks, range)
         return tracks.asSequence()
             .filter { it.album.isNotBlank() }
             .groupBy { Normalizer.normalize(it.album, Normalizer.Form.NFKC).trim().replace(Regex("\\s+"), " ").lowercase(Locale.ROOT) }
             .mapNotNull { (_, group) ->
-                val total = group.sumOf { counts[it.id] ?: 0L }
-                if (total <= 0L) return@mapNotNull null
+                val total = group.fold(StatValue()) { acc, t -> acc + (values[t.id] ?: StatValue()) }
+                if (!total.counts()) return@mapNotNull null
                 val first = group.first()
-                val artist = first.albumArtist.ifBlank { first.artist }
-                Triple(first.album, artist, total)
+                Triple(first.album, first.albumArtist.ifBlank { first.artist }, total)
             }
-            .sortedWith(compareByDescending<Triple<String, String, Long>> { it.third }.thenBy { it.first.lowercase(Locale.ROOT) })
+            .sortedWith(byTime({ it.third }, { it.first }))
             .take(limit)
+            .toList()
     }
 
-    fun topArtists(tracks: List<AudioTrack>, limit: Int = 10): List<Pair<String, Long>> {
-        val counts = countsFor(tracks)
+    fun topArtists(tracks: List<AudioTrack>, range: StatsRange, limit: Int = 10): List<Pair<String, StatValue>> {
+        val values = valuesFor(tracks, range)
         return tracks.asSequence()
             .filter { it.artist.isNotBlank() && it.artist != "<unknown>" }
             .groupBy { Normalizer.normalize(it.artist, Normalizer.Form.NFKC).trim().replace(Regex("\\s+"), " ").lowercase(Locale.ROOT) }
             .mapNotNull { (_, group) ->
-                val total = group.sumOf { counts[it.id] ?: 0L }
-                if (total <= 0L) null else (group.first().artist to total)
+                val total = group.fold(StatValue()) { acc, t -> acc + (values[t.id] ?: StatValue()) }
+                if (!total.counts()) null else (group.first().artist to total)
             }
-            .sortedWith(compareByDescending<Pair<String, Long>> { it.second }.thenBy { it.first.lowercase(Locale.ROOT) })
+            .sortedWith(byTime({ it.second }, { it.first }))
             .take(limit)
+            .toList()
+    }
+}
+
+private fun StatValue.minutesText(): String = when {
+    ms <= 0L -> "0 min"
+    ms < 60_000L -> "<1 min"
+    else -> NumberFormat.getIntegerInstance(Locale("pt", "BR")).format(minutes) + " min"
+}
+
+@Composable
+private fun StatsRangeChips(range: StatsRange, onChange: (StatsRange) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom = UiTokens.sectionSpacing),
+        horizontalArrangement = Arrangement.spacedBy(UiTokens.toolbarGap),
+    ) {
+        StatsRange.entries.forEach { r ->
+            FilterChip(selected = r == range, onClick = { onChange(r) }, label = { Text(r.label) })
+        }
     }
 }
 
@@ -1273,6 +1297,7 @@ private fun CombinedMostPlayedPlaylistHost(
     var mode by rememberSaveable { mutableStateOf(MostPlayedMode.OVERVIEW) }
     val context = LocalContext.current
     val store = remember { PlayStatsStore(context) }
+    var range by rememberSaveable { mutableStateOf(StatsRange.ALL) }
     var creating by remember { mutableStateOf(false) }
     var createName by remember { mutableStateOf("") }
     var renaming by remember { mutableStateOf<PlaylistData?>(null) }
@@ -1285,9 +1310,9 @@ private fun CombinedMostPlayedPlaylistHost(
     // A revisão entra como chave do remember: os três cards são recalculados
     // pelo mesmo evento de reprodução, mas não a cada recomposição (o cálculo
     // percorre e ordena a biblioteca inteira).
-    val liveTopTrack = remember(statsRevision, tracks) { store.topTracks(tracks, 1).firstOrNull() }
-    val liveTopAlbum = remember(statsRevision, tracks) { store.topAlbums(tracks, 1).firstOrNull() }
-    val liveTopArtist = remember(statsRevision, tracks) { store.topArtists(tracks, 1).firstOrNull() }
+    val liveTopTrack = remember(statsRevision, tracks, range) { store.topTracks(tracks, range, 1).firstOrNull() }
+    val liveTopAlbum = remember(statsRevision, tracks, range) { store.topAlbums(tracks, range, 1).firstOrNull() }
+    val liveTopArtist = remember(statsRevision, tracks, range) { store.topArtists(tracks, range, 1).firstOrNull() }
 
     BackHandler(enabled = mode != MostPlayedMode.OVERVIEW) {
         mode = MostPlayedMode.OVERVIEW
@@ -1346,6 +1371,7 @@ private fun CombinedMostPlayedPlaylistHost(
                             item {
                                 Text("MAIS OUVIDAS", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = UiTokens.space2))
                             }
+                            item { StatsRangeChips(range) { range = it } }
                             item {
                                 // A reprodução iniciada é o único gatilho necessário para
                                 // atualizar os cards de Mais Ouvidas. O estado de progresso
@@ -1360,7 +1386,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                         }
                                         MostPlayedCategoryCard(
                                         title = "MÚSICAS",
-                                        subtitle = topTrack?.let { "${it.displayTitle()} • ${liveTopTrack?.second ?: 0L}x" },
+                                        subtitle = topTrack?.let { "${it.displayTitle()} • ${liveTopTrack?.second?.minutesText().orEmpty()}" },
                                         artwork = topTrack?.artworkBytes,
                                         artworkUri = topTrack?.id,
                                         modifier = Modifier.weight(1f),
@@ -1368,7 +1394,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                     )
                                     MostPlayedCategoryCard(
                                         title = "ÁLBUNS",
-                                        subtitle = topAlbum?.let { "$it • ${liveTopAlbum?.third ?: 0L}x" },
+                                        subtitle = topAlbum?.let { "$it • ${liveTopAlbum?.third?.minutesText().orEmpty()}" },
                                         artwork = topAlbumTrack?.artworkBytes,
                                         artworkUri = topAlbumTrack?.id,
                                         modifier = Modifier.weight(1f),
@@ -1376,7 +1402,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                     )
                                         MostPlayedCategoryCard(
                                             title = "ARTISTAS",
-                                            subtitle = liveTopArtist?.let { "${it.first} • ${it.second}x" },
+                                            subtitle = liveTopArtist?.let { "${it.first} • ${it.second.minutesText()}" },
                                             artistName = liveTopArtist?.first,
                                             modifier = Modifier.weight(1f),
                                             onClick = { mode = MostPlayedMode.ARTISTS },
@@ -1390,17 +1416,18 @@ private fun CombinedMostPlayedPlaylistHost(
                 }
             } else {
                 val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+                StatsRangeChips(range) { range = it }
                 when (mode) {
                     MostPlayedMode.TRACKS -> {
-                        val values = remember(statsRevision, tracks) { store.topTracks(tracks) }
+                        val values = remember(statsRevision, tracks, range) { store.topTracks(tracks, range) }
                         if (values.isEmpty()) EmptyMostPlayed() else SongListContainer(state = state, modifier = Modifier.fillMaxSize()) {
-                            itemsIndexed(values, key = { _, pair -> pair.first.id }) { index, (track, count) ->
+                            itemsIndexed(values, key = { _, pair -> pair.first.id }) { index, (track, value) ->
                                 MostPlayedRow(
                                     index + 1,
                                     track.displayTitle(),
                                     track.artist,
                                     track.album,
-                                    count,
+                                    value,
                                     track.artworkBytes,
                                     track.id,
                                 ) { play(listOf(track), 0) }
@@ -1408,9 +1435,9 @@ private fun CombinedMostPlayedPlaylistHost(
                         }
                     }
                     MostPlayedMode.ALBUMS -> {
-                        val values = remember(statsRevision, tracks) { store.topAlbums(tracks) }
+                        val values = remember(statsRevision, tracks, range) { store.topAlbums(tracks, range) }
                         if (values.isEmpty()) EmptyMostPlayed() else SongListContainer(state = state, modifier = Modifier.fillMaxSize()) {
-                            itemsIndexed(values, key = { _, item -> item.first + "\u0000" + item.second }) { index, (album, artist, count) ->
+                            itemsIndexed(values, key = { _, item -> item.first + "\u0000" + item.second }) { index, (album, artist, value) ->
                                 val artworkTrack = tracks.firstOrNull { it.album.equals(album, true) && it.artworkBytes?.isNotEmpty() == true }
                                     ?: tracks.firstOrNull { it.album.equals(album, true) }
                                 MostPlayedRow(
@@ -1418,7 +1445,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                     album,
                                     artist,
                                     "",
-                                    count,
+                                    value,
                                     artworkTrack?.artworkBytes,
                                     artworkTrack?.id,
                                 ) { onAlbum(album) }
@@ -1426,15 +1453,15 @@ private fun CombinedMostPlayedPlaylistHost(
                         }
                     }
                     MostPlayedMode.ARTISTS -> {
-                        val values = remember(statsRevision, tracks) { store.topArtists(tracks) }
+                        val values = remember(statsRevision, tracks, range) { store.topArtists(tracks, range) }
                         if (values.isEmpty()) EmptyMostPlayed() else SongListContainer(state = state, modifier = Modifier.fillMaxSize()) {
-                            itemsIndexed(values, key = { _, item -> item.first }) { index, (artist, count) ->
+                            itemsIndexed(values, key = { _, item -> item.first }) { index, (artist, value) ->
                                 MostPlayedRow(
                                     index + 1,
                                     artist,
                                     "",
                                     "",
-                                    count,
+                                    value,
                                     null,
                                     null,
                                     artist,
@@ -1527,7 +1554,7 @@ private fun EmptyMostPlayed() {
 }
 
 @Composable
-private fun MostPlayedRow(rank: Int, title: String, artist: String, album: String, count: Long, artwork: ByteArray?, artworkUri: String? = null, artistImageName: String? = null, onClick: () -> Unit) {
+private fun MostPlayedRow(rank: Int, title: String, artist: String, album: String, value: StatValue, artwork: ByteArray?, artworkUri: String? = null, artistImageName: String? = null, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth()
             .heightIn(min = UiTokens.mostPlayedRowHeight)
@@ -1555,7 +1582,10 @@ private fun MostPlayedRow(rank: Int, title: String, artist: String, album: Strin
                 ScrollingText(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        Text("$count×", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+        Column(horizontalAlignment = Alignment.End) {
+            Text(value.minutesText(), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
+            Text("${value.plays}×", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 

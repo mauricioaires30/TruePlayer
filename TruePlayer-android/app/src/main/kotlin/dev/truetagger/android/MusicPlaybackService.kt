@@ -234,6 +234,7 @@ class MusicPlaybackService : Service() {
 
     private val progressRunnable = object : Runnable {
         override fun run() {
+            trackListening()
             updateStateAndNotification()
             if (player != null || queue.isNotEmpty()) {
                 handler.postDelayed(this, 1000)
@@ -508,10 +509,25 @@ class MusicPlaybackService : Service() {
         updateStateAndNotification()
     }
 
-    private fun recordPlayCount(trackId: String) {
-        if (trackId.isBlank()) return
-        PlayStatsState.record(this, trackId)
-        AppEvents.bump()
+    /** Uma nova reprodução da faixa começou; o play só é contado depois de 30 s ouvidos. */
+    private fun recordPlayCount(track: AudioTrack) {
+        PlayStatsState.beginPlay(PlayStatsState.keyFor(track))
+    }
+
+    private var lastListenTickMs = 0L
+
+    /** Chamada a cada segundo: soma o tempo realmente ouvido (só enquanto está tocando). */
+    private fun trackListening() {
+        val now = android.os.SystemClock.elapsedRealtime()
+        val playing = runCatching { player?.isPlaying == true }.getOrDefault(false)
+        val track = queue.getOrNull(index)
+        if (playing && track != null && lastListenTickMs > 0L) {
+            val delta = (now - lastListenTickMs).coerceIn(0L, 2_500L)
+            PlayStatsState.addListening(this, PlayStatsState.keyFor(track), track.durationMs, delta)
+        } else if (!playing && lastListenTickMs > 0L) {
+            PlayStatsState.flush(this)
+        }
+        lastListenTickMs = if (playing) now else 0L
     }
 
     private fun releaseCurrentPlayer() {
@@ -579,7 +595,7 @@ class MusicPlaybackService : Service() {
                         if (pendingPlay) {
                             mediaPlayer.start()
                             if (playCountRecordedGeneration != generation) {
-                                recordPlayCount(track.id)
+                                recordPlayCount(track)
                                 playCountRecordedGeneration = generation
                             }
                         }
@@ -621,7 +637,7 @@ class MusicPlaybackService : Service() {
                 runCatching { mediaPlayer.start() }.onSuccess {
                     playbackStarted = true
                     if (playCountRecordedGeneration != generation) {
-                        recordPlayCount(track.id)
+                        recordPlayCount(track)
                         playCountRecordedGeneration = generation
                     }
                     updateStateAndNotification()
@@ -673,7 +689,7 @@ class MusicPlaybackService : Service() {
                 p.start()
                 val track = queue.getOrNull(index)
                 if (track != null && playCountRecordedGeneration != playerGeneration) {
-                    recordPlayCount(track.id)
+                    recordPlayCount(track)
                     playCountRecordedGeneration = playerGeneration
                 }
             }

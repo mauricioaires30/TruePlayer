@@ -175,6 +175,11 @@ class MainActivity : ComponentActivity() {
         handleIntent(intent)
     }
 
+    override fun onStop() {
+        PlayStatsState.flush(this)
+        super.onStop()
+    }
+
     override fun onDestroy() {
         writeContinuation?.cancel()
         mediaRefreshJob?.cancel()
@@ -305,6 +310,7 @@ class MainActivity : ComponentActivity() {
     /** Depois de uma varredura que deu certo: acerta chaves das playlists e confere o layout da pasta. */
     private fun onReliableScan() {
         PlaylistStore(this).upgradeKeys()
+        PlayStatsState.convertLegacy(this)
         if (folderChecked || migrationRunning) return
         val tree = MusicFolder.tree(this) ?: return
         folderChecked = true
@@ -318,6 +324,7 @@ class MainActivity : ComponentActivity() {
             Log.i("TruePlayer", "checagem da pasta: plano=${preview?.plan?.size}")
             PlaylistFolderSync.importFromFolder(this@MainActivity)
             PlaylistFolderSync.exportAllNow(this@MainActivity)
+            PlayStatsState.loadFromFolder(this@MainActivity)
             val declinedAt = prefs.getLong(PREF_MIGRATION_DECLINED_AT, 0L)
             val recentlyDeclined = System.currentTimeMillis() - declinedAt < MIGRATION_ASK_AGAIN_MS
             if (preview != null && preview.plan.isNotEmpty() && !recentlyDeclined) migrationPreview = preview
