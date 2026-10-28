@@ -9,6 +9,7 @@ coroutines = "1.10.2"
 jaudiotagger = "3.0.1"
 youtubedlAndroid = "0.18.1"
 junit = "4.13.2"
+work = "2.10.0"
 
 [libraries]
 androidx-compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
@@ -28,6 +29,7 @@ jaudiotagger = { module = "net.jthink:jaudiotagger", version.ref = "jaudiotagger
 youtubedl-android = { module = "io.github.junkfood02.youtubedl-android:library", version.ref = "youtubedlAndroid" }
 youtubedl-ffmpeg = { module = "io.github.junkfood02.youtubedl-android:ffmpeg", version.ref = "youtubedlAndroid" }
 junit = { module = "junit:junit", version.ref = "junit" }
+androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "work" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

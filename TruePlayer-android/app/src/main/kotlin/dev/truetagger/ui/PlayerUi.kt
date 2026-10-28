@@ -487,6 +487,7 @@ fun TrueTaggerPlayerApp(
     appVersion: String,
     onOrganizeFolder: (() -> Unit)? = null,
     onCleanFolder: (() -> Unit)? = null,
+    onCheckUpdate: (() -> Unit)? = null,
     permissions: List<dev.truetagger.model.PermissionItem> = emptyList(),
     importStatus: dev.truetagger.model.ImportStatus?,
     onDismissImportStatus: () -> Unit,
@@ -895,7 +896,7 @@ fun TrueTaggerPlayerApp(
                             onExport = { playlist -> pendingExportPlaylist = playlist; exportPlaylistLauncher.launch("${playlist.name}.m3u") },
                             onRename = { oldName, newName -> if (store.rename(oldName, newName)) { reloadPlaylists(); if (uiPrefs.getString("last_playlist_key", "").orEmpty() == oldName) uiPrefs.edit().putString("last_playlist_key", newName).apply() } },
                         )
-                        HomeTab.SETTINGS -> SettingsTab(settings, onSettingsChange, downloadFolderLabel, onChooseDownloadFolder, onReleaseDownloadFolder, appVersion, onOrganizeFolder, onCleanFolder, permissions, reviewTracks) { openEditor(it) }
+                        HomeTab.SETTINGS -> SettingsTab(settings, onSettingsChange, downloadFolderLabel, onChooseDownloadFolder, onReleaseDownloadFolder, appVersion, onOrganizeFolder, onCleanFolder, permissions, reviewTracks, onCheckUpdate) { openEditor(it) }
                     }
                 }
             }
@@ -2580,7 +2581,7 @@ private fun ScrollingText(
 }
 
 @Composable
-private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, downloadFolderLabel: String, onChooseDownloadFolder: (() -> Unit)?, onReleaseDownloadFolder: (() -> Unit)?, appVersion: String, onOrganizeFolder: (() -> Unit)? = null, onCleanFolder: (() -> Unit)? = null, permissions: List<dev.truetagger.model.PermissionItem> = emptyList(), reviewTracks: List<AudioTrack> = emptyList(), onOpenTrack: (AudioTrack) -> Unit = {}) {
+private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, downloadFolderLabel: String, onChooseDownloadFolder: (() -> Unit)?, onReleaseDownloadFolder: (() -> Unit)?, appVersion: String, onOrganizeFolder: (() -> Unit)? = null, onCleanFolder: (() -> Unit)? = null, permissions: List<dev.truetagger.model.PermissionItem> = emptyList(), reviewTracks: List<AudioTrack> = emptyList(), onCheckUpdate: (() -> Unit)? = null, onOpenTrack: (AudioTrack) -> Unit = {}) {
     val context = LocalContext.current
     val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     PersistListScroll(state, "settings")
@@ -2760,6 +2761,21 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                                 }
                             }
                         }
+                    }
+                }
+                item {
+                    SettingSwitch(
+                        "Avisar quando sair versão nova",
+                        "Confere sozinho se existe uma versão mais nova do app e avisa por notificação. Precisa de internet.",
+                        settings.autoCheckUpdates,
+                    ) { onChange(settings.copy(autoCheckUpdates = it)) }
+                }
+                item {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.space2)) {
+                        SettingAction(
+                            "Verificar atualização", Icons.Rounded.Refresh,
+                            "Consulta agora se existe uma versão mais nova e, se você quiser, baixa e instala. Suas músicas, playlists e estatísticas não são alteradas.",
+                        ) { onCheckUpdate?.invoke() }
                     }
                 }
                 item {

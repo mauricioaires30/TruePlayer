@@ -84,6 +84,7 @@ data class AppSettings(
     val autoUpdateDownloader: Boolean = true,
     val geniusAccessToken: String = "",
     val autoTag: Boolean = true,
+    val autoCheckUpdates: Boolean = true,
 )
 
 /** Uma permissão que o app precisa, para o checklist de Configurações. */

@@ -18,6 +18,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -32,6 +33,7 @@ import dev.truetagger.data.UrlSupport
 import dev.truetagger.data.PlannedMove
 import dev.truetagger.model.TrackKeys
 import dev.truetagger.ui.FolderCleanupDialog
+import dev.truetagger.ui.UpdateDialogs
 import dev.truetagger.ui.FolderMigrationDialogs
 import dev.truetagger.ui.TrueTaggerPlayerApp
 import kotlinx.coroutines.CancellableContinuation
@@ -61,6 +63,7 @@ class MainActivity : ComponentActivity() {
     private var migrationProgress by mutableStateOf<FolderMigrator.Progress?>(null)
     private var migrationReport by mutableStateOf<FolderMigrator.Report?>(null)
     private var migrationMessage by mutableStateOf<String?>(null)
+    private var whatsNew by mutableStateOf<Pair<String, String>?>(null)
     private var cleanupScan by mutableStateOf<FolderOrganizer.Scan?>(null)
     private var folderAccessNeeded by mutableStateOf(false)
     private var accessPromptDismissed = false
@@ -136,6 +139,14 @@ class MainActivity : ComponentActivity() {
         downloadFolderLabel = savedDownloadTree()?.let(::folderLabel).orEmpty()
         settings = loadSettings()
         ConnectivityObserver.start(this)
+        whatsNew = UpdateManager.takeWhatsNew(this)
+        UpdateWorker.schedule(this, settings.autoCheckUpdates)
+        // Confere ao abrir e sempre que a internet volta (no máximo a cada 6 horas).
+        appScope.launch {
+            ConnectivityObserver.reconnects.collect {
+                if (settings.autoCheckUpdates) UpdateManager.check(this@MainActivity, manual = false)
+            }
+        }
         releaseStalePermissions()
         checkFolderAccess()
         registerMediaObserver()
@@ -156,6 +167,7 @@ class MainActivity : ComponentActivity() {
                 onSettingsChange = ::updateSettings,
                 onOrganizeFolder = ::organizeFolderNow,
                 onCleanFolder = ::cleanFolderNow,
+                onCheckUpdate = { UpdateManager.check(this, manual = true) },
                 permissions = permissionItems(),
                 appVersion = runCatching { packageManager.getPackageInfo(packageName, 0).versionName.orEmpty() }.getOrDefault(""),
                 importStatus = importStatus,
@@ -168,6 +180,14 @@ class MainActivity : ComponentActivity() {
                     onCancel = { cleanupScan = null },
                 )
             }
+            val updateState by UpdateManager.ui.collectAsState()
+            UpdateDialogs(
+                state = updateState,
+                whatsNew = whatsNew,
+                onUpdate = { UpdateManager.downloadAndInstall(this@MainActivity, it) },
+                onDismiss = UpdateManager::dismiss,
+                onWhatsNewDismiss = { whatsNew = null },
+            )
             FolderMigrationDialogs(
                 preview = migrationPreview,
                 progress = migrationProgress,
@@ -222,6 +242,10 @@ class MainActivity : ComponentActivity() {
         // suficiente desde a última varredura.
         checkFolderAccess()
         permissionsRevision++
+        // Voltou da tela de "instalar apps desconhecidos" com a permissão dada: continua a atualização.
+        (UpdateManager.ui.value as? UpdateUi.NeedsInstallPermission)?.let {
+            if (UpdateManager.canInstallPackages(this)) UpdateManager.downloadAndInstall(this, it.release)
+        }
         val now = android.os.SystemClock.elapsedRealtime()
         if (::audioService.isInitialized && hasAudioPermission() &&
             now - lastRefreshAtMs >= MIN_REFRESH_INTERVAL_MS
@@ -619,10 +643,12 @@ class MainActivity : ComponentActivity() {
         autoUpdateDownloader = prefs.getBoolean(ShareContract.PREF_AUTO_UPDATE_DOWNLOADER, true),
         geniusAccessToken = prefs.getString(ShareContract.PREF_GENIUS_ACCESS_TOKEN, "").orEmpty(),
         autoTag = prefs.getBoolean(ShareContract.PREF_AUTO_TAG, true),
+        autoCheckUpdates = prefs.getBoolean(ShareContract.PREF_AUTO_CHECK_UPDATES, true),
     )
 
     private fun updateSettings(newSettings: AppSettings) {
         settings = newSettings
+        UpdateWorker.schedule(this, newSettings.autoCheckUpdates)
         SettingsBackup.scheduleWrite(this, newSettings)
         prefs.edit()
             .putBoolean(ShareContract.PREF_AUTO_REFRESH_LIBRARY, newSettings.autoRefreshLibrary)
@@ -630,6 +656,7 @@ class MainActivity : ComponentActivity() {
             .putBoolean(ShareContract.PREF_AUTO_UPDATE_DOWNLOADER, newSettings.autoUpdateDownloader)
             .putString(ShareContract.PREF_GENIUS_ACCESS_TOKEN, newSettings.geniusAccessToken)
             .putBoolean(ShareContract.PREF_AUTO_TAG, newSettings.autoTag)
+            .putBoolean(ShareContract.PREF_AUTO_CHECK_UPDATES, newSettings.autoCheckUpdates)
             .apply()
     }
 
