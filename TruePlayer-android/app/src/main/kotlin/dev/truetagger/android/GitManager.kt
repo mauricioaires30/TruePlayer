@@ -7,7 +7,6 @@ import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.ObjectId
 import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.storage.file.WindowCacheConfig
-import org.eclipse.jgit.treewalk.TreeWalk
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.lib.ProgressMonitor
 import org.eclipse.jgit.transport.RefSpec
@@ -273,84 +272,6 @@ internal object GitManager {
         val current = branch(dir) ?: return false
         val remoteId = heads[current] ?: return false
         return !isAncestorOfHead(dir, remoteId)
-    }
-
-    /**
-     * Arquivos que uma ligação antiga (versão 1.6.1) copiou do GitHub para a pasta: estão no último
-     * commit baixado, não foram alterados e têm a data de gravação logo depois do download. Só serve
-     * para pastas em que o app baixou o histórico; sem isso, devolve vazio.
-     */
-    fun copiedFromRemote(dir: File): List<String> {
-        val fetchHead = File(dir, ".git/FETCH_HEAD")
-        if (!fetchHead.isFile) return emptyList()
-        val from = fetchHead.lastModified() - 2 * 60_000L
-        val until = fetchHead.lastModified() + 60 * 60_000L
-        val result = runCatching {
-            openRepo(dir).use { git ->
-                val repo = git.repository
-                val remoteRef = repo.branch?.let { repo.exactRef("refs/remotes/origin/$it") }
-                if (remoteRef == null) {
-                    emptyList()
-                } else {
-                    val st = git.status().call()
-                    val touched = (st.modified + st.changed + st.added + st.removed + st.missing).toSet()
-                    val out = ArrayList<String>()
-                    RevWalk(repo).use { walk ->
-                        TreeWalk(repo).use { tw ->
-                            tw.addTree(walk.parseCommit(remoteRef.objectId).tree)
-                            tw.isRecursive = true
-                            while (tw.next()) {
-                                val path = tw.pathString
-                                val file = File(dir, path)
-                                if (file.isFile && file.lastModified() in from..until && path !in touched) out += path
-                            }
-                        }
-                    }
-                    out
-                }
-            }
-        }
-        return result.getOrDefault(emptyList())
-    }
-
-    /** Move os arquivos para `_lixeira/<carimbo>/` (mesmos caminhos). Nunca sobrescreve nem apaga: devolve quantos foram. */
-    fun moveToTrash(dir: File, paths: List<String>, stamp: String): Int {
-        val trash = File(dir, "_lixeira/$stamp")
-        var moved = 0
-        paths.forEach { path ->
-            val from = File(dir, path)
-            val to = File(trash, path)
-            if (!from.isFile || to.exists()) return@forEach
-            to.parentFile?.mkdirs()
-            if (from.renameTo(to)) {
-                moved++
-                // Tira as pastas que ficaram vazias (File.delete só funciona em pasta vazia).
-                var parent = from.parentFile
-                while (parent != null && parent != dir && parent.delete()) parent = parent.parentFile
-            }
-        }
-        return moved
-    }
-
-    /**
-     * Deixa o repositório sem commits (como recém-criado), mantendo endereço, nome e e-mail.
-     * Só faz se o último commit é exatamente o que veio do GitHub: assim nenhum commit seu se perde.
-     * Devolve false quando não fez.
-     */
-    fun resetToFreshRepo(dir: File): Boolean = Git.open(dir).use { git ->
-        val repo = git.repository
-        val branch = repo.branch ?: return false
-        val head = repo.resolve("HEAD") ?: return false
-        val remote = repo.exactRef("refs/remotes/origin/$branch")?.objectId ?: return false
-        if (head != remote) return false
-        // O JGit recusa apagar a branch atual; o arquivo da referência é solto e some junto com o índice.
-        val ref = File(dir, ".git/refs/heads/$branch")
-        if (!ref.isFile || !ref.delete()) return false
-        File(dir, ".git/index").delete()
-        File(dir, ".git/FETCH_HEAD").delete()
-        repo.refDatabase.getRefsByPrefix("refs/remotes/").forEach { r -> File(dir, ".git/${r.name}").delete() }
-        repo.refDatabase.refresh()
-        repo.exactRef("refs/heads/$branch") == null
     }
 
     /** True se não há nada para registrar (pasta igual ao último commit). */

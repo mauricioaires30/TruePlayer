@@ -11,7 +11,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.Folder
-import androidx.compose.material.icons.rounded.FolderOff
 import androidx.compose.material.icons.rounded.SwapHoriz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.LinearProgressIndicator
@@ -45,7 +44,6 @@ fun GitSection() {
     var showSetup by remember { mutableStateOf(false) }
     var showSync by remember { mutableStateOf(false) }
     var showChange by remember { mutableStateOf(false) }
-    var showUndo by remember { mutableStateOf(false) }
 
     // Mantém a tela ligada enquanto o git trabalha (o primeiro envio pode demorar).
     val view = LocalView.current
@@ -107,12 +105,6 @@ fun GitSection() {
                     "Trocar repositório", Icons.Rounded.SwapHoriz,
                     "Aponta a pasta para outro repositório do GitHub.",
                 ) { showChange = true }
-                if (state.copiedFromGithub > 0) {
-                    GitAction(
-                        "Tirar arquivos copiados do GitHub (${state.copiedFromGithub})", Icons.Rounded.FolderOff,
-                        "Uma ligação antiga trouxe esses arquivos do GitHub para a pasta. Eles vão para a _lixeira.",
-                    ) { showUndo = true }
-                }
             }
         }
     }
@@ -179,22 +171,6 @@ fun GitSection() {
             onCancel = { showChange = false },
             onConfirm = { url, token -> showChange = false; GitController.changeRemote(context, url, token) },
         )
-    }
-    if (showUndo) {
-        MaterialTheme(colorScheme = TruePlayerDarkScheme) {
-            AlertDialog(
-                onDismissRequest = { showUndo = false },
-                title = { Text("Tirar os arquivos copiados?") },
-                text = {
-                    Text(
-                        "${state.copiedFromGithub} arquivo(s) vieram do GitHub para a pasta. Vão para a _lixeira, sem apagar. " +
-                            "Suas outras músicas não mudam.",
-                    )
-                },
-                confirmButton = { TextButton(onClick = { showUndo = false; GitController.undoGithubCopy(context) }) { Text("Mover") } },
-                dismissButton = { TextButton(onClick = { showUndo = false }) { Text("Cancelar") } },
-            )
-        }
     }
     state.replaceBranch?.let { branch ->
         MaterialTheme(colorScheme = TruePlayerDarkScheme) {

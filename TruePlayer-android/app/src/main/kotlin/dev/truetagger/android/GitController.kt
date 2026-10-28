@@ -39,8 +39,6 @@ data class GitUi(
     val busyFraction: Float? = null,
     /** Branch do GitHub que o envio vai substituir; enquanto não for null a tela pergunta se pode. */
     val replaceBranch: String? = null,
-    /** Quantos arquivos uma ligação antiga copiou do GitHub para a pasta (0 se não houve). */
-    val copiedFromGithub: Int = 0,
     /** Resultado ou erro para mostrar uma vez. */
     val message: String? = null,
 ) {
@@ -139,12 +137,10 @@ object GitController {
                         val (name, email) = GitManager.identity(dir)
                         Triple(summary, name to email, GitManager.remoteUrl(dir) to GitManager.branch(dir))
                     }
-                    val copied = runCatching { GitManager.copiedFromRemote(dir).size }.getOrDefault(0)
                     result.onSuccess { (summary, who, where) ->
                         _ui.value = base.copy(
                             availability = GitUi.Availability.READY,
                             summary = summary,
-                            copiedFromGithub = copied,
                             remote = where.first?.let(GitRemote::stripCredentials),
                             branch = where.second,
                             hasToken = base.hasToken || where.first?.let { GitRemote.embeddedCredentials(it) } != null,
@@ -368,28 +364,6 @@ object GitController {
                 GitManager.setRemote(dir, target)
                 if (token.isNotBlank()) SecretStore.put(app, TOKEN, token)
                 "Repositório trocado para ${GitRemote.stripCredentials(target)}."
-            }
-            finish(outcome, app)
-        }
-    }
-
-    /** Tira da pasta os arquivos que a ligação antiga copiou do GitHub (vão para a _lixeira) e limpa o histórico baixado. */
-    fun undoGithubCopy(context: Context) {
-        val app = context.applicationContext
-        if (_ui.value.busy != null) return
-        _ui.update { it.copy(busy = "Procurando os arquivos copiados…", busyFraction = null, message = null) }
-        scope.launch {
-            val outcome = runCatching {
-                val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("pasta não suportada")
-                val files = GitManager.copiedFromRemote(dir)
-                require(files.isNotEmpty()) { "não achei arquivos copiados do GitHub" }
-                val stamp = java.time.LocalDateTime.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH-mm")) + "-github"
-                _ui.update { it.copy(busy = "Movendo ${files.size} arquivo(s) para a _lixeira…") }
-                val moved = GitManager.moveToTrash(dir, files, stamp)
-                val fresh = GitManager.resetToFreshRepo(dir)
-                "$moved de ${files.size} arquivo(s) foram para _lixeira/$stamp. " +
-                    if (fresh) "A pasta voltou a ser só sua. Use Sincronizar para enviar."
-                    else "O histórico local tem commits seus, então foi mantido."
             }
             finish(outcome, app)
         }
