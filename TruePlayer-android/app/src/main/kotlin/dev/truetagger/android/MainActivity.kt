@@ -358,6 +358,8 @@ class MainActivity : ComponentActivity() {
         migrationPreview = null
         migrationRunning = true
         migrationProgress = 0 to 1
+        // Mantém a tela acesa enquanto organiza (só vale com o app aberto).
+        window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         MusicPlaybackService.releaseFileHandles(this)
         appScope.launch {
             val outcome = withContext(Dispatchers.IO) {
@@ -370,6 +372,7 @@ class MainActivity : ComponentActivity() {
             }
             migrationProgress = null
             migrationRunning = false
+            window.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             outcome.onSuccess { migrationReport = it }.onFailure {
                 android.widget.Toast.makeText(
                     this@MainActivity,

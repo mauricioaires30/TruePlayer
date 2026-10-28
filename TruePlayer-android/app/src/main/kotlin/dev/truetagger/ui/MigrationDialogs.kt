@@ -52,7 +52,7 @@ fun FolderMigrationDialogs(
                 title = { Text("Organizando a pasta…") },
                 text = {
                     Column {
-                        Text("Movendo ${progress.first} de ${progress.second}. Não feche o app; nada é apagado.")
+                        Text("Movendo ${progress.first} de ${progress.second}. Não feche o app; a tela fica ligada e nada é apagado.")
                         Spacer(Modifier.height(12.dp))
                         LinearProgressIndicator(progress = { progress.first / progress.second.coerceAtLeast(1).toFloat() })
                     }
