@@ -165,6 +165,15 @@ internal class PlaylistStore(private val context: Context) {
         save(current + StoredPlaylist(clean, entries))
     }
 
+    /** Acrescenta no fim da playlist, mantendo a ordem de chegada (usado pelos downloads de playlist). */
+    fun appendEntries(name: String, entries: List<PlaylistEntry>) {
+        if (entries.isEmpty()) return
+        mutate(name) { it.copy(entries = it.entries + entries) }
+    }
+
+    /** Nome que ainda não existe: "Treino" -> "Treino (2)". */
+    fun uniqueNameFor(base: String): String = uniqueName(base.trim().ifBlank { "Playlist" })
+
     fun delete(name: String) {
         val current = loadStored()
         save(current.filterNot { it.name == name })

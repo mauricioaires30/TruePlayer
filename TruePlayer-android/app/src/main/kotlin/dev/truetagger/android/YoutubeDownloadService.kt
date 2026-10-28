@@ -7,10 +7,11 @@ import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import dev.truetagger.data.PlaylistEntry
+import dev.truetagger.data.UrlSupport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -20,6 +21,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.launch
 import java.io.File
 
+/**
+ * Baixa músicas de links do YouTube e do SoundCloud, uma de cada vez. Links de playlist viram uma
+ * playlist do app, com as músicas na mesma ordem da original.
+ */
 class YoutubeDownloadService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private lateinit var importer: YoutubeImportManager
@@ -33,7 +38,10 @@ class YoutubeDownloadService : Service() {
         serviceScope.launch {
             for (task in downloadChannel) {
                 queuedDownloads.decrementAndGet()
-                processDownload(task)
+                when (task) {
+                    is DownloadTask.Single -> processDownload(task)
+                    is DownloadTask.Expand -> expandPlaylist(task)
+                }
                 finishBatchIfIdle()
             }
         }
@@ -41,13 +49,13 @@ class YoutubeDownloadService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         val url = intent?.getStringExtra(ShareContract.EXTRA_SHARED_URL).orEmpty().trim()
-        if (url.isBlank()) {
+        if (url.isBlank() || !UrlSupport.isSupported(url)) {
             stopSelf(startId)
             return START_NOT_STICKY
         }
 
         queuedDownloads.incrementAndGet()
-        downloadChannel.trySend(DownloadTask(url))
+        downloadChannel.trySend(if (UrlSupport.needsListing(url)) DownloadTask.Expand(url) else DownloadTask.Single(url))
         return START_NOT_STICKY
     }
 
@@ -61,21 +69,58 @@ class YoutubeDownloadService : Service() {
         }
     }
 
-    private suspend fun processDownload(task: DownloadTask) {
+    /** Lê a playlist, cria a playlist do app (vazia) e põe cada música na fila, na ordem original. */
+    private suspend fun expandPlaylist(task: DownloadTask.Expand) {
+        runCatching {
+            startForeground(
+                ShareContract.NOTIFICATION_ID,
+                buildNotification(title = "Lendo a playlist", text = "Pegando a lista de músicas do link...", indeterminate = true),
+            )
+            MusicFolder.treeUri(this) ?: error("Libere a pasta de músicas em Configurações antes de baixar.")
+        }.onFailure { error ->
+            saveLastError(error)
+            finishWithNotification("Falha no download", error.message ?: "Não foi possível ler a playlist.", failed = true)
+            return
+        }
+
+        val playlist = importer.listPlaylist(task.url) { }
+        if (playlist == null) {
+            if (UrlSupport.isPlaylist(task.url)) {
+                finishWithNotification(
+                    "Não consegui ler a playlist",
+                    "Confira se o link está certo e se a playlist é pública.",
+                    failed = true,
+                )
+            } else {
+                // Link curto que na verdade era uma música só.
+                processDownload(DownloadTask.Single(task.url))
+            }
+            return
+        }
+
+        val store = PlaylistStore(this)
+        val name = store.uniqueNameFor(playlist.title)
+        store.createWithEntries(name, emptyList())
+        val job = PlaylistJob(name, playlist.entries.size)
+        playlist.entries.forEachIndexed { index, entry ->
+            queuedDownloads.incrementAndGet()
+            downloadChannel.trySend(DownloadTask.Single(entry.url, job, index + 1))
+        }
+    }
+
+    private suspend fun processDownload(task: DownloadTask.Single) {
         val url = task.url
+        val job = task.job
         var videoTitle = ""
         val queuedAfterCurrent = queuedDownloads.get()
+        val position = job?.let { "Playlist ${it.name} (${task.position}/${it.total})" }
 
         runCatching {
             startForeground(
                 ShareContract.NOTIFICATION_ID,
                 buildNotification(
-                    title = "Preparando download",
-                    text = if (queuedAfterCurrent > 0) {
-                        "Lendo informações do vídeo... • $queuedAfterCurrent na fila"
-                    } else {
-                        "Lendo informações do vídeo..."
-                    },
+                    title = position ?: "Preparando download",
+                    text = if (queuedAfterCurrent > 0) "Lendo informações... • $queuedAfterCurrent na fila" else "Lendo informações...",
                     indeterminate = true,
                 ),
             )
@@ -88,7 +133,7 @@ class YoutubeDownloadService : Service() {
                 val progress = status.progress?.coerceIn(0, 100)
                 val queued = queuedDownloads.get()
                 val queueText = if (queued > 0) " • $queued na fila" else ""
-                val notificationTitle = when {
+                val shownTitle = when {
                     videoTitle.isNotBlank() && progress != null && progress > 0 -> "$videoTitle • $progress%"
                     videoTitle.isNotBlank() -> videoTitle
                     progress != null && progress > 0 -> "Baixando música • $progress%"
@@ -97,32 +142,49 @@ class YoutubeDownloadService : Service() {
                 startForeground(
                     ShareContract.NOTIFICATION_ID,
                     buildNotification(
-                        title = notificationTitle,
-                        text = status.message.ifBlank { "Processando vídeo..." } + queueText,
+                        title = position ?: shownTitle,
+                        text = (if (position != null) "$shownTitle — " else "") + status.message.ifBlank { "Processando..." } + queueText,
                         progress = progress,
                         indeterminate = progress == null || progress == 0,
                     ),
                 )
             }
-        }.onSuccess { fileName ->
+        }.onSuccess { result ->
             clearLastError()
-            finishWithNotification(
-                title = "Download concluído",
-                text = videoTitle.ifBlank { fileName },
-                completed = true,
-            )
+            if (job == null) {
+                finishWithNotification(
+                    title = "Download concluído",
+                    text = result.label + if (result.needsReview) " • revise as tags em Configurações" else "",
+                    completed = true,
+                )
+            } else {
+                PlaylistStore(this).appendEntries(job.name, listOf(PlaylistEntry(result.relPath, result.label)))
+                job.done++
+                if (task.position == job.total) finishPlaylist(job)
+            }
         }.onFailure { error ->
             saveLastError(error)
-            finishWithNotification(
-                title = "Falha no download",
-                text = if (videoTitle.isBlank()) {
-                    "Não foi possível baixar este vídeo."
-                } else {
-                    "Não foi possível baixar: $videoTitle"
-                },
-                failed = true,
-            )
+            if (job == null) {
+                finishWithNotification(
+                    title = "Falha no download",
+                    text = if (videoTitle.isBlank()) "Não foi possível baixar este link." else "Não foi possível baixar: $videoTitle",
+                    failed = true,
+                )
+            } else {
+                job.failed++
+                if (task.position == job.total) finishPlaylist(job)
+            }
         }
+    }
+
+    private fun finishPlaylist(job: PlaylistJob) {
+        val missing = if (job.failed > 0) " (${job.failed} não baixaram)" else ""
+        finishWithNotification(
+            title = "Playlist baixada",
+            text = "${job.name}: ${job.done} de ${job.total} músicas$missing",
+            completed = job.done > 0,
+            failed = job.done == 0,
+        )
     }
 
     override fun onDestroy() {
@@ -198,10 +260,10 @@ class YoutubeDownloadService : Service() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val channel = NotificationChannel(
             ShareContract.NOTIFICATION_CHANNEL_ID,
-            "Downloads do TrueTagger",
+            "Downloads do TruePlayer",
             NotificationManager.IMPORTANCE_LOW,
         ).apply {
-            description = "Progresso dos downloads de áudio"
+            description = "Progresso dos downloads de músicas"
         }
         notificationManager().createNotificationChannel(channel)
     }
@@ -225,7 +287,16 @@ class YoutubeDownloadService : Service() {
         runCatching { File(filesDir, "last-download-error.txt").delete() }
     }
 
-    private data class DownloadTask(val url: String)
+    /** Playlist em andamento: quantas músicas já baixaram e quantas falharam. */
+    private class PlaylistJob(val name: String, val total: Int) {
+        var done = 0
+        var failed = 0
+    }
+
+    private sealed interface DownloadTask {
+        data class Single(val url: String, val job: PlaylistJob? = null, val position: Int = 0) : DownloadTask
+        data class Expand(val url: String) : DownloadTask
+    }
 
     companion object {
         fun start(context: Context, url: String) {

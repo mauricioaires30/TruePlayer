@@ -58,6 +58,7 @@ data class MetadataResult(
     val genre: String = "",
     val isrc: String = "",
     val artworkUrl: String = "",
+    val durationSec: Int = 0,
 ) {
     val year: String get() = releaseDate.take(4)
 }
@@ -82,6 +83,7 @@ data class AppSettings(
     val embedYoutubeThumbnail: Boolean = true,
     val autoUpdateDownloader: Boolean = true,
     val geniusAccessToken: String = "",
+    val autoTag: Boolean = true,
 )
 
 /** Uma permissão que o app precisa, para o checklist de Configurações. */

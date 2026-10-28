@@ -593,9 +593,9 @@ class MusicPlaybackService : Service() {
         updateStateAndNotification()
     }
 
-    /** Uma nova reprodução da faixa começou; o play só é contado depois de 30 s ouvidos. */
+    /** A música começou a tocar: conta o play na hora. */
     private fun recordPlayCount(track: AudioTrack) {
-        PlayStatsState.beginPlay(PlayStatsState.keyFor(track))
+        PlayStatsState.countPlay(this, PlayStatsState.keyFor(track))
     }
 
     private var lastListenTickMs = 0L
@@ -607,7 +607,7 @@ class MusicPlaybackService : Service() {
         val track = queue.getOrNull(index)
         if (playing && track != null && lastListenTickMs > 0L) {
             val delta = (now - lastListenTickMs).coerceIn(0L, 2_500L)
-            PlayStatsState.addListening(this, PlayStatsState.keyFor(track), track.durationMs, delta)
+            PlayStatsState.addListening(this, PlayStatsState.keyFor(track), delta)
         } else if (!playing && lastListenTickMs > 0L) {
             PlayStatsState.flush(this)
         }

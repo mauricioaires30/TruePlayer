@@ -119,9 +119,3 @@ class PlayStats {
     /** Mesmo conteúdo? (para saber se vale regravar o arquivo) */
     fun sameContentAs(other: PlayStats): Boolean = days == other.days && legacy == other.legacy
 }
-
-/** Regra de "play": 30 s ouvidos, ou metade da faixa quando ela tem menos de 1 minuto. */
-object PlayRule {
-    fun thresholdMs(durationMs: Long): Long =
-        if (durationMs in 1L until 60_000L) maxOf(durationMs / 2L, 5_000L) else 30_000L
-}

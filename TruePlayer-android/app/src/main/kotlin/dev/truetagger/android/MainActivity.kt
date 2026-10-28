@@ -28,6 +28,7 @@ import dev.truetagger.model.ImportStatus
 import dev.truetagger.model.PermissionItem
 import dev.truetagger.model.TagWriteResult
 import dev.truetagger.data.MigrationPlanner
+import dev.truetagger.data.UrlSupport
 import dev.truetagger.data.PlannedMove
 import dev.truetagger.model.TrackKeys
 import dev.truetagger.ui.FolderCleanupDialog
@@ -283,7 +284,7 @@ class MainActivity : ComponentActivity() {
             ShareContract.ACTION_OPEN_APP, Intent.ACTION_MAIN, null -> Unit
             Intent.ACTION_SEND -> {
                 val url = intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
-                if (url.isNotBlank() && savedDownloadTree() != null) YoutubeDownloadService.start(this, url)
+                if (UrlSupport.isSupported(url) && MusicFolder.treeUri(this) != null) YoutubeDownloadService.start(this, url)
             }
         }
     }
@@ -551,6 +552,7 @@ class MainActivity : ComponentActivity() {
             return withContext(Dispatchers.IO) {
                 audioService.applyEditsOrThrow(track, edits)
             }.also { result ->
+                if (result.success) TagReview.remove(this@MainActivity, track.relPath)
                 result.updatedTrack?.let { updatedRaw ->
                     val updated = updatedRaw.copy(
                         relPath = track.relPath,
@@ -616,6 +618,7 @@ class MainActivity : ComponentActivity() {
         embedYoutubeThumbnail = prefs.getBoolean(ShareContract.PREF_EMBED_YOUTUBE_THUMBNAIL, true),
         autoUpdateDownloader = prefs.getBoolean(ShareContract.PREF_AUTO_UPDATE_DOWNLOADER, true),
         geniusAccessToken = prefs.getString(ShareContract.PREF_GENIUS_ACCESS_TOKEN, "").orEmpty(),
+        autoTag = prefs.getBoolean(ShareContract.PREF_AUTO_TAG, true),
     )
 
     private fun updateSettings(newSettings: AppSettings) {
@@ -626,6 +629,7 @@ class MainActivity : ComponentActivity() {
             .putBoolean(ShareContract.PREF_EMBED_YOUTUBE_THUMBNAIL, newSettings.embedYoutubeThumbnail)
             .putBoolean(ShareContract.PREF_AUTO_UPDATE_DOWNLOADER, newSettings.autoUpdateDownloader)
             .putString(ShareContract.PREF_GENIUS_ACCESS_TOKEN, newSettings.geniusAccessToken)
+            .putBoolean(ShareContract.PREF_AUTO_TAG, newSettings.autoTag)
             .apply()
     }
 

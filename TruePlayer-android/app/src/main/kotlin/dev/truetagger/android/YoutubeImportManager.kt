@@ -10,8 +10,11 @@ import android.provider.DocumentsContract
 import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
-import com.yausername.youtubedl_android.mapper.VideoInfo
+import dev.truetagger.data.FlatPlaylist
 import dev.truetagger.data.MigrationPlanner
+import dev.truetagger.data.SourceInfo
+import dev.truetagger.data.YtDlpJson
+import dev.truetagger.model.EditableTags
 import dev.truetagger.model.ImportStatus
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,72 +25,105 @@ import java.io.File
 import java.net.URL
 import java.util.Locale
 
+/** Resultado de um download: nome salvo em songs/, caminho relativo e se as tags precisam de revisão. */
+data class ImportResult(val fileName: String, val relPath: String, val label: String, val needsReview: Boolean)
+
 class YoutubeImportManager(private val context: Context) {
+    private val prefs get() = context.getSharedPreferences(ShareContract.PREFS, Context.MODE_PRIVATE)
+
+    private fun initEngines() {
+        YoutubeDL.getInstance().init(context)
+        FFmpeg.getInstance().init(context)
+    }
+
+    /** Lista o conteúdo de uma playlist (YouTube ou SoundCloud). Devolve null se o link não é uma playlist ou falhou. */
+    suspend fun listPlaylist(url: String, onStatus: (ImportStatus) -> Unit): FlatPlaylist? = withContext(Dispatchers.IO) {
+        initEngines()
+        updateEngineIfNeeded(url, onStatus)
+        onStatus(ImportStatus(url, "Lendo a playlist...", 0))
+        runCatching {
+            val request = YoutubeDLRequest(url).apply {
+                addOption("-J")
+                addOption("--flat-playlist")
+                addOption("--no-warnings")
+            }
+            YtDlpJson.parseListing(YoutubeDL.getInstance().execute(request).out)
+        }.getOrNull()
+    }
+
     suspend fun downloadAudio(
         url: String,
         destinationTree: Uri,
         onStatus: (ImportStatus) -> Unit,
-    ): String = withContext(Dispatchers.IO) {
+    ): ImportResult = withContext(Dispatchers.IO) {
         onStatus(ImportStatus(url, "Preparando download...", 0))
-        YoutubeDL.getInstance().init(context)
-        FFmpeg.getInstance().init(context)
+        initEngines()
 
         updateEngineIfNeeded(url, onStatus)
-        var videoInfo = fetchVideoInfo(url, onStatus)
-        val initialTitle = cleanFeaturingText(videoInfo?.title.orEmpty())
+        var info = fetchSourceInfo(url, onStatus)
+        val initialTitle = cleanFeaturingText(info?.title.orEmpty())
         if (initialTitle.isNotBlank()) {
             onStatus(ImportStatus(url, "Preparando áudio...", 0, mediaTitle = initialTitle))
         }
 
         val firstAttempt = runCatching {
-            executeDownload(url, destinationTree, onStatus, retry = false, videoInfo = videoInfo)
+            executeDownload(url, destinationTree, onStatus, retry = false, info = info)
         }
         if (firstAttempt.isSuccess) return@withContext firstAttempt.getOrThrow()
 
         onStatus(
             ImportStatus(
                 url,
-                "Atualizando compatibilidade com o YouTube...",
+                "Atualizando o baixador...",
                 0,
-                mediaTitle = cleanFeaturingText(videoInfo?.title.orEmpty()),
+                mediaTitle = cleanFeaturingText(info?.title.orEmpty()),
             )
         )
         runCatching {
             YoutubeDL.getInstance().updateYoutubeDL(context, YoutubeDL.UpdateChannel._NIGHTLY)
             rememberEngineUpdate()
         }
-        videoInfo = fetchVideoInfo(url, onStatus) ?: videoInfo
-        executeDownload(url, destinationTree, onStatus, retry = true, videoInfo = videoInfo)
+        info = fetchSourceInfo(url, onStatus) ?: info
+        executeDownload(url, destinationTree, onStatus, retry = true, info = info)
     }
 
-    private fun fetchVideoInfo(url: String, onStatus: (ImportStatus) -> Unit): VideoInfo? {
-        onStatus(ImportStatus(url, "Lendo informações do vídeo...", 0))
-        val info = runCatching { YoutubeDL.getInstance().getInfo(url) }.getOrNull()
-        if (info?.title?.isNotBlank() == true) {
-            onStatus(
-                ImportStatus(
-                    url = url,
-                    message = "Informações encontradas.",
-                    progress = 0,
-                    mediaTitle = cleanFeaturingText(info.title.orEmpty()),
-                )
+    private fun fetchSourceInfo(url: String, onStatus: (ImportStatus) -> Unit): SourceInfo? {
+        onStatus(ImportStatus(url, "Lendo informações...", 0))
+        val raw = runCatching {
+            val request = YoutubeDLRequest(url).apply {
+                addOption("--dump-single-json")
+                addOption("--no-playlist")
+                addOption("--no-warnings")
+            }
+            YtDlpJson.parseInfo(YoutubeDL.getInstance().execute(request).out)
+        }.getOrNull()
+        val info = raw ?: runCatching { YoutubeDL.getInstance().getInfo(url) }.getOrNull()?.let {
+            SourceInfo(
+                title = it.title.orEmpty(),
+                uploader = it.uploader.orEmpty(),
+                uploadDate = it.uploadDate.orEmpty(),
+                thumbnail = it.thumbnail.orEmpty(),
+                durationSec = it.duration,
             )
+        }
+        if (info?.title?.isNotBlank() == true) {
+            onStatus(ImportStatus(url, "Informações encontradas.", 0, mediaTitle = cleanFeaturingText(info.title)))
         }
         return info
     }
 
-    private fun executeDownload(
+    private suspend fun executeDownload(
         url: String,
         destinationTree: Uri,
         onStatus: (ImportStatus) -> Unit,
         retry: Boolean,
-        videoInfo: VideoInfo?,
-    ): String {
+        info: SourceInfo?,
+    ): ImportResult {
         val workDir = File(context.cacheDir, if (retry) "youtube-import-retry" else "youtube-import").apply {
             deleteRecursively()
             mkdirs()
         }
-        val mediaTitle = cleanFeaturingText(videoInfo?.title.orEmpty())
+        val mediaTitle = cleanFeaturingText(info?.title.orEmpty())
 
         val request = YoutubeDLRequest(url).apply {
             addOption("--no-playlist")
@@ -100,7 +136,7 @@ class YoutubeImportManager(private val context: Context) {
             addOption("--audio-format", "mp3")
             addOption("--audio-quality", "0")
             addOption("--embed-metadata")
-            addOption("-o", File(workDir, "%(title)s.%(ext)s").absolutePath)
+            addOption("-o", File(workDir, "%(autonumber)s.%(ext)s").absolutePath)
         }
 
         val processId = "TrueTaggerImport-${System.currentTimeMillis()}"
@@ -121,62 +157,73 @@ class YoutubeImportManager(private val context: Context) {
             ?.maxByOrNull { it.lastModified() }
             ?: error("O MP3 final não foi encontrado.")
 
-        if (videoInfo != null) {
+        var label = mediaTitle
+        var baseName = mediaTitle.ifBlank { output.nameWithoutExtension }
+        var needsReview = false
+        val autoTag = prefs.getBoolean(ShareContract.PREF_AUTO_TAG, true)
+        val embedThumbnail = prefs.getBoolean(ShareContract.PREF_EMBED_YOUTUBE_THUMBNAIL, true)
+
+        if (autoTag) {
+            onStatus(ImportStatus(url, "Procurando as tags...", 100, mediaTitle = mediaTitle))
+            val outcome = AutoTagger().resolve(
+                info = info,
+                fallbackTitle = mediaTitle.ifBlank { output.nameWithoutExtension },
+                geniusToken = prefs.getString(ShareContract.PREF_GENIUS_ACCESS_TOKEN, "").orEmpty(),
+            )
+            var tags = outcome.tags
+            if (outcome.useThumbnail && embedThumbnail) {
+                downloadThumbnail(info?.thumbnail.orEmpty())?.let { tags = tags.copy(artworkBytes = it) }
+            }
+            runCatching { FileTagWriter.write(context, output, tags, outcome.comment) }
+            needsReview = outcome.needsReview
+            label = listOf(tags.artist, tags.title).filter { it.isNotBlank() }.joinToString(" - ").ifBlank { mediaTitle }
+            if (tags.artist.isNotBlank() && tags.title.isNotBlank()) baseName = label
+        } else if (info != null) {
             onStatus(ImportStatus(url, "Aplicando informações do vídeo...", 100, mediaTitle = mediaTitle))
-            runCatching { applyVideoInfo(output, videoInfo) }
+            runCatching { applyBasicInfo(output, info, embedThumbnail) }
         }
 
-        val cleanOutput = cleanedOutputFile(output, mediaTitle)
+        val cleanOutput = renamedOutputFile(output, baseName)
         onStatus(ImportStatus(url, "Salvando arquivo...", 100, mediaTitle = mediaTitle))
         val savedName = copyIntoTree(cleanOutput, destinationTree)
-        scanPrimaryTreeFile(destinationTree, "${MigrationPlanner.SONGS_DIR}/$savedName")
-        val finalName = savedName
+        val relPath = "${MigrationPlanner.SONGS_DIR}/$savedName"
+        scanPrimaryTreeFile(destinationTree, relPath)
+        if (needsReview) TagReview.add(context, relPath)
         output.delete()
         workDir.deleteRecursively()
-        return finalName
+        return ImportResult(savedName, relPath, label.ifBlank { savedName }, needsReview)
     }
 
-    private fun applyVideoInfo(file: File, info: VideoInfo) {
-        val audio = AudioFileIO.read(file)
-        val tag = audio.tagOrCreateAndSetDefault
-
-        fun set(key: FieldKey, value: String?) {
-            if (value.isNullOrBlank()) return
-            runCatching { tag.deleteField(key) }
-            tag.setField(key, value.trim())
-        }
-
-        set(FieldKey.TITLE, cleanFeaturingText(info.title.orEmpty()))
-        set(FieldKey.ARTIST, info.uploader)
-        set(FieldKey.ALBUM_ARTIST, info.uploader)
-        set(FieldKey.YEAR, info.uploadDate?.take(4))
-
-        val prefs = context.getSharedPreferences(ShareContract.PREFS, Context.MODE_PRIVATE)
-        if (prefs.getBoolean(ShareContract.PREF_EMBED_YOUTUBE_THUMBNAIL, true)) {
-            val thumbnail = info.thumbnail
-            if (!thumbnail.isNullOrBlank()) {
-                runCatching {
-                    val bytes = URL(thumbnail).openStream().use { it.readBytes() }
-                    val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                    if (bitmap != null) {
-                        val coverFile = File.createTempFile("truetagger-youtube-cover-", ".jpg", context.cacheDir)
-                        try {
-                            coverFile.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 92, it) }
-                            tag.deleteArtworkField()
-                            tag.setField(ArtworkFactory.createArtworkFromFile(coverFile))
-                        } finally {
-                            coverFile.delete()
-                            bitmap.recycle()
-                        }
-                    }
-                }
+    /** Baixa a imagem do vídeo e devolve em JPEG, ou null se não der. */
+    private fun downloadThumbnail(url: String): ByteArray? {
+        if (url.isBlank()) return null
+        return runCatching {
+            val bytes = URL(url).openStream().use { it.readBytes() }
+            val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
+            try {
+                java.io.ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, 92, it) }.toByteArray()
+            } finally {
+                bitmap.recycle()
             }
-        }
-
-        audio.commit()
+        }.getOrNull()
     }
 
-    private fun cleanedOutputFile(source: File, title: String): File {
+    /** Tags simples (quando o ajuste automático está desligado): título, canal, ano e capa do vídeo. */
+    private fun applyBasicInfo(file: File, info: SourceInfo, embedThumbnail: Boolean) {
+        val tags = EditableTags(
+            title = cleanFeaturingText(info.title),
+            artist = info.uploader,
+            album = "",
+            albumArtist = info.uploader,
+            trackNumber = "", trackTotal = "", discNumber = "", discTotal = "",
+            year = info.uploadDate.take(4),
+            genre = "", isrc = "",
+            artworkBytes = if (embedThumbnail) downloadThumbnail(info.thumbnail) else null,
+        )
+        FileTagWriter.write(context, file, tags)
+    }
+
+    private fun renamedOutputFile(source: File, title: String): File {
         val baseTitle = sanitizeFileName(cleanFeaturingText(title).ifBlank { source.nameWithoutExtension })
         val target = File(source.parentFile, "$baseTitle.mp3")
         if (target.absolutePath == source.absolutePath) return source
@@ -208,7 +255,7 @@ class YoutubeImportManager(private val context: Context) {
         val now = System.currentTimeMillis()
         if (now - last < ENGINE_UPDATE_INTERVAL_MS) return
 
-        onStatus(ImportStatus(url, "Atualizando compatibilidade com o YouTube...", 0))
+        onStatus(ImportStatus(url, "Atualizando o baixador...", 0))
         runCatching {
             YoutubeDL.getInstance().updateYoutubeDL(context, YoutubeDL.UpdateChannel._STABLE)
             rememberEngineUpdate()
@@ -226,8 +273,8 @@ class YoutubeImportManager(private val context: Context) {
         val line = raw.trim()
         val etaText = if (eta > 0) " • ${eta}s restantes" else ""
         if (line.isBlank()) return "Baixando áudio$etaText"
-        if (line.contains("Sleeping for", ignoreCase = true)) return "Conectando ao YouTube..."
-        if (line.contains("Downloading webpage", ignoreCase = true)) return "Lendo informações do vídeo..."
+        if (line.contains("Sleeping for", ignoreCase = true)) return "Conectando..."
+        if (line.contains("Downloading webpage", ignoreCase = true)) return "Lendo informações..."
         if (line.contains("player API", ignoreCase = true)) return "Preparando áudio..."
         if (line.contains("ExtractAudio", ignoreCase = true)) return "Convertendo para MP3..."
         if (line.contains("Destination", ignoreCase = true)) return "Preparando arquivo..."

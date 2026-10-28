@@ -101,11 +101,4 @@ class PlayStatsTest {
     @Test fun allTimeIsTheFirstRange() {
         assertEquals(StatsRange.ALL, StatsRange.entries.first())
     }
-
-    @Test fun playRule() {
-        assertEquals(30_000L, PlayRule.thresholdMs(200_000))
-        assertEquals(30_000L, PlayRule.thresholdMs(0))
-        assertEquals(20_000L, PlayRule.thresholdMs(40_000))
-        assertEquals(5_000L, PlayRule.thresholdMs(3_000))
-    }
 }

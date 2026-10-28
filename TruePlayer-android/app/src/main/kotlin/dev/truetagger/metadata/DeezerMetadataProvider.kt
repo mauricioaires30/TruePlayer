@@ -34,6 +34,7 @@ class DeezerMetadataProvider(
                 trackNumber = item.trackPosition,
                 discNumber = item.diskNumber,
                 artworkUrl = item.album.coverXl ?: item.album.coverBig.orEmpty(),
+                durationSec = item.duration ?: 0,
             )
         }
     }
@@ -52,6 +53,7 @@ private data class DeezerTrack(
     val album: DeezerAlbum,
     val track_position: Int? = null,
     val disk_number: Int? = null,
+    val duration: Int? = null,
 ) {
     val trackPosition: Int? get() = track_position
     val diskNumber: Int? get() = disk_number

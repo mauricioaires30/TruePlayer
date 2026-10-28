@@ -45,6 +45,7 @@ class AppleMetadataProvider(
                 artworkUrl = item.artworkUrl100
                     ?.replace("100x100bb", "600x600bb")
                     .orEmpty(),
+                durationSec = ((item.trackTimeMillis ?: 0L) / 1000L).toInt(),
             )
         }
     }
@@ -70,4 +71,5 @@ private data class AppleTrack(
     val releaseDate: String? = null,
     val primaryGenreName: String? = null,
     val artworkUrl100: String? = null,
+    val trackTimeMillis: Long? = null,
 )

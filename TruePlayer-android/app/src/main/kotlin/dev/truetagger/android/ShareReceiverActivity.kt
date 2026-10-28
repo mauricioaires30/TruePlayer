@@ -5,13 +5,14 @@ import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import dev.truetagger.data.UrlSupport
 
 class ShareReceiverActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         val url = extractUrl(intent)
-        if (url == null || !isYoutubeUrl(url)) {
+        if (url == null || !UrlSupport.isSupported(url)) {
             finish()
             return
         }
@@ -38,11 +39,6 @@ class ShareReceiverActivity : ComponentActivity() {
     private fun extractUrl(intent: Intent?): String? {
         val text = intent?.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
         return URL_REGEX.find(text)?.value
-    }
-
-    private fun isYoutubeUrl(url: String): Boolean {
-        val host = runCatching { Uri.parse(url).host.orEmpty().lowercase() }.getOrDefault("")
-        return host == "youtu.be" || host.endsWith("youtube.com")
     }
 
     companion object {

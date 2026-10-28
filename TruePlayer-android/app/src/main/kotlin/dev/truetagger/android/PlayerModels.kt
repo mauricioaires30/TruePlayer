@@ -1,7 +1,6 @@
 package dev.truetagger.android
 
 import dev.truetagger.data.MigrationPlanner
-import dev.truetagger.data.PlayRule
 import dev.truetagger.data.PlayStats
 import dev.truetagger.data.StatValue
 import dev.truetagger.data.StatsRange
@@ -114,10 +113,6 @@ object PlayStatsState {
     private var lastFolderSaveMs = 0L
     private var dirty = false
 
-    private var sessionKey: String? = null
-    private var sessionMs = 0L
-    private var sessionCounted = false
-
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     private val folderLock = Mutex()
 
@@ -161,30 +156,25 @@ object PlayStatsState {
         }
     }
 
-    /** Começa uma nova reprodução da faixa (início, retomada ou repetição). Ainda não conta play. */
+    /** Conta um play no momento em que a música começa (início, retomada de uma faixa ainda não contada ou repetição). */
     @Synchronized
-    fun beginPlay(key: String) {
-        sessionKey = key
-        sessionMs = 0L
-        sessionCounted = false
+    fun countPlay(context: android.content.Context, key: String) {
+        if (key.isBlank()) return
+        initialize(context)
+        stats.add(LocalDate.now(), key, 0L, 1L)
+        dirty = true
+        saveLocal(context)
+        _revision.value = _revision.value + 1L
     }
 
-    /** Soma [deltaMs] de tempo ouvido; o play só é contado depois de [PlayRule.thresholdMs]. */
+    /** Soma [deltaMs] de tempo ouvido. */
     @Synchronized
-    fun addListening(context: android.content.Context, key: String, durationMs: Long, deltaMs: Long) {
+    fun addListening(context: android.content.Context, key: String, deltaMs: Long) {
         if (key.isBlank() || deltaMs <= 0L) return
         initialize(context)
-        if (key != sessionKey) beginPlay(key)
-        val today = LocalDate.now()
-        stats.add(today, key, deltaMs, 0L)
-        sessionMs += deltaMs
+        stats.add(LocalDate.now(), key, deltaMs, 0L)
         dirty = true
         var bump = false
-        if (!sessionCounted && sessionMs >= PlayRule.thresholdMs(durationMs)) {
-            sessionCounted = true
-            stats.add(today, key, 0L, 1L)
-            bump = true
-        }
         val now = android.os.SystemClock.elapsedRealtime()
         if (now - lastLocalSaveMs >= LOCAL_SAVE_EVERY_MS) {
             saveLocal(context)
@@ -213,9 +203,6 @@ object PlayStatsState {
             stats.clear()
             val prefs = app.getSharedPreferences(CACHE_PREFS, android.content.Context.MODE_PRIVATE)
             prefs.edit().putStringSet(KEY_LEGACY_DONE, legacyById.keys.toSet()).apply()
-            sessionKey = null
-            sessionMs = 0L
-            sessionCounted = false
             dirty = false
             saveLocal(app)
             _revision.value = _revision.value + 1L

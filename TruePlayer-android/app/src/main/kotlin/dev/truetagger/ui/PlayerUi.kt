@@ -19,6 +19,8 @@ import dev.truetagger.data.StatsRange
 import java.text.NumberFormat
 import dev.truetagger.android.ConnectivityObserver
 import dev.truetagger.android.PlaylistData
+import dev.truetagger.android.TagReview
+import dev.truetagger.model.TrackKeys
 import dev.truetagger.android.PlaylistStore
 import dev.truetagger.android.LibraryIndex
 import dev.truetagger.android.MusicFolder
@@ -287,7 +289,7 @@ private fun StatValue.minutesText(): String = when {
 }
 
 @Composable
-private fun StatsRangeChips(range: StatsRange, onReset: (() -> Unit)? = null, onChange: (StatsRange) -> Unit) {
+private fun StatsRangeChips(range: StatsRange, onChange: (StatsRange) -> Unit) {
     Row(
         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom = UiTokens.sectionSpacing),
         horizontalArrangement = Arrangement.spacedBy(UiTokens.toolbarGap),
@@ -296,7 +298,6 @@ private fun StatsRangeChips(range: StatsRange, onReset: (() -> Unit)? = null, on
         StatsRange.entries.forEach { r ->
             FilterChip(selected = r == range, onClick = { onChange(r) }, label = { Text(r.label) })
         }
-        if (onReset != null) TextButton(onClick = onReset) { Text("Resetar") }
     }
 }
 
@@ -629,6 +630,11 @@ fun TrueTaggerPlayerApp(
     }
     val trackById by remember(tracks) { mutableStateOf(tracks.associateBy { it.id }) }
     val drafts = remember { mutableStateMapOf<String, EditableTags>() }
+    val reviewRevision by AppEvents.revision.collectAsState()
+    val reviewTracks = remember(tracks, reviewRevision) {
+        val pending = TagReview.all(context)
+        if (pending.isEmpty()) emptyList() else tracks.filter { TrackKeys.compareKey(it.relPath) in pending }
+    }
     val libraryListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     PersistListScroll(libraryListState, "library")
 
@@ -889,7 +895,7 @@ fun TrueTaggerPlayerApp(
                             onExport = { playlist -> pendingExportPlaylist = playlist; exportPlaylistLauncher.launch("${playlist.name}.m3u") },
                             onRename = { oldName, newName -> if (store.rename(oldName, newName)) { reloadPlaylists(); if (uiPrefs.getString("last_playlist_key", "").orEmpty() == oldName) uiPrefs.edit().putString("last_playlist_key", newName).apply() } },
                         )
-                        HomeTab.SETTINGS -> SettingsTab(settings, onSettingsChange, downloadFolderLabel, onChooseDownloadFolder, onReleaseDownloadFolder, appVersion, onOrganizeFolder, onCleanFolder, permissions)
+                        HomeTab.SETTINGS -> SettingsTab(settings, onSettingsChange, downloadFolderLabel, onChooseDownloadFolder, onReleaseDownloadFolder, appVersion, onOrganizeFolder, onCleanFolder, permissions, reviewTracks) { openEditor(it) }
                     }
                 }
             }
@@ -1466,14 +1472,6 @@ private fun CombinedMostPlayedPlaylistHost(
     val context = LocalContext.current
     val store = remember { PlayStatsStore(context) }
     var range by rememberSaveable { mutableStateOf(StatsRange.ALL) }
-    var confirmReset by remember { mutableStateOf(false) }
-    val resetScope = rememberCoroutineScope()
-    if (confirmReset) {
-        StatsResetDialog(
-            onConfirm = { confirmReset = false; resetScope.launch { PlayStatsState.reset(context) } },
-            onDismiss = { confirmReset = false },
-        )
-    }
     var creating by remember { mutableStateOf(false) }
     var createName by remember { mutableStateOf("") }
     var renaming by remember { mutableStateOf<PlaylistData?>(null) }
@@ -1548,7 +1546,7 @@ private fun CombinedMostPlayedPlaylistHost(
                             item {
                                 Text("MAIS OUVIDAS", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = UiTokens.space2))
                             }
-                            item { StatsRangeChips(range, onReset = { confirmReset = true }) { range = it } }
+                            item { StatsRangeChips(range) { range = it } }
                             item {
                                 // A reprodução iniciada é o único gatilho necessário para
                                 // atualizar os cards de Mais Ouvidas. O estado de progresso
@@ -1594,7 +1592,7 @@ private fun CombinedMostPlayedPlaylistHost(
             } else {
                 val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
                 PersistListScroll(state, "most_played_${mode.name}")
-                StatsRangeChips(range, onReset = { confirmReset = true }) { range = it }
+                StatsRangeChips(range) { range = it }
                 when (mode) {
                     MostPlayedMode.TRACKS -> {
                         val values = remember(statsRevision, tracks, range) { store.topTracks(tracks, range) }
@@ -2582,7 +2580,7 @@ private fun ScrollingText(
 }
 
 @Composable
-private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, downloadFolderLabel: String, onChooseDownloadFolder: (() -> Unit)?, onReleaseDownloadFolder: (() -> Unit)?, appVersion: String, onOrganizeFolder: (() -> Unit)? = null, onCleanFolder: (() -> Unit)? = null, permissions: List<dev.truetagger.model.PermissionItem> = emptyList()) {
+private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, downloadFolderLabel: String, onChooseDownloadFolder: (() -> Unit)?, onReleaseDownloadFolder: (() -> Unit)?, appVersion: String, onOrganizeFolder: (() -> Unit)? = null, onCleanFolder: (() -> Unit)? = null, permissions: List<dev.truetagger.model.PermissionItem> = emptyList(), reviewTracks: List<AudioTrack> = emptyList(), onOpenTrack: (AudioTrack) -> Unit = {}) {
     val context = LocalContext.current
     val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     PersistListScroll(state, "settings")
@@ -2611,6 +2609,28 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
         )
     }
 
+    var showReview by remember { mutableStateOf(false) }
+    if (showReview) {
+        AlertDialog(
+            onDismissRequest = { showReview = false },
+            title = { Text("Tags para revisar") },
+            text = {
+                LazyColumn {
+                    items(reviewTracks, key = { it.id }) { track ->
+                        TextButton(onClick = { showReview = false; onOpenTrack(track) }, modifier = Modifier.fillMaxWidth()) {
+                            Column(Modifier.fillMaxWidth()) {
+                                Text(track.displayTitle(), maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                if (track.artist.isNotBlank()) {
+                                    Text(track.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = { showReview = false }) { Text("Fechar") } },
+        )
+    }
     var confirmResetStats by remember { mutableStateOf(false) }
     val settingsScope = rememberCoroutineScope()
     if (confirmResetStats) {
@@ -2640,7 +2660,7 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                 item {
                     SettingSwitch(
                         "Usar a imagem do vídeo como capa",
-                        "Nas músicas baixadas de um link, salva a imagem do vídeo como capa do arquivo.",
+                        "Quando o app não achar a capa do álbum, usa a imagem do vídeo ou da faixa como capa.",
                         settings.embedYoutubeThumbnail,
                     ) { onChange(settings.copy(embedYoutubeThumbnail = it)) }
                 }
@@ -2650,6 +2670,35 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                         "Mantém em dia o programa que baixa as músicas dos links (yt-dlp). Costuma resolver quando um download para de funcionar.",
                         settings.autoUpdateDownloader,
                     ) { onChange(settings.copy(autoUpdateDownloader = it)) }
+                }
+                item {
+                    SettingSwitch(
+                        "Ajustar as tags sozinho",
+                        "Depois de baixar um link, procura a música no Apple Music e no Deezer e preenche título, artista, álbum e capa. Se não tiver certeza, deixa a música na lista de revisão.",
+                        settings.autoTag,
+                    ) { onChange(settings.copy(autoTag = it)) }
+                }
+                item {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.space2)) {
+                        OutlinedTextField(
+                            value = settings.geniusAccessToken,
+                            onValueChange = { onChange(settings.copy(geniusAccessToken = it.trim())) },
+                            label = { Text("Chave do Genius (opcional)") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Text(
+                            "Ajuda a achar músicas que não saíram nas plataformas. Dá pra gerar uma chave grátis em genius.com/api-clients.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp),
+                        )
+                        SettingAction(
+                            "Revisar tags (${reviewTracks.size})", Icons.Rounded.Edit,
+                            "Músicas baixadas em que o app não teve certeza das tags. Toque em uma para conferir e corrigir.",
+                            enabled = reviewTracks.isNotEmpty(),
+                        ) { showReview = true }
+                    }
                 }
                 item {
                     Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.space2)) {
