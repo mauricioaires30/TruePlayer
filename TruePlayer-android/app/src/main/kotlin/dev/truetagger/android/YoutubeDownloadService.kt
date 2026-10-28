@@ -154,7 +154,7 @@ class YoutubeDownloadService : Service() {
             if (job == null) {
                 finishWithNotification(
                     title = "Download concluído",
-                    text = result.label + if (result.needsReview) " • revise as tags em Configurações" else "",
+                    text = result.label,
                     completed = true,
                 )
             } else {

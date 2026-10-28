@@ -87,7 +87,11 @@ fun GitSection() {
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(top = 8.dp),
                 )
-                state.remote?.let { Text("Repositório: $it", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                Text(
+                    "Repositório da pasta: " + (state.remote ?: "sem endereço de envio (origin)") + (state.branch?.let { " • branch $it" } ?: ""),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
                 GitAction(
                     "Sincronizar com o Git", Icons.Rounded.CloudUpload,
                     "Mostra o que mudou, deixa você ajustar a mensagem e faz o commit. Se quiser, já envia ao GitHub.",
@@ -135,9 +139,9 @@ fun GitSection() {
         )
     }
     if (showSync && state.summary != null) {
-        SyncDialog(state = state, onClose = { showSync = false }) { message, name, email, push, token ->
+        SyncDialog(state = state, onClose = { showSync = false }) { message, name, email, push, token, remoteUrl ->
             showSync = false
-            GitController.commit(context, message, name, email, push, token)
+            GitController.commit(context, message, name, email, push, token, remoteUrl)
         }
     }
 }
@@ -224,14 +228,16 @@ private fun SetupDialog(initialUser: String, onCancel: () -> Unit, onConfirm: (G
 private fun SyncDialog(
     state: GitUi,
     onClose: () -> Unit,
-    onCommit: (message: String, name: String, email: String, push: Boolean, token: String) -> Unit,
+    onCommit: (message: String, name: String, email: String, push: Boolean, token: String, remoteUrl: String) -> Unit,
 ) {
     val summary = state.summary ?: return
     var message by remember { mutableStateOf(state.suggestedMessage) }
     var name by remember { mutableStateOf(state.userName) }
     var email by remember { mutableStateOf(state.userEmail) }
     var token by remember { mutableStateOf("") }
+    var remoteUrl by remember { mutableStateOf("") }
     val needsToken = !state.hasToken
+    val needsRemote = state.remote.isNullOrBlank()
     MaterialTheme(colorScheme = TruePlayerDarkScheme) {
         AlertDialog(
             onDismissRequest = onClose,
@@ -243,6 +249,14 @@ private fun SyncDialog(
                         style = MaterialTheme.typography.bodySmall,
                     )
                     OutlinedTextField(message, { message = it }, label = { Text("Mensagem do commit") }, modifier = Modifier.fillMaxWidth().padding(top = 8.dp))
+                    if (needsRemote) {
+                        OutlinedTextField(
+                            remoteUrl, { remoteUrl = it.trim() }, label = { Text("Endereço do repositório (só para enviar)") },
+                            placeholder = { Text("https://github.com/usuario/repo.git") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                        )
+                    } else {
+                        Text("Usa o repositório que já está na pasta: ${state.remote}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 4.dp))
+                    }
                     if (state.userName.isBlank() || state.userEmail.isBlank()) {
                         OutlinedTextField(name, { name = it }, label = { Text("Seu nome") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                         OutlinedTextField(email, { email = it.trim() }, label = { Text("Seu e-mail") }, singleLine = true, modifier = Modifier.fillMaxWidth())
@@ -264,8 +278,11 @@ private fun SyncDialog(
             confirmButton = {
                 val identityOk = name.isNotBlank() && email.isNotBlank()
                 Column {
-                    TextButton(enabled = identityOk && !summary.isEmpty, onClick = { onCommit(message, name, email, false, token) }) { Text("Só commit") }
-                    TextButton(enabled = identityOk && !summary.isEmpty && (!needsToken || token.isNotBlank()), onClick = { onCommit(message, name, email, true, token) }) { Text("Commit e enviar") }
+                    TextButton(enabled = identityOk && !summary.isEmpty, onClick = { onCommit(message, name, email, false, token, remoteUrl) }) { Text("Só commit") }
+                    TextButton(
+                        enabled = identityOk && !summary.isEmpty && (!needsToken || token.isNotBlank()) && (!needsRemote || remoteUrl.isNotBlank()),
+                        onClick = { onCommit(message, name, email, true, token, remoteUrl) },
+                    ) { Text("Commit e enviar") }
                 }
             },
             dismissButton = { TextButton(onClick = onClose) { Text("Fechar") } },

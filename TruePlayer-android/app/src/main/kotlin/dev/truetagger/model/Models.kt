@@ -82,7 +82,6 @@ data class AppSettings(
     val autoRefreshLibrary: Boolean = true,
     val embedYoutubeThumbnail: Boolean = true,
     val autoUpdateDownloader: Boolean = true,
-    val geniusAccessToken: String = "",
     val autoTag: Boolean = true,
     val autoCheckUpdates: Boolean = true,
 )

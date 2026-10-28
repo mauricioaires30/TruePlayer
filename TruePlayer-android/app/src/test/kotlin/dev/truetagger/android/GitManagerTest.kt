@@ -4,7 +4,6 @@ import dev.truetagger.data.CommitMessage
 import dev.truetagger.data.GitChange
 import dev.truetagger.data.GitSummary
 import org.eclipse.jgit.api.Git
-import org.eclipse.jgit.lib.NullProgressMonitor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -116,7 +115,7 @@ class GitManagerTest {
         GitManager.init(dir, "main", remote.absolutePath, "F", "f@x.com")
         GitManager.updateGitignore(dir, emptyList())
         GitManager.commitAll(dir, "Primeiro commit do TruePlayer", "F", "f@x.com")
-        GitManager.push(dir, "u", "t", NullProgressMonitor.INSTANCE.let { GitManager.TextMonitor { } })
+        GitManager.push(dir, remote.absolutePath, "u", "t", GitManager.TextMonitor { })
         Git.open(remote).use { git -> assertNotNull(git.repository.resolve("refs/heads/main")) }
         assertTrue(GitManager.remoteHasBranches(remote.absolutePath, "u", "t"))
     }
@@ -126,19 +125,52 @@ class GitManagerTest {
         val first = music()
         GitManager.init(first, "main", remote.absolutePath, "F", "f@x.com")
         GitManager.commitAll(first, "um", "F", "f@x.com")
-        GitManager.push(first, "u", "t", GitManager.TextMonitor { })
+        GitManager.push(first, remote.absolutePath, "u", "t", GitManager.TextMonitor { })
 
         // Outra pasta com outra história tentando subir para o mesmo remoto.
         val second = temp.newFolder("outra").also { File(it, "x.txt").writeText("outro") }
         GitManager.init(second, "main", remote.absolutePath, "G", "g@x.com")
         GitManager.commitAll(second, "outro", "G", "g@x.com")
         try {
-            GitManager.push(second, "u", "t", GitManager.TextMonitor { })
+            GitManager.push(second, remote.absolutePath, "u", "t", GitManager.TextMonitor { })
             fail("o envio com histórico diferente deveria ter sido recusado")
         } catch (expected: IllegalStateException) {
             assertTrue(expected.message.orEmpty().contains("Nada foi sobrescrito"))
         }
         // o conteúdo do primeiro continua no remoto
         Git.open(remote).use { git -> assertEquals("um", git.log().add(git.repository.resolve("refs/heads/main")).call().first().fullMessage) }
+    }
+
+    @Test fun existingRepoKeepsItsGitignoreAndLargeFilesAreExcludedLocally() {
+        val dir = music()
+        GitManager.init(dir, "main", "git@github.com:u/r.git", "F", "f@x.com")
+        File(dir, ".gitignore").writeText("meu-ignore\n")
+        GitManager.commitAll(dir, "base", "F", "f@x.com")
+        File(dir, "songs/enorme.wav").writeText("x")
+        GitManager.addLocalExclude(dir, listOf("songs/enorme.wav"))
+        GitManager.addLocalExclude(dir, listOf("songs/enorme.wav"))
+
+        assertEquals("meu-ignore\n", File(dir, ".gitignore").readText())
+        assertEquals(1, File(dir, ".git/info/exclude").readLines().count { it == "/songs/enorme.wav" })
+        assertTrue(summaryOf(dir).songsAdded.isEmpty())
+    }
+
+    @Test fun repoWithoutOriginCanReceiveOne() {
+        val dir = music()
+        Git.init().setDirectory(dir).setInitialBranch("main").call().close()
+        assertEquals(null, GitManager.remoteUrl(dir))
+        GitManager.setRemote(dir, "https://github.com/u/r.git")
+        assertEquals("https://github.com/u/r.git", GitManager.remoteUrl(dir))
+    }
+
+    @Test fun pushWithoutAnAddressFailsClearly() {
+        val dir = music()
+        GitManager.init(dir, "main", "https://github.com/u/r.git", "F", "f@x.com")
+        try {
+            GitManager.push(dir, "", "u", "t", GitManager.TextMonitor { })
+            fail("deveria falhar sem endereço")
+        } catch (expected: IllegalStateException) {
+            assertTrue(expected.message.orEmpty().contains("origin"))
+        }
     }
 }

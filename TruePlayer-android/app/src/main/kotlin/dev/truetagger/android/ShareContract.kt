@@ -6,7 +6,6 @@ object ShareContract {
     const val PREF_AUTO_REFRESH_LIBRARY = "auto_refresh_library"
     const val PREF_EMBED_YOUTUBE_THUMBNAIL = "embed_youtube_thumbnail"
     const val PREF_AUTO_UPDATE_DOWNLOADER = "auto_update_downloader"
-    const val PREF_GENIUS_ACCESS_TOKEN = "genius_access_token"
     const val PREF_AUTO_TAG = "auto_tag"
     const val PREF_AUTO_CHECK_UPDATES = "auto_check_updates"
 

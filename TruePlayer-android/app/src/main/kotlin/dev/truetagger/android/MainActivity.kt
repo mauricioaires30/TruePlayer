@@ -501,7 +501,7 @@ class MainActivity : ComponentActivity() {
                 null
             }
         }
-        if (restored != null) updateSettings(restored.copy(geniusAccessToken = settings.geniusAccessToken))
+        if (restored != null) updateSettings(restored)
     }
 
     private fun runMigration() {
@@ -577,7 +577,6 @@ class MainActivity : ComponentActivity() {
             return withContext(Dispatchers.IO) {
                 audioService.applyEditsOrThrow(track, edits)
             }.also { result ->
-                if (result.success) TagReview.remove(this@MainActivity, track.relPath)
                 result.updatedTrack?.let { updatedRaw ->
                     val updated = updatedRaw.copy(
                         relPath = track.relPath,
@@ -642,7 +641,6 @@ class MainActivity : ComponentActivity() {
         autoRefreshLibrary = prefs.getBoolean(ShareContract.PREF_AUTO_REFRESH_LIBRARY, true),
         embedYoutubeThumbnail = prefs.getBoolean(ShareContract.PREF_EMBED_YOUTUBE_THUMBNAIL, true),
         autoUpdateDownloader = prefs.getBoolean(ShareContract.PREF_AUTO_UPDATE_DOWNLOADER, true),
-        geniusAccessToken = prefs.getString(ShareContract.PREF_GENIUS_ACCESS_TOKEN, "").orEmpty(),
         autoTag = prefs.getBoolean(ShareContract.PREF_AUTO_TAG, true),
         autoCheckUpdates = prefs.getBoolean(ShareContract.PREF_AUTO_CHECK_UPDATES, true),
     )
@@ -655,7 +653,6 @@ class MainActivity : ComponentActivity() {
             .putBoolean(ShareContract.PREF_AUTO_REFRESH_LIBRARY, newSettings.autoRefreshLibrary)
             .putBoolean(ShareContract.PREF_EMBED_YOUTUBE_THUMBNAIL, newSettings.embedYoutubeThumbnail)
             .putBoolean(ShareContract.PREF_AUTO_UPDATE_DOWNLOADER, newSettings.autoUpdateDownloader)
-            .putString(ShareContract.PREF_GENIUS_ACCESS_TOKEN, newSettings.geniusAccessToken)
             .putBoolean(ShareContract.PREF_AUTO_TAG, newSettings.autoTag)
             .putBoolean(ShareContract.PREF_AUTO_CHECK_UPDATES, newSettings.autoCheckUpdates)
             .apply()

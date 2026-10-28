@@ -9,41 +9,34 @@ import dev.truetagger.model.EditableTags
 import dev.truetagger.model.MetadataResult
 
 /**
- * Decide as tags de uma música recém-baixada. Se achar a faixa com confiança no Apple Music/Deezer,
- * usa os dados dela; senão usa o que o yt-dlp sabe e deixa a música na lista de revisão.
+ * Procura a música recém-baixada no Apple Music, no Deezer e (se esses não acharem) no Genius. Só devolve tags quando tem certeza de que
+ * achou a faixa certa; caso contrário devolve null e o arquivo fica exatamente como foi baixado.
  */
 class AutoTagger {
     data class Outcome(
         val tags: EditableTags,
-        val comment: String,
-        /** Usar a imagem do vídeo como capa (quando não veio capa de álbum). */
+        /** Usar a imagem do vídeo como capa (quando a faixa achada não trouxe capa de álbum). */
         val useThumbnail: Boolean,
-        val needsReview: Boolean,
     )
 
-    suspend fun resolve(info: SourceInfo?, fallbackTitle: String, geniusToken: String): Outcome {
+    suspend fun resolve(info: SourceInfo?, fallbackTitle: String): Outcome? {
         val rawTitle = info?.title?.ifBlank { fallbackTitle } ?: fallbackTitle
         val parsed = TitleParser.parse(rawTitle)
         val realMetadata = info?.hasRealMetadata == true
         val artistHint = info?.mainArtist.orEmpty().ifBlank { parsed.artist.orEmpty() }
         val titleHint = info?.track.orEmpty().ifBlank { parsed.title }.ifBlank { fallbackTitle }
-        val duration = info?.durationSec ?: 0
-        // Metadados reais do YouTube Music valem mais que marcas no título.
-        val unreleased = parsed.unreleased && !realMetadata
+        if (titleHint.isBlank()) return null
 
-        if (!unreleased && titleHint.isNotBlank()) {
-            val match = searchAndPick(artistHint, titleHint, duration, if (realMetadata) 0.70 else MatchScorer.DEFAULT_THRESHOLD, geniusToken)
-            if (match != null) {
-                return Outcome(tagsFrom(match), comment = "", useThumbnail = match.artworkUrl.isBlank(), needsReview = false)
-            }
-        }
-        return fallback(info, parsed.version, titleHint, artistHint, unreleased, realMetadata, rawTitle)
+        // Metadados reais do YouTube Music já são confiáveis; sem eles, exige uma correspondência forte.
+        val threshold = if (realMetadata) 0.70 else MatchScorer.DEFAULT_THRESHOLD
+        val match = searchAndPick(artistHint, titleHint, info?.durationSec ?: 0, threshold) ?: return null
+        return Outcome(tagsFrom(match), useThumbnail = match.artworkUrl.isBlank())
     }
 
-    private suspend fun searchAndPick(artist: String, title: String, durationSec: Int, threshold: Double, geniusToken: String): MetadataResult? {
+    private suspend fun searchAndPick(artist: String, title: String, durationSec: Int, threshold: Double): MetadataResult? {
         val client = createPlatformHttpClient()
         try {
-            val repository = MetadataRepository(client, geniusToken)
+            val repository = MetadataRepository(client)
             var candidates = runCatching { repository.search(listOf(artist, title).filter { it.isNotBlank() }.joinToString(" ")) }
                 .getOrDefault(emptyList())
             if (candidates.isEmpty() && artist.isNotBlank()) {
@@ -70,28 +63,4 @@ class AutoTagger {
         isrc = m.isrc,
         artworkUrl = m.artworkUrl,
     )
-
-    private fun fallback(
-        info: SourceInfo?,
-        version: String?,
-        titleHint: String,
-        artistHint: String,
-        unreleased: Boolean,
-        realMetadata: Boolean,
-        rawTitle: String,
-    ): Outcome {
-        val artist = artistHint.ifBlank { info?.uploader.orEmpty() }
-        val title = if (unreleased && version != null) "$titleHint ($version)" else titleHint
-        val year = info?.releaseYear.orEmpty().ifBlank { info?.uploadDate.orEmpty().take(4) }
-        val album = if (unreleased) "Inéditas" else info?.album.orEmpty()
-        val comment = if (unreleased) {
-            "Inédita${version?.let { " ($it)" }.orEmpty()} • fonte: ${info?.extractor.orEmpty().ifBlank { "link" }} • título original: $rawTitle"
-        } else ""
-        val tags = EditableTags(
-            title = title, artist = artist, album = album, albumArtist = artist,
-            trackNumber = "", trackTotal = "", discNumber = "", discTotal = "",
-            year = year, genre = "", isrc = "",
-        )
-        return Outcome(tags, comment, useThumbnail = true, needsReview = unreleased || !realMetadata)
-    }
 }

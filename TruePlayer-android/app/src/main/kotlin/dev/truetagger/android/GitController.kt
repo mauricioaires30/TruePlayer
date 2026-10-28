@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.Settings
 import dev.truetagger.data.CommitMessage
+import dev.truetagger.data.GitRemote
 import dev.truetagger.data.GitSummary
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -23,11 +24,13 @@ import java.time.LocalDate
 data class GitUi(
     val availability: Availability = Availability.UNKNOWN,
     val summary: GitSummary? = null,
+    /** Endereço do `origin` do repositório que já existe na pasta (sem usuário/senha). */
     val remote: String? = null,
     val branch: String? = null,
     val userName: String = "",
     val userEmail: String = "",
     val githubUser: String = "",
+    /** Já há um token guardado ou embutido no endereço do repositório. */
     val hasToken: Boolean = false,
     val suggestedMessage: String = "",
     /** Texto de andamento enquanto algo roda (a interface bloqueia até acabar). */
@@ -48,8 +51,9 @@ data class GitSetupRequest(
 
 /**
  * Git da pasta de músicas: mostra o que mudou, faz commit e envia ao GitHub. Só aparece quando a
- * pasta tem `.git`; se não tiver, oferece criar o repositório. Precisa do acesso a todos os arquivos
- * porque o git trabalha direto com o caminho da pasta (e não pelo seletor de pastas do Android).
+ * pasta tem `.git`; se não tiver, oferece criar o repositório. Quando o `.git` já existe, o app usa
+ * o que está nele (endereço `origin`, branch, nome e e-mail) e não altera o `.gitignore` dele.
+ * Precisa do acesso a todos os arquivos porque o git trabalha direto com o caminho da pasta.
  */
 object GitController {
     private const val PREFS = "truetagger_git"
@@ -85,6 +89,15 @@ object GitController {
         val relative = tree.rootDocId.substringAfter(':').trim('/')
         if (relative.isBlank()) return null
         return File(Environment.getExternalStorageDirectory(), relative)
+    }
+
+    /** Credenciais para enviar: o que o usuário digitou, senão o que já está no endereço do repositório, senão o token guardado. */
+    private fun credentials(app: Context, dir: File, typedToken: String): Pair<String, String> {
+        val url = GitManager.remoteUrl(dir).orEmpty()
+        val embedded = GitRemote.embeddedCredentials(url)
+        val token = typedToken.ifBlank { embedded?.second ?: SecretStore.get(app, TOKEN).orEmpty() }
+        val user = embedded?.first ?: prefs(app).getString("github_user", "").orEmpty().ifBlank { GitRemote.authUser(url) }
+        return user to token
     }
 
     // ---- estado
@@ -124,8 +137,9 @@ object GitController {
                         _ui.value = base.copy(
                             availability = GitUi.Availability.READY,
                             summary = summary,
-                            remote = where.first,
+                            remote = where.first?.let(GitRemote::stripCredentials),
                             branch = where.second,
+                            hasToken = base.hasToken || where.first?.let { GitRemote.embeddedCredentials(it) } != null,
                             userName = who.first.ifBlank { saved.getString("name", "").orEmpty() },
                             userEmail = who.second.ifBlank { saved.getString("email", "").orEmpty() },
                             suggestedMessage = CommitMessage.build(summary, LocalDate.now(), PlayStatsState.minutesToday(app)),
@@ -142,10 +156,21 @@ object GitController {
         _ui.update { it.copy(message = null) }
     }
 
+    private fun finish(outcome: Result<String>, app: Context) {
+        _ui.update { it.copy(busy = null, message = outcome.fold({ text -> text }, { e -> "Não deu certo: ${e.message ?: e::class.simpleName}" })) }
+        refresh(app)
+    }
+
+    private fun largeFilesNote(large: List<String>) =
+        if (large.isEmpty()) "" else "\n\n${large.size} arquivo(s) passam de 100 MB e ficaram de fora (o GitHub recusa): ${large.take(3).joinToString(", ")}."
+
     // ---- ações
 
-    /** Commit de tudo que mudou. Com [push] também envia ao GitHub (usa/guarda o token). */
-    fun commit(context: Context, message: String, name: String, email: String, push: Boolean, token: String) {
+    /**
+     * Commit de tudo que mudou. Com [push] também envia ao GitHub. [remoteUrl] só é usado quando o
+     * repositório existente ainda não tem `origin`.
+     */
+    fun commit(context: Context, message: String, name: String, email: String, push: Boolean, token: String, remoteUrl: String = "") {
         val app = context.applicationContext
         if (_ui.value.busy != null) return
         _ui.update { it.copy(busy = "Preparando…", message = null) }
@@ -154,48 +179,45 @@ object GitController {
                 val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("pasta não suportada")
                 require(name.isNotBlank() && email.isNotBlank()) { "informe nome e e-mail para o commit" }
                 prefs(app).edit().putString("name", name).putString("email", email).apply()
+                if (remoteUrl.isNotBlank() && GitManager.remoteUrl(dir).isNullOrBlank()) GitManager.setRemote(dir, remoteUrl.trim())
 
                 val changes = GitManager.status(dir)
+                // Arquivos grandes demais ficam de fora sem mexer no .gitignore do usuário (lista local em .git/info/exclude).
                 val large = GitManager.tooLarge(dir, changes)
-                GitManager.updateGitignore(dir, large)
+                GitManager.addLocalExclude(dir, large)
                 _ui.update { it.copy(busy = "Registrando as mudanças…") }
                 GitManager.commitAll(dir, message.ifBlank { "Atualização da pasta" }, name.trim(), email.trim())
 
                 var pushed = false
                 if (push) {
-                    val usedToken = token.ifBlank { SecretStore.get(app, TOKEN).orEmpty() }
-                    require(usedToken.isNotBlank()) { "informe o token do GitHub para enviar" }
-                    val user = prefs(app).getString("github_user", "").orEmpty().ifBlank { "x-access-token" }
+                    val (user, secret) = credentials(app, dir, token)
+                    require(secret.isNotBlank()) { "informe o token do GitHub para enviar" }
                     if (token.isNotBlank()) SecretStore.put(app, TOKEN, token)
-                    GitManager.push(dir, user, usedToken, GitManager.TextMonitor { text -> _ui.update { it.copy(busy = text) } })
+                    GitManager.push(dir, GitManager.remoteUrl(dir).orEmpty(), user, secret, GitManager.TextMonitor { text -> _ui.update { it.copy(busy = text) } })
                     pushed = true
                 }
-                buildString {
-                    append(if (pushed) "Commit feito e enviado ao GitHub." else "Commit feito.")
-                    if (large.isNotEmpty()) append("\n\n${large.size} arquivo(s) passam de 100 MB e ficaram de fora (o GitHub recusa): ${large.take(3).joinToString(", ")}.")
-                }
+                (if (pushed) "Commit feito e enviado ao GitHub." else "Commit feito.") + largeFilesNote(large)
             }
-            _ui.update { it.copy(busy = null, message = outcome.fold({ text -> text }, { e -> "Não deu certo: ${e.message ?: e::class.simpleName}" })) }
-            refresh(app)
+            finish(outcome, app)
         }
     }
 
     /** Só envia o que já foi commitado. */
-    fun push(context: Context, token: String) {
+    fun push(context: Context, token: String, remoteUrl: String = "") {
         val app = context.applicationContext
         if (_ui.value.busy != null) return
         _ui.update { it.copy(busy = "Conectando ao GitHub…", message = null) }
         scope.launch {
             val outcome = runCatching {
                 val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("pasta não suportada")
-                val usedToken = token.ifBlank { SecretStore.get(app, TOKEN).orEmpty() }
-                require(usedToken.isNotBlank()) { "informe o token do GitHub" }
+                if (remoteUrl.isNotBlank() && GitManager.remoteUrl(dir).isNullOrBlank()) GitManager.setRemote(dir, remoteUrl.trim())
+                val (user, secret) = credentials(app, dir, token)
+                require(secret.isNotBlank()) { "informe o token do GitHub" }
                 if (token.isNotBlank()) SecretStore.put(app, TOKEN, token)
-                val user = prefs(app).getString("github_user", "").orEmpty().ifBlank { "x-access-token" }
-                GitManager.push(dir, user, usedToken, GitManager.TextMonitor { text -> _ui.update { it.copy(busy = text) } })
+                GitManager.push(dir, GitManager.remoteUrl(dir).orEmpty(), user, secret, GitManager.TextMonitor { text -> _ui.update { it.copy(busy = text) } })
+                "Enviado ao GitHub."
             }
-            _ui.update { it.copy(busy = null, message = outcome.fold({ "Enviado ao GitHub." }, { e -> "Não deu certo: ${e.message ?: e::class.simpleName}" })) }
-            refresh(app)
+            finish(outcome, app)
         }
     }
 
@@ -226,14 +248,10 @@ object GitController {
                 GitManager.updateGitignore(dir, large)
                 _ui.update { it.copy(busy = "Registrando os arquivos (pode demorar)…") }
                 GitManager.commitAll(dir, "Primeiro commit do TruePlayer", request.githubUser, request.email)
-                GitManager.push(dir, request.githubUser, request.token, GitManager.TextMonitor { text -> _ui.update { it.copy(busy = text) } })
-                buildString {
-                    append("Repositório criado e enviado ao GitHub.")
-                    if (large.isNotEmpty()) append("\n\n${large.size} arquivo(s) passam de 100 MB e ficaram de fora: ${large.take(3).joinToString(", ")}.")
-                }
+                GitManager.push(dir, request.url, request.githubUser, request.token, GitManager.TextMonitor { text -> _ui.update { it.copy(busy = text) } })
+                "Repositório criado e enviado ao GitHub." + largeFilesNote(large)
             }
-            _ui.update { it.copy(busy = null, message = outcome.fold({ text -> text }, { e -> "Não deu certo: ${e.message ?: e::class.simpleName}" })) }
-            refresh(app)
+            finish(outcome, app)
         }
     }
 }

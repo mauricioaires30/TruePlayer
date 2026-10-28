@@ -1,14 +1,9 @@
 package dev.truetagger.data
 
-/**
- * Título de vídeo/faixa já separado em partes. [version] é algo como "v2" ou "Leak"; [unreleased]
- * vira true quando o título tem marca de música não lançada (leak, snippet, demo, v1...).
- */
+/** Título de vídeo/faixa separado em artista e título, já sem ruído de "Official Video" e parecidos. */
 data class ParsedTitle(
     val artist: String?,
     val title: String,
-    val version: String?,
-    val unreleased: Boolean,
     /** Marcas como remix, live, acoustic encontradas no título (ajudam a comparar com resultados). */
     val variants: Set<String> = emptySet(),
 )
@@ -21,14 +16,12 @@ object TitleParser {
             "prod\\.?[^)\\]}]*|produced\\s+by[^)\\]}]*|dir\\.?[^)\\]}]*)\\s*[)\\]}]",
     )
     private val FEAT_GROUP = Regex("(?i)\\s*[(\\[]\\s*(?:ft|feat|featuring)\\.?\\s+[^)\\]]*[)\\]]")
-    private val VERSION_NUMBER = Regex("(?i)(?<![a-z0-9])v\\s?(\\d+(?:\\.\\d+)?)(?![a-z0-9])")
-    private val UNRELEASED_WORDS = Regex("(?i)(?<![a-z0-9])(leak(?:ed)?|unreleased|snippet|demo|rough|vault|og|cdq|lq)(?![a-z0-9])")
-    private val MARKER_GROUP = Regex(
-        "(?i)[(\\[{]\\s*(?:v\\s?\\d+(?:\\.\\d+)?|leak(?:ed)?|unreleased|snippet|demo|rough|vault|og|cdq|lq)(?:\\s*[,/&+]?\\s*(?:v\\s?\\d+(?:\\.\\d+)?|leak(?:ed)?|unreleased|snippet|demo|rough|vault|og|cdq|lq))*\\s*[)\\]}]",
-    )
-    private val TRAILING_MARKER = Regex(
-        "(?i)\\s+(?:v\\s?\\d+(?:\\.\\d+)?|leak(?:ed)?|unreleased|snippet|demo|rough|vault|og|cdq|lq)\\s*$",
-    )
+
+    // Marcas de versão/vazamento ("(v2)", "[LEAK]") atrapalham a busca, então saem do título.
+    private const val MARKER = "v\\s?\\d+(?:\\.\\d+)?|leak(?:ed)?|unreleased|snippet|demo|rough|vault|og|cdq|lq"
+    private val MARKER_GROUP = Regex("(?i)[(\\[{]\\s*(?:$MARKER)(?:\\s*[,/&+]?\\s*(?:$MARKER))*\\s*[)\\]}]")
+    private val TRAILING_MARKER = Regex("(?i)\\s+(?:$MARKER)\\s*$")
+
     private val VARIANT_WORDS = listOf(
         "remix", "live", "acoustic", "instrumental", "karaoke", "cover", "sped up", "slowed", "reverb", "remaster", "edit",
     )
@@ -36,8 +29,6 @@ object TitleParser {
 
     fun parse(rawTitle: String): ParsedTitle {
         val raw = rawTitle.trim()
-        val version = detectVersion(raw)
-        val unreleased = VERSION_NUMBER.containsMatchIn(raw) || UNRELEASED_WORDS.containsMatchIn(raw)
         val lower = raw.lowercase()
         val variants = VARIANT_WORDS.filter { Regex("(?<![a-z])${Regex.escape(it)}(?![a-z])").containsMatchIn(lower) }.toSet()
 
@@ -60,19 +51,7 @@ object TitleParser {
             artist = null
             title = s
         }
-        return ParsedTitle(artist, title.trim('-', '–', '—', '|', '·', ' '), version, unreleased, variants)
-    }
-
-    private fun detectVersion(raw: String): String? {
-        VERSION_NUMBER.find(raw)?.let { return "v" + it.groupValues[1] }
-        val word = UNRELEASED_WORDS.find(raw)?.groupValues?.get(1)?.lowercase() ?: return null
-        return when (word) {
-            "leak", "leaked" -> "Leak"
-            "og" -> "OG"
-            "cdq" -> "CDQ"
-            "lq" -> "LQ"
-            else -> word.replaceFirstChar { it.uppercase() }
-        }
+        return ParsedTitle(artist, title.trim('-', '–', '—', '|', '·', ' '), variants)
     }
 
     private fun collapse(value: String): String = value.replace(Regex("\\s+"), " ").trim()

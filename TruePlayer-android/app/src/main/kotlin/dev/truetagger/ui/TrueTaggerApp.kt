@@ -113,11 +113,7 @@ fun CurrentTrackScreen(
         return
     }
 
-    val repo = remember(settings.geniusAccessToken) {
-        MetadataRepository(
-            geniusAccessToken = settings.geniusAccessToken,
-        )
-    }
+    val repo = remember { MetadataRepository() }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
 

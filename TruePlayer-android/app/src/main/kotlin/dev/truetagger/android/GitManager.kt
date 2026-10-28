@@ -2,6 +2,7 @@ package dev.truetagger.android
 
 import dev.truetagger.data.GitChange
 import dev.truetagger.data.GitLimits
+import dev.truetagger.data.GitRemote
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.lib.ProgressMonitor
@@ -114,13 +115,16 @@ internal object GitManager {
         }
     }
 
-    /** Envia a branch atual para `origin`. Nunca força: se o remoto tem algo que não temos, falha e explica. */
-    fun push(dir: File, user: String, token: String, monitor: ProgressMonitor) {
+    /** Endereço do repositório remoto; link SSH é trocado por https (o envio é feito com token). Nunca força o envio. */
+    fun push(dir: File, remoteUrl: String, user: String, token: String, monitor: ProgressMonitor) {
+        val target = GitRemote.toHttps(remoteUrl)
+        check(target.isNotBlank()) { "este repositório não tem um endereço de envio (origin)" }
         Git.open(dir).use { git ->
-            val branch = git.repository.branch
+            val branch = git.repository.fullBranch.orEmpty()
+            check(branch.startsWith("refs/heads/")) { "o repositório está sem branch ativa (HEAD solto)" }
             val results = git.push()
-                .setRemote("origin")
-                .add("refs/heads/$branch")
+                .setRemote(target)
+                .add(branch)
                 .setCredentialsProvider(UsernamePasswordCredentialsProvider(user, token))
                 .setProgressMonitor(monitor)
                 .call()
@@ -135,6 +139,29 @@ internal object GitManager {
                 }
             }
         }
+    }
+
+    /** Define o `origin` de um repositório que ainda não tem. */
+    fun setRemote(dir: File, url: String) {
+        Git.open(dir).use { git ->
+            val config = git.repository.config
+            config.setString("remote", "origin", "url", url)
+            config.setString("remote", "origin", "fetch", "+refs/heads/*:refs/remotes/origin/*")
+            config.save()
+        }
+    }
+
+    /**
+     * Deixa arquivos de fora do commit só neste aparelho (`.git/info/exclude`), sem tocar no
+     * `.gitignore` do repositório, que pode ser compartilhado com outros computadores.
+     */
+    fun addLocalExclude(dir: File, paths: List<String>) {
+        if (paths.isEmpty()) return
+        val file = File(dir, ".git/info/exclude").also { it.parentFile?.mkdirs() }
+        val existing = if (file.exists()) file.readLines() else emptyList()
+        val missing = paths.map { "/$it" }.filter { it !in existing }
+        if (missing.isEmpty()) return
+        file.appendText((if (existing.isNotEmpty() && file.readText().endsWith("\n").not()) "\n" else "") + missing.joinToString("\n", postfix = "\n"))
     }
 
     /** Confere URL e credenciais. Devolve true se o repositório remoto já tem alguma branch (não está vazio). */

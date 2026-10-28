@@ -19,7 +19,6 @@ import dev.truetagger.data.StatsRange
 import java.text.NumberFormat
 import dev.truetagger.android.ConnectivityObserver
 import dev.truetagger.android.PlaylistData
-import dev.truetagger.android.TagReview
 import dev.truetagger.model.TrackKeys
 import dev.truetagger.android.PlaylistStore
 import dev.truetagger.android.LibraryIndex
@@ -631,11 +630,6 @@ fun TrueTaggerPlayerApp(
     }
     val trackById by remember(tracks) { mutableStateOf(tracks.associateBy { it.id }) }
     val drafts = remember { mutableStateMapOf<String, EditableTags>() }
-    val reviewRevision by AppEvents.revision.collectAsState()
-    val reviewTracks = remember(tracks, reviewRevision) {
-        val pending = TagReview.all(context)
-        if (pending.isEmpty()) emptyList() else tracks.filter { TrackKeys.compareKey(it.relPath) in pending }
-    }
     val libraryListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     PersistListScroll(libraryListState, "library")
 
@@ -896,7 +890,7 @@ fun TrueTaggerPlayerApp(
                             onExport = { playlist -> pendingExportPlaylist = playlist; exportPlaylistLauncher.launch("${playlist.name}.m3u") },
                             onRename = { oldName, newName -> if (store.rename(oldName, newName)) { reloadPlaylists(); if (uiPrefs.getString("last_playlist_key", "").orEmpty() == oldName) uiPrefs.edit().putString("last_playlist_key", newName).apply() } },
                         )
-                        HomeTab.SETTINGS -> SettingsTab(settings, onSettingsChange, downloadFolderLabel, onChooseDownloadFolder, onReleaseDownloadFolder, appVersion, onOrganizeFolder, onCleanFolder, permissions, reviewTracks, onCheckUpdate) { openEditor(it) }
+                        HomeTab.SETTINGS -> SettingsTab(settings, onSettingsChange, downloadFolderLabel, onChooseDownloadFolder, onReleaseDownloadFolder, appVersion, onOrganizeFolder, onCleanFolder, permissions, onCheckUpdate)
                     }
                 }
             }
@@ -2581,7 +2575,7 @@ private fun ScrollingText(
 }
 
 @Composable
-private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, downloadFolderLabel: String, onChooseDownloadFolder: (() -> Unit)?, onReleaseDownloadFolder: (() -> Unit)?, appVersion: String, onOrganizeFolder: (() -> Unit)? = null, onCleanFolder: (() -> Unit)? = null, permissions: List<dev.truetagger.model.PermissionItem> = emptyList(), reviewTracks: List<AudioTrack> = emptyList(), onCheckUpdate: (() -> Unit)? = null, onOpenTrack: (AudioTrack) -> Unit = {}) {
+private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, downloadFolderLabel: String, onChooseDownloadFolder: (() -> Unit)?, onReleaseDownloadFolder: (() -> Unit)?, appVersion: String, onOrganizeFolder: (() -> Unit)? = null, onCleanFolder: (() -> Unit)? = null, permissions: List<dev.truetagger.model.PermissionItem> = emptyList(), onCheckUpdate: (() -> Unit)? = null) {
     val context = LocalContext.current
     val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     PersistListScroll(state, "settings")
@@ -2610,28 +2604,6 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
         )
     }
 
-    var showReview by remember { mutableStateOf(false) }
-    if (showReview) {
-        AlertDialog(
-            onDismissRequest = { showReview = false },
-            title = { Text("Tags para revisar") },
-            text = {
-                LazyColumn {
-                    items(reviewTracks, key = { it.id }) { track ->
-                        TextButton(onClick = { showReview = false; onOpenTrack(track) }, modifier = Modifier.fillMaxWidth()) {
-                            Column(Modifier.fillMaxWidth()) {
-                                Text(track.displayTitle(), maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                if (track.artist.isNotBlank()) {
-                                    Text(track.artist, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = { TextButton(onClick = { showReview = false }) { Text("Fechar") } },
-        )
-    }
     var confirmResetStats by remember { mutableStateOf(false) }
     val settingsScope = rememberCoroutineScope()
     if (confirmResetStats) {
@@ -2661,7 +2633,7 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                 item {
                     SettingSwitch(
                         "Usar a imagem do vídeo como capa",
-                        "Quando o app não achar a capa do álbum, usa a imagem do vídeo ou da faixa como capa.",
+                        "Se o app achar a música mas não a capa do álbum, usa a imagem do vídeo. Com o ajuste automático de tags desligado, grava a imagem do vídeo em todo download.",
                         settings.embedYoutubeThumbnail,
                     ) { onChange(settings.copy(embedYoutubeThumbnail = it)) }
                 }
@@ -2675,31 +2647,9 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                 item {
                     SettingSwitch(
                         "Ajustar as tags sozinho",
-                        "Depois de baixar um link, procura a música no Apple Music e no Deezer e preenche título, artista, álbum e capa. Se não tiver certeza, deixa a música na lista de revisão.",
+                        "Depois de baixar um link, procura a música no Apple Music e no Deezer e preenche título, artista, álbum e capa. Se não achar com certeza, não mexe nas tags.",
                         settings.autoTag,
                     ) { onChange(settings.copy(autoTag = it)) }
-                }
-                item {
-                    Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.space2)) {
-                        OutlinedTextField(
-                            value = settings.geniusAccessToken,
-                            onValueChange = { onChange(settings.copy(geniusAccessToken = it.trim())) },
-                            label = { Text("Chave do Genius (opcional)") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                        Text(
-                            "Ajuda a achar músicas que não saíram nas plataformas. Dá pra gerar uma chave grátis em genius.com/api-clients.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp),
-                        )
-                        SettingAction(
-                            "Revisar tags (${reviewTracks.size})", Icons.Rounded.Edit,
-                            "Músicas baixadas em que o app não teve certeza das tags. Toque em uma para conferir e corrigir.",
-                            enabled = reviewTracks.isNotEmpty(),
-                        ) { showReview = true }
-                    }
                 }
                 item {
                     Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.space2)) {

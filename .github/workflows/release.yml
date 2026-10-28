@@ -1,0 +1,101 @@
+name: Publicar release
+
+# A cada push na main com uma versão nova em gradle.properties, compila o APK, assina com a sua chave
+# e cria a release v<versão> no GitHub com o APK anexado. É isso que o app baixa quando se atualiza.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'TruePlayer-android/**'
+      - 'RELEASE_NOTES.md'
+      - '.github/workflows/release.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Ler a versão
+        id: version
+        run: |
+          VERSION=$(grep '^appVersion=' TruePlayer-android/gradle.properties | cut -d= -f2 | tr -d '\r ')
+          if [ -z "$VERSION" ]; then echo "appVersion não encontrado em gradle.properties"; exit 1; fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Esta versão já foi publicada?
+        id: exists
+        run: |
+          if gh release view "v${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
+            echo "A release v${{ steps.version.outputs.version }} já existe. Suba a versão em gradle.properties para publicar outra."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-java@v4
+        if: steps.exists.outputs.exists == 'false'
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v4
+        if: steps.exists.outputs.exists == 'false'
+        with:
+          gradle-version: '8.13'
+
+      - name: Instalar o Android SDK 36
+        if: steps.exists.outputs.exists == 'false'
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-36" "build-tools;36.0.0"
+
+      - name: Preparar a chave de assinatura
+        if: steps.exists.outputs.exists == 'false'
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEYSTORE_PASSWORD" ] || [ -z "$KEY_ALIAS" ] || [ -z "$KEY_PASSWORD" ]; then
+            echo "Faltam os secrets da chave de assinatura (ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, ANDROID_KEY_PASSWORD)."
+            echo "Veja tools/COMO-PUBLICAR.txt. Sem a mesma chave, o app instalado não consegue se atualizar."
+            exit 1
+          fi
+          mkdir -p tools
+          echo "$KEYSTORE_BASE64" | base64 -d > tools/release.keystore
+          {
+            echo "storeFile=release.keystore"
+            echo "storePassword=$KEYSTORE_PASSWORD"
+            echo "keyAlias=$KEY_ALIAS"
+            echo "keyPassword=$KEY_PASSWORD"
+          } > tools/signing.properties
+
+      - name: Rodar os testes e gerar o APK
+        if: steps.exists.outputs.exists == 'false'
+        working-directory: TruePlayer-android
+        run: gradle :app:testDebugUnitTest :app:assembleRelease --console=plain
+
+      - name: Conferir a assinatura
+        if: steps.exists.outputs.exists == 'false'
+        run: |
+          APK="TruePlayer-android/app/build/outputs/apk/release/app-release.apk"
+          "$ANDROID_HOME/build-tools/36.0.0/apksigner" verify --print-certs "$APK"
+          cp "$APK" "TruePlayer-${{ steps.version.outputs.version }}.apk"
+
+      - name: Criar a release
+        if: steps.exists.outputs.exists == 'false'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          if [ -f RELEASE_NOTES.md ]; then NOTES=(--notes-file RELEASE_NOTES.md); else NOTES=(--generate-notes); fi
+          gh release create "v$VERSION" "TruePlayer-$VERSION.apk" \
+            --target "$GITHUB_SHA" \
+            --title "TruePlayer $VERSION" \
+            "${NOTES[@]}"

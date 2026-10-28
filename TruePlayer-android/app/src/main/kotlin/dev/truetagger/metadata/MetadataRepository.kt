@@ -4,18 +4,14 @@ import dev.truetagger.model.MetadataResult
 
 class MetadataRepository(
     private val client: io.ktor.client.HttpClient = createPlatformHttpClient(),
-    geniusAccessToken: String = "",
 ) {
     private val primaryProviders: List<MetadataProvider> = listOf(
         AppleMetadataProvider(client),
         DeezerMetadataProvider(client),
     )
 
-    private val fallbackProviders: List<MetadataProvider> = buildList {
-        if (geniusAccessToken.isNotBlank()) {
-            add(GeniusMetadataProvider(client, geniusAccessToken))
-        }
-    }
+    // O Genius só entra quando Apple e Deezer não acham nada; a busca é a mesma que o site faz, sem chave.
+    private val fallbackProviders: List<MetadataProvider> = listOf(GeniusMetadataProvider(client))
 
     suspend fun search(query: String): List<MetadataResult> {
         val cleanedQuery = removeParenthesizedText(query)

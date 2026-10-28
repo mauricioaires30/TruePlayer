@@ -26,7 +26,7 @@ import java.net.URL
 import java.util.Locale
 
 /** Resultado de um download: nome salvo em songs/, caminho relativo e se as tags precisam de revisão. */
-data class ImportResult(val fileName: String, val relPath: String, val label: String, val needsReview: Boolean)
+data class ImportResult(val fileName: String, val relPath: String, val label: String)
 
 class YoutubeImportManager(private val context: Context) {
     private val prefs get() = context.getSharedPreferences(ShareContract.PREFS, Context.MODE_PRIVATE)
@@ -159,7 +159,6 @@ class YoutubeImportManager(private val context: Context) {
 
         var label = mediaTitle
         var baseName = mediaTitle.ifBlank { output.nameWithoutExtension }
-        var needsReview = false
         val autoTag = prefs.getBoolean(ShareContract.PREF_AUTO_TAG, true)
         val embedThumbnail = prefs.getBoolean(ShareContract.PREF_EMBED_YOUTUBE_THUMBNAIL, true)
 
@@ -168,16 +167,17 @@ class YoutubeImportManager(private val context: Context) {
             val outcome = AutoTagger().resolve(
                 info = info,
                 fallbackTitle = mediaTitle.ifBlank { output.nameWithoutExtension },
-                geniusToken = prefs.getString(ShareContract.PREF_GENIUS_ACCESS_TOKEN, "").orEmpty(),
             )
-            var tags = outcome.tags
-            if (outcome.useThumbnail && embedThumbnail) {
-                downloadThumbnail(info?.thumbnail.orEmpty())?.let { tags = tags.copy(artworkBytes = it) }
+            // Sem uma correspondência confiável o arquivo fica exatamente como o yt-dlp entregou.
+            if (outcome != null) {
+                var tags = outcome.tags
+                if (outcome.useThumbnail && embedThumbnail) {
+                    downloadThumbnail(info?.thumbnail.orEmpty())?.let { tags = tags.copy(artworkBytes = it) }
+                }
+                runCatching { FileTagWriter.write(context, output, tags) }
+                label = listOf(tags.artist, tags.title).filter { it.isNotBlank() }.joinToString(" - ").ifBlank { mediaTitle }
+                if (tags.artist.isNotBlank() && tags.title.isNotBlank()) baseName = label
             }
-            runCatching { FileTagWriter.write(context, output, tags, outcome.comment) }
-            needsReview = outcome.needsReview
-            label = listOf(tags.artist, tags.title).filter { it.isNotBlank() }.joinToString(" - ").ifBlank { mediaTitle }
-            if (tags.artist.isNotBlank() && tags.title.isNotBlank()) baseName = label
         } else if (info != null) {
             onStatus(ImportStatus(url, "Aplicando informações do vídeo...", 100, mediaTitle = mediaTitle))
             runCatching { applyBasicInfo(output, info, embedThumbnail) }
@@ -188,10 +188,9 @@ class YoutubeImportManager(private val context: Context) {
         val savedName = copyIntoTree(cleanOutput, destinationTree)
         val relPath = "${MigrationPlanner.SONGS_DIR}/$savedName"
         scanPrimaryTreeFile(destinationTree, relPath)
-        if (needsReview) TagReview.add(context, relPath)
         output.delete()
         workDir.deleteRecursively()
-        return ImportResult(savedName, relPath, label.ifBlank { savedName }, needsReview)
+        return ImportResult(savedName, relPath, label.ifBlank { savedName })
     }
 
     /** Baixa a imagem do vídeo e devolve em JPEG, ou null se não der. */

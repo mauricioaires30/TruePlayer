@@ -13,7 +13,7 @@ import kotlinx.serialization.json.Json
 
 /**
  * Cópia das configurações em `.trueplayer/settings.json`, para voltarem sozinhas depois de
- * reinstalar ou trocar de celular. Segredos (como o token do Genius) nunca vão para a pasta.
+ * reinstalar ou trocar de celular. Segredos (como o token do GitHub) nunca vão para a pasta.
  */
 object SettingsBackup {
     private const val FILE = "settings.json"
