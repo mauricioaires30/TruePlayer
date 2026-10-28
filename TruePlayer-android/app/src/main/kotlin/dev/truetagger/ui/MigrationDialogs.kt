@@ -13,14 +13,17 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.truetagger.android.FolderMigrator
+import dev.truetagger.data.PlannedMove
 
-/** Pergunta, mostra o progresso e o relatório da organização da pasta em songs/ e playlists/. */
+/** Avisos da organização da pasta (songs/ e playlists/) e do acesso à pasta. */
 @Composable
 fun FolderMigrationDialogs(
     preview: FolderMigrator.Preview?,
-    progress: Pair<Int, Int>?,
+    progress: FolderMigrator.Progress?,
     report: FolderMigrator.Report?,
     message: String?,
     onMessageDismiss: () -> Unit,
@@ -35,26 +38,38 @@ fun FolderMigrationDialogs(
         when {
             accessNeeded -> AlertDialog(
                 onDismissRequest = onAccessLater,
-                title = { Text("Autorize sua pasta de músicas") },
+                title = { Text("Libere a pasta de novo") },
                 text = {
                     Text(
-                        "O Android não guarda a permissão de acesso à pasta quando o app é restaurado em outro " +
-                            "celular. Toque em Autorizar e confirme a mesma pasta de antes (use \"Usar esta pasta\"). " +
-                            "Nenhuma música é alterada.",
+                        "Ao trocar de celular o Android pede a permissão da pasta outra vez. " +
+                            "Toque em Escolher pasta e confirme a mesma de antes, em \"Usar esta pasta\". " +
+                            "Suas músicas não são mexidas.",
                     )
                 },
-                confirmButton = { TextButton(onClick = onGrantAccess) { Text("Autorizar") } },
-                dismissButton = { TextButton(onClick = onAccessLater) { Text("Depois") } },
+                confirmButton = { TextButton(onClick = onGrantAccess) { Text("Escolher pasta") } },
+                dismissButton = { TextButton(onClick = onAccessLater) { Text("Agora não") } },
             )
 
             progress != null -> AlertDialog(
                 onDismissRequest = {},
-                title = { Text("Organizando a pasta…") },
+                title = { Text("Organizando a pasta") },
                 text = {
                     Column {
-                        Text("Movendo ${progress.first} de ${progress.second}. Não feche o app; a tela fica ligada e nada é apagado.")
+                        val isSong = progress.kind == PlannedMove.Kind.SONG
+                        if (progress.name.isBlank()) {
+                            Text("Preparando…")
+                        } else {
+                            Text(if (isSong) "Movendo música" else "Movendo playlist", style = MaterialTheme.typography.bodySmall)
+                            Text(progress.name, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                "${progress.index} de ${progress.total} " + if (isSong) "músicas" else "playlists",
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                         Spacer(Modifier.height(12.dp))
-                        LinearProgressIndicator(progress = { progress.first / progress.second.coerceAtLeast(1).toFloat() })
+                        LinearProgressIndicator(progress = { progress.overallDone / progress.overallTotal.coerceAtLeast(1).toFloat() })
+                        Spacer(Modifier.height(12.dp))
+                        Text("Não feche o app, a tela fica ligada enquanto isso.", style = MaterialTheme.typography.bodySmall)
                     }
                 },
                 confirmButton = {},
@@ -62,24 +77,24 @@ fun FolderMigrationDialogs(
 
             preview != null -> AlertDialog(
                 onDismissRequest = onLater,
-                title = { Text("Organizar sua pasta de músicas") },
+                title = { Text("Organizar a pasta?") },
                 text = {
                     Column(Modifier.verticalScroll(rememberScrollState())) {
                         Text(
-                            "Criei as pastas songs e playlists. Encontrei ${preview.songs} música(s) e " +
-                                "${preview.playlists} playlist(s) fora delas.",
+                            "Achei ${preview.songs} música(s) e ${preview.playlists} playlist(s) fora das pastas " +
+                                "songs e playlists. Posso mover tudo pra dentro delas.",
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Vou apenas mover os arquivos para dentro dessas pastas (sem copiar, apagar ou sobrescrever) " +
-                                "e atualizar suas playlists para continuarem apontando para as mesmas músicas. " +
-                                "Um registro de tudo fica em .trueplayer. O que não puder ser movido continua onde está.",
+                            "Os arquivos só mudam de lugar: nada é copiado, apagado ou sobrescrito, e suas " +
+                                "playlists continuam com as mesmas músicas. O que não der pra mover fica onde está. " +
+                                "Tudo que for feito fica registrado em .trueplayer.",
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
                 },
-                confirmButton = { TextButton(onClick = onConfirm) { Text("Organizar agora") } },
-                dismissButton = { TextButton(onClick = onLater) { Text("Depois") } },
+                confirmButton = { TextButton(onClick = onConfirm) { Text("Organizar") } },
+                dismissButton = { TextButton(onClick = onLater) { Text("Agora não") } },
             )
 
             message != null -> AlertDialog(
@@ -91,20 +106,20 @@ fun FolderMigrationDialogs(
 
             report != null -> AlertDialog(
                 onDismissRequest = onReportDismiss,
-                title = { Text(if (report.failed.isEmpty()) "Pasta organizada" else "Organizada, com avisos") },
+                title = { Text(if (report.failed.isEmpty()) "Pasta organizada" else "Organizei, mas teve problema") },
                 text = {
                     Column(Modifier.verticalScroll(rememberScrollState())) {
-                        Text("${report.songsMoved} música(s) e ${report.playlistsMoved} playlist(s) movidas. Nenhum arquivo foi apagado.")
+                        Text("${report.songsMoved} música(s) e ${report.playlistsMoved} playlist(s) movidas. Nada foi apagado.")
                         if (report.failed.isNotEmpty()) {
                             Spacer(Modifier.height(8.dp))
-                            Text("${report.failed.size} item(ns) ficaram onde estavam:", style = MaterialTheme.typography.bodySmall)
+                            Text("Estes ficaram onde estavam (${report.failed.size}):", style = MaterialTheme.typography.bodySmall)
                             report.failed.take(8).forEach {
                                 Text("• ${it.path}: ${it.reason}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
                             }
-                            if (report.failed.size > 8) Text("… e mais ${report.failed.size - 8}.", style = MaterialTheme.typography.bodySmall)
+                            if (report.failed.size > 8) Text("e mais ${report.failed.size - 8}.", style = MaterialTheme.typography.bodySmall)
                         }
                         Spacer(Modifier.height(8.dp))
-                        Text("Registro: .trueplayer/${report.logName}", style = MaterialTheme.typography.bodySmall)
+                        Text("Registro salvo em .trueplayer/${report.logName}", style = MaterialTheme.typography.bodySmall)
                     }
                 },
                 confirmButton = { TextButton(onClick = onReportDismiss) { Text("OK") } },

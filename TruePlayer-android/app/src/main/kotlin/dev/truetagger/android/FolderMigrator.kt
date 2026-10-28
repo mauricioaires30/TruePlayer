@@ -40,6 +40,16 @@ class FolderMigrator(context: Context, private val tree: SafTree) {
 
     data class Failure(val path: String, val reason: String)
 
+    /** O que está sendo movido agora; [index]/[total] contam só itens do mesmo tipo (músicas ou playlists). */
+    data class Progress(
+        val kind: PlannedMove.Kind,
+        val name: String,
+        val index: Int,
+        val total: Int,
+        val overallDone: Int,
+        val overallTotal: Int,
+    )
+
     @Serializable
     private data class LogItem(val from: String, val to: String, val kind: String, val status: String = "pendente")
 
@@ -103,8 +113,8 @@ class FolderMigrator(context: Context, private val tree: SafTree) {
      * @param beforeMove chamado com o plano completo antes de mover qualquer arquivo; é onde o app
      *        grava as playlists internas já com os caminhos finais. Se lançar exceção, nada é movido.
      */
-    fun run(beforeMove: (List<PlannedMove>) -> Unit, onProgress: (done: Int, total: Int) -> Unit): Report {
-        val layout = ensureLayout() ?: error("Não foi possível criar as pastas songs/ e playlists/.")
+    fun run(beforeMove: (List<PlannedMove>) -> Unit, onProgress: (Progress) -> Unit): Report {
+        val layout = ensureLayout() ?: error("Não consegui criar as pastas songs e playlists.")
         val files = inventory()
         val sizes = files.associate { it.relPath.lowercase() to it.node.sizeBytes }
         val byPath = files.associateBy { it.relPath.lowercase() }
@@ -124,10 +134,26 @@ class FolderMigrator(context: Context, private val tree: SafTree) {
         val movedTargets = ArrayList<String>()
         var songs = 0
         var playlists = 0
+        val totalSongs = plan.count { it.kind == PlannedMove.Kind.SONG }
+        val totalPlaylists = plan.size - totalSongs
+        var seenSongs = 0
+        var seenPlaylists = 0
         plan.forEachIndexed { index, move ->
+            val isSong = move.kind == PlannedMove.Kind.SONG
+            if (isSong) seenSongs++ else seenPlaylists++
+            onProgress(
+                Progress(
+                    kind = move.kind,
+                    name = move.from.substringAfterLast('/').substringBeforeLast('.'),
+                    index = if (isSong) seenSongs else seenPlaylists,
+                    total = if (isSong) totalSongs else totalPlaylists,
+                    overallDone = index,
+                    overallTotal = plan.size,
+                ),
+            )
             val source = byPath[move.from.lowercase()]
             val (movedDocId, error) =
-                if (source == null) null to "arquivo não encontrado" else moveOne(source, move, index)
+                if (source == null) null to "não achei o arquivo" else moveOne(source, move, index)
             if (error == null) {
                 if (move.kind == PlannedMove.Kind.PLAYLIST && movedDocId != null && source != null) {
                     rewritePlaylist(movedDocId, move, source, songTargets, rootRel, layout)
@@ -139,7 +165,6 @@ class FolderMigrator(context: Context, private val tree: SafTree) {
                 items[index] = items[index].copy(status = "falhou: $error")
                 failures += Failure(move.from, error)
             }
-            onProgress(index + 1, plan.size)
         }
 
         // Confere o resultado: cada destino precisa existir com o mesmo tamanho do original.
@@ -149,8 +174,8 @@ class FolderMigrator(context: Context, private val tree: SafTree) {
             val moved = after[move.to.lowercase()]
             val expected = sizes[move.from.lowercase()]
             if (moved == null || (expected != null && expected > 0 && moved.node.sizeBytes != expected)) {
-                items[index] = items[index].copy(status = "verificar: destino ausente ou com tamanho diferente")
-                failures += Failure(move.to, "destino não conferiu após mover")
+                items[index] = items[index].copy(status = "conferir: arquivo ausente ou com tamanho diferente")
+                failures += Failure(move.to, "o arquivo movido não bate com o original")
             }
         }
 
@@ -164,22 +189,22 @@ class FolderMigrator(context: Context, private val tree: SafTree) {
     /** Devolve (novo docId, null) em caso de sucesso, ou (null, motivo) em caso de falha. */
     private fun moveOne(source: SafTree.Entry, move: PlannedMove, index: Int): Pair<String?, String?> {
         val targetDir = move.to.substringBeforeLast('/', "")
-        val destParent = tree.ensureDirPath(targetDir) ?: return null to "não foi possível criar a pasta $targetDir"
+        val destParent = tree.ensureDirPath(targetDir) ?: return null to "não consegui criar a pasta $targetDir"
         // Algo novo pode ter aparecido no destino depois do plano (ex.: playlist exportada pelo app).
         val targetName = freeName(destParent, move.to.substringAfterLast('/'))
 
         if (source.node.name == targetName) {
             val moved = tree.move(source.node.docId, source.parentDocId, destParent)
-            return if (moved != null) moved to null else null to "o Android não permitiu mover este arquivo"
+            return if (moved != null) moved to null else null to "o Android não deixou mover"
         }
 
         // Nome mudou por colisão: passa por uma pasta temporária para não conflitar em nenhum dos lados.
-        val staging = tree.ensureDirPath("${MigrationPlanner.META_DIR}/tmp/$index") ?: return null to "sem pasta temporária"
+        val staging = tree.ensureDirPath("${MigrationPlanner.META_DIR}/tmp/$index") ?: return null to "não consegui criar a pasta temporária"
         val stagedId = tree.move(source.node.docId, source.parentDocId, staging)
-            ?: return null to "o Android não permitiu mover este arquivo"
+            ?: return null to "o Android não deixou mover"
         val finalId = tree.rename(stagedId, targetName) ?: stagedId
         val moved = tree.move(finalId, staging, destParent)
-            ?: return null to "falhou ao concluir o movimento (arquivo preservado em ${MigrationPlanner.META_DIR}/tmp/$index)"
+            ?: return null to "não terminou de mover, o arquivo está em ${MigrationPlanner.META_DIR}/tmp/$index"
         tree.deleteEmptyDir(staging)
         return moved to null
     }

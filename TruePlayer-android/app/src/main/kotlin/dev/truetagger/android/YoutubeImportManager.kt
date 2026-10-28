@@ -244,7 +244,7 @@ class YoutubeImportManager(private val context: Context) {
         val tree = SafTree(context, treeUri)
         val parentDocId = tree.ensureDir(tree.rootDocId, MigrationPlanner.SONGS_DIR) ?: tree.rootDocId
         val destinationId = tree.create(parentDocId, "audio/mpeg", source.name)
-            ?: error("Não foi possível criar o arquivo na pasta escolhida.")
+            ?: error("Não consegui salvar o arquivo na pasta de músicas.")
         resolver.openOutputStream(tree.docUri(destinationId), "w")!!.use { output ->
             source.inputStream().use { input -> input.copyTo(output) }
         }

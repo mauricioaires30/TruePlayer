@@ -55,7 +55,7 @@ class MainActivity : ComponentActivity() {
     private var importStatus by mutableStateOf<ImportStatus?>(null)
     private var settings by mutableStateOf(AppSettings())
     private var migrationPreview by mutableStateOf<FolderMigrator.Preview?>(null)
-    private var migrationProgress by mutableStateOf<Pair<Int, Int>?>(null)
+    private var migrationProgress by mutableStateOf<FolderMigrator.Progress?>(null)
     private var migrationReport by mutableStateOf<FolderMigrator.Report?>(null)
     private var migrationMessage by mutableStateOf<String?>(null)
     private var folderAccessNeeded by mutableStateOf(false)
@@ -332,7 +332,7 @@ class MainActivity : ComponentActivity() {
                 accessPromptDismissed = false
                 folderAccessNeeded = true
             } else {
-                migrationMessage = "Nenhuma pasta de músicas escolhida. Escolha uma pasta em Configurações."
+                migrationMessage = "Você ainda não escolheu a pasta de músicas. Escolha uma em Configurações."
             }
             return
         }
@@ -344,11 +344,11 @@ class MainActivity : ComponentActivity() {
             } else if (diagnosis.plan.isNotEmpty()) {
                 migrationPreview = FolderMigrator.Preview(diagnosis.audioOutside, diagnosis.playlistsOutside, diagnosis.plan)
             } else {
-                migrationMessage = "Nada para mover.\n\n" +
+                migrationMessage = "Não tem nada pra mover.\n\n" +
                     "Pasta: $downloadFolderLabel\n" +
-                    "Arquivos encontrados: ${diagnosis.totalFiles}\n" +
-                    "Músicas: ${diagnosis.audioFiles} (${diagnosis.audioInSongs} já em songs/)\n" +
-                    "Pastas songs/ e playlists/: " + if (diagnosis.layoutOk) "criadas" else "não foi possível criar"
+                    "Arquivos: ${diagnosis.totalFiles}\n" +
+                    "Músicas: ${diagnosis.audioFiles} (${diagnosis.audioInSongs} já estão em songs)\n" +
+                    "Pastas songs e playlists: " + if (diagnosis.layoutOk) "ok" else "não consegui criar"
             }
         }
     }
@@ -357,7 +357,7 @@ class MainActivity : ComponentActivity() {
         val tree = MusicFolder.tree(this) ?: return
         migrationPreview = null
         migrationRunning = true
-        migrationProgress = 0 to 1
+        migrationProgress = FolderMigrator.Progress(PlannedMove.Kind.SONG, "", 0, 0, 0, 1)
         // Mantém a tela acesa enquanto organiza (só vale com o app aberto).
         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         MusicPlaybackService.releaseFileHandles(this)
@@ -366,7 +366,7 @@ class MainActivity : ComponentActivity() {
                 runCatching {
                     FolderMigrator(this@MainActivity, tree).run(
                         beforeMove = { plan -> prepareForMigration(tree, plan) },
-                        onProgress = { done, total -> migrationProgress = done to total },
+                        onProgress = { migrationProgress = it },
                     )
                 }
             }
@@ -376,7 +376,7 @@ class MainActivity : ComponentActivity() {
             outcome.onSuccess { migrationReport = it }.onFailure {
                 android.widget.Toast.makeText(
                     this@MainActivity,
-                    "Não foi possível organizar a pasta: ${it.message}. Nada foi apagado.",
+                    "Não deu pra organizar a pasta: ${it.message}. Nada foi apagado.",
                     android.widget.Toast.LENGTH_LONG,
                 ).show()
             }
@@ -389,10 +389,10 @@ class MainActivity : ComponentActivity() {
     /** Antes de mover: backup das playlists do app e gravação delas em playlists/ já com os caminhos finais. */
     private fun prepareForMigration(tree: SafTree, plan: List<PlannedMove>) {
         val store = PlaylistStore(this)
-        val backupDir = tree.ensureDirPath("${MigrationPlanner.META_DIR}/backup") ?: error("sem pasta de backup")
+        val backupDir = tree.ensureDirPath("${MigrationPlanner.META_DIR}/backup") ?: error("não consegui criar a pasta de backup")
         val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
         tree.writeTextFile(backupDir, "playlists-$stamp.json", store.rawBackup(), "application/json")
-            ?: error("não foi possível gravar o backup das playlists")
+            ?: error("não consegui salvar o backup das playlists")
         store.remapKeys(
             plan.filter { it.kind == PlannedMove.Kind.SONG }.associate { TrackKeys.compareKey(it.from) to it.to },
         )

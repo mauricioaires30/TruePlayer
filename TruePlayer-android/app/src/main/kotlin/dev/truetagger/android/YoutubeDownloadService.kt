@@ -81,7 +81,7 @@ class YoutubeDownloadService : Service() {
             )
 
             val tree = MusicFolder.treeUri(this)
-                ?: error("Autorize a pasta de músicas no TruePlayer (Configurações > Escolher) antes de baixar.")
+                ?: error("Libere a pasta de músicas em Configurações antes de baixar.")
 
             importer.downloadAudio(url, tree) { status ->
                 if (status.mediaTitle.isNotBlank()) videoTitle = status.mediaTitle
