@@ -1,6 +1,7 @@
 package dev.truetagger.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -12,6 +13,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -67,7 +69,15 @@ fun FolderMigrationDialogs(
                             )
                         }
                         Spacer(Modifier.height(12.dp))
-                        LinearProgressIndicator(progress = { progress.overallDone / progress.overallTotal.coerceAtLeast(1).toFloat() })
+                        val fraction = (progress.overallDone / progress.overallTotal.coerceAtLeast(1).toFloat()).coerceIn(0f, 1f)
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            LinearProgressIndicator(progress = { fraction }, modifier = Modifier.weight(1f))
+                            Text(
+                                "${(fraction * 100).toInt()}%",
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(start = 12.dp),
+                            )
+                        }
                         Spacer(Modifier.height(12.dp))
                         Text("Não feche o app, a tela fica ligada enquanto isso.", style = MaterialTheme.typography.bodySmall)
                     }
