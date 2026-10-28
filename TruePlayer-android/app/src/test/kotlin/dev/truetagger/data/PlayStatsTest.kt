@@ -91,6 +91,17 @@ class PlayStatsTest {
         assertTrue(s.isEmpty)
     }
 
+    @Test fun clearRemovesEverythingIncludingLegacyPlays() {
+        val s = stats()
+        s.clear()
+        assertTrue(s.isEmpty)
+        assertTrue(s.totals(StatsRange.ALL, today).isEmpty())
+    }
+
+    @Test fun allTimeIsTheFirstRange() {
+        assertEquals(StatsRange.ALL, StatsRange.entries.first())
+    }
+
     @Test fun playRule() {
         assertEquals(30_000L, PlayRule.thresholdMs(200_000))
         assertEquals(30_000L, PlayRule.thresholdMs(0))

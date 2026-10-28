@@ -12,11 +12,11 @@ data class StatValue(val ms: Long = 0L, val plays: Long = 0L) {
 }
 
 enum class StatsRange(val label: String, val days: Int?) {
+    ALL("Sempre", null),
     WEEK("Semana", 7),
     MONTH("Mês", 30),
     SIX_MONTHS("6 meses", 183),
     YEAR("Ano", 365),
-    ALL("Sempre", null),
 }
 
 @Serializable
@@ -66,6 +66,12 @@ class PlayStats {
         if (key.isBlank() || (ms <= 0L && plays <= 0L)) return
         val perTrack = days.getOrPut(date.toString()) { HashMap() }
         perTrack[key] = (perTrack[key] ?: StatValue()) + StatValue(maxOf(ms, 0L), maxOf(plays, 0L))
+    }
+
+    /** Zera tudo (usado pelo botão de resetar estatísticas). */
+    fun clear() {
+        days.clear()
+        legacy.clear()
     }
 
     fun addLegacy(key: String, plays: Long) {

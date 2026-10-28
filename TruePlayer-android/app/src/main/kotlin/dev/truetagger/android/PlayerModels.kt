@@ -200,6 +200,41 @@ object PlayStatsState {
         return stats.totals(range, LocalDate.now())
     }
 
+    /**
+     * Zera as estatísticas. Antes guarda uma cópia em `.trueplayer/backup/` e esvazia também o
+     * `stats.json` da pasta (senão ele voltaria na próxima sincronização). Os plays antigos
+     * (formato antigo) são marcados como já tratados para não reaparecerem.
+     */
+    suspend fun reset(context: android.content.Context) {
+        val app = context.applicationContext
+        initialize(app)
+        val backup: String? = synchronized(this) {
+            val previous = if (stats.isEmpty) null else stats.toJson()
+            stats.clear()
+            val prefs = app.getSharedPreferences(CACHE_PREFS, android.content.Context.MODE_PRIVATE)
+            prefs.edit().putStringSet(KEY_LEGACY_DONE, legacyById.keys.toSet()).apply()
+            sessionKey = null
+            sessionMs = 0L
+            sessionCounted = false
+            dirty = false
+            saveLocal(app)
+            _revision.value = _revision.value + 1L
+            previous
+        }
+        folderLock.withLock {
+            runCatching {
+                val tree = MusicFolder.tree(app) ?: return@runCatching
+                val metaDir = tree.ensureDir(tree.rootDocId, MigrationPlanner.META_DIR) ?: return@runCatching
+                if (backup != null) {
+                    val backupDir = tree.ensureDir(metaDir, "backup") ?: return@runCatching
+                    val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
+                    tree.writeTextFile(backupDir, "stats-$stamp.json", backup, "application/json")
+                }
+                tree.writeTextFile(metaDir, "stats.json", PlayStats().toJson(), "application/json")
+            }
+        }
+    }
+
     /** Grava agora (pausa, app em segundo plano, serviço encerrando). */
     @Synchronized
     fun flush(context: android.content.Context) {

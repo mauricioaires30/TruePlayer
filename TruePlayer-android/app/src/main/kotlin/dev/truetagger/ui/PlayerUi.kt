@@ -9,6 +9,9 @@ import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import dev.truetagger.data.StatValue
@@ -278,21 +281,145 @@ private class PlayStatsStore(context: Context) {
 }
 
 private fun StatValue.minutesText(): String = when {
-    ms <= 0L -> "0 min"
+    ms <= 0L -> "—"
     ms < 60_000L -> "<1 min"
     else -> NumberFormat.getIntegerInstance(Locale("pt", "BR")).format(minutes) + " min"
 }
 
 @Composable
-private fun StatsRangeChips(range: StatsRange, onChange: (StatsRange) -> Unit) {
+private fun StatsRangeChips(range: StatsRange, onReset: (() -> Unit)? = null, onChange: (StatsRange) -> Unit) {
     Row(
         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(bottom = UiTokens.sectionSpacing),
         horizontalArrangement = Arrangement.spacedBy(UiTokens.toolbarGap),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         StatsRange.entries.forEach { r ->
             FilterChip(selected = r == range, onClick = { onChange(r) }, label = { Text(r.label) })
         }
+        if (onReset != null) TextButton(onClick = onReset) { Text("Resetar") }
     }
+}
+
+@Composable
+private fun StatsResetDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Resetar as estatísticas?") },
+        text = {
+            Text(
+                "Zera o tempo ouvido e as vezes tocadas de todas as músicas, artistas e álbuns. " +
+                    "Antes de zerar, o app guarda uma cópia na pasta .trueplayer/backup. " +
+                    "Suas músicas e playlists não mudam.",
+            )
+        },
+        confirmButton = { TextButton(onClick = onConfirm) { Text("Resetar") } },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } },
+    )
+}
+
+/**
+ * Posição de rolagem das listas guardada na última vez que o app foi usado. Só vale logo depois de
+ * abrir o app (para voltar ao mesmo ponto); depois disso cada lista se comporta como sempre.
+ */
+private object ScrollMemory {
+    private const val PREFS = "truetagger_scroll"
+    private const val WINDOW_MS = 20_000L
+    private var pending: MutableMap<String, Pair<Int, Int>> = mutableMapOf()
+    private var sessionStartMs = 0L
+
+    @Synchronized
+    fun beginSession(context: Context) {
+        sessionStartMs = android.os.SystemClock.elapsedRealtime()
+        pending = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).all
+            .mapNotNull { (key, value) ->
+                val parts = (value as? String)?.split(',') ?: return@mapNotNull null
+                val index = parts.getOrNull(0)?.toIntOrNull() ?: return@mapNotNull null
+                val offset = parts.getOrNull(1)?.toIntOrNull() ?: return@mapNotNull null
+                key to (index to offset)
+            }.toMap().toMutableMap()
+    }
+
+    fun save(context: Context, key: String, index: Int, offset: Int) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(key, "$index,$offset").apply()
+    }
+
+    /** Devolve a posição salva uma única vez, e só dentro da janela logo após a abertura. */
+    @Synchronized
+    fun takeForStart(key: String): Pair<Int, Int>? {
+        if (android.os.SystemClock.elapsedRealtime() - sessionStartMs > WINDOW_MS) return null
+        return pending.remove(key)
+    }
+}
+
+@Composable
+private fun PersistListScroll(state: LazyListState, key: String) {
+    val context = LocalContext.current
+    var restored by remember(key) { mutableStateOf(false) }
+    LaunchedEffect(state, key) {
+        val saved = ScrollMemory.takeForStart(key)
+        if (saved != null && (saved.first > 0 || saved.second > 0)) {
+            // A biblioteca pode ainda estar carregando: espera a lista ter itens suficientes.
+            val ready = withTimeoutOrNull(10_000L) { snapshotFlow { state.layoutInfo.totalItemsCount }.first { it > saved.first } }
+            if (ready != null) state.scrollToItem(saved.first, saved.second)
+        }
+        restored = true
+    }
+    LaunchedEffect(state, key, restored) {
+        if (!restored) return@LaunchedEffect
+        snapshotFlow { state.firstVisibleItemIndex to state.firstVisibleItemScrollOffset }
+            .collectLatest { (index, offset) ->
+                delay(400)
+                ScrollMemory.save(context, key, index, offset)
+            }
+    }
+}
+
+@Composable
+private fun PersistGridScroll(state: LazyGridState, key: String) {
+    val context = LocalContext.current
+    var restored by remember(key) { mutableStateOf(false) }
+    LaunchedEffect(state, key) {
+        val saved = ScrollMemory.takeForStart(key)
+        if (saved != null && (saved.first > 0 || saved.second > 0)) {
+            val ready = withTimeoutOrNull(10_000L) { snapshotFlow { state.layoutInfo.totalItemsCount }.first { it > saved.first } }
+            if (ready != null) state.scrollToItem(saved.first, saved.second)
+        }
+        restored = true
+    }
+    LaunchedEffect(state, key, restored) {
+        if (!restored) return@LaunchedEffect
+        snapshotFlow { state.firstVisibleItemIndex to state.firstVisibleItemScrollOffset }
+            .collectLatest { (index, offset) ->
+                delay(400)
+                ScrollMemory.save(context, key, index, offset)
+            }
+    }
+}
+
+private fun encodeNav(
+    tab: HomeTab, detail: Detail, detailKey: String, editorTrackId: String?, playerScreen: PlayerScreen, history: List<NavEntry>,
+): String = JSONObject().apply {
+    put("tab", tab.name)
+    put("detail", detail.name)
+    put("detail_key", detailKey)
+    put("editor_track", editorTrackId.orEmpty())
+    put("player", playerScreen.name)
+    put("history", JSONArray().apply {
+        history.takeLast(20).forEach {
+            put(JSONObject().apply {
+                put("tab", it.tab.name)
+                put("detail", it.detail.name)
+                put("detail_key", it.detailKey)
+            })
+        }
+    })
+}.toString()
+
+private fun decodeNavEntry(obj: JSONObject?): NavEntry? {
+    obj ?: return null
+    val tab = runCatching { HomeTab.valueOf(obj.optString("tab")) }.getOrNull() ?: return null
+    val detail = runCatching { Detail.valueOf(obj.optString("detail")) }.getOrDefault(Detail.NONE)
+    return NavEntry(tab, PlayerScreen.NONE, detail, obj.optString("detail_key"), editorOpen = false)
 }
 
 private data class NavEntry(
@@ -391,6 +518,7 @@ fun TrueTaggerPlayerApp(
     var albumAscending by rememberSaveable { mutableStateOf(true) }
     val history = remember { mutableStateListOf<NavEntry>() }
     val context = LocalContext.current
+    remember { ScrollMemory.beginSession(context) }
     LaunchedEffect(Unit) {
         (context as? Activity)?.title = "TruePlayer"
     }
@@ -398,6 +526,9 @@ fun TrueTaggerPlayerApp(
     val uiPrefs = remember { context.getSharedPreferences("truetagger_ui", Context.MODE_PRIVATE) }
     var pendingExportPlaylist by remember { mutableStateOf<PlaylistData?>(null) }
     var uiStateLoaded by remember { mutableStateOf(false) }
+    // Tela de tag e tela do player só voltam depois que a biblioteca/o player estiverem prontos.
+    var pendingEditorId by remember { mutableStateOf<String?>(null) }
+    var pendingPlayerScreen by remember { mutableStateOf<PlayerScreen?>(null) }
     LaunchedEffect(Unit) {
         librarySearch = filterPrefs.getString("library_search", "").orEmpty()
         librarySortMode = runCatching { PlayerSortMode.valueOf(filterPrefs.getString("library_sort", PlayerSortMode.NAME.name)!!) }.getOrDefault(PlayerSortMode.NAME)
@@ -405,39 +536,55 @@ fun TrueTaggerPlayerApp(
         albumSearch = filterPrefs.getString("album_search", "").orEmpty()
         albumSortMode = runCatching { AlbumSortMode.valueOf(filterPrefs.getString("album_sort", AlbumSortMode.NAME.name)!!) }.getOrDefault(AlbumSortMode.NAME)
         albumAscending = filterPrefs.getBoolean("album_ascending", true)
-        tab = when (uiPrefs.getString("home_tab", HomeTab.LIBRARY.name)) {
-            HomeTab.PLAYLISTS.name, HomeTab.MOST_PLAYED.name -> HomeTab.MOST_PLAYED
-            HomeTab.ALBUMS.name -> HomeTab.ALBUMS
-            else -> HomeTab.LIBRARY
-        }
-        val savedDetail = uiPrefs.getString("detail", Detail.NONE.name)
-        val savedDetailKey = uiPrefs.getString("detail_key", "").orEmpty()
-        val lastPlaylistKey = uiPrefs.getString("last_playlist_key", "").orEmpty()
-        if ((savedDetail == Detail.PLAYLIST.name || savedDetail == Detail.ALBUM.name) && savedDetailKey.isNotBlank()) {
-            detail = runCatching { Detail.valueOf(savedDetail) }.getOrDefault(Detail.NONE)
-            detailKey = savedDetailKey
-            tab = if (detail == Detail.PLAYLIST) HomeTab.MOST_PLAYED else HomeTab.ALBUMS
-        } else if (lastPlaylistKey.isNotBlank()) {
-            // Mantém a última playlist aberta para que a aba Playlists retorne ao mesmo lugar.
-            detailKey = lastPlaylistKey
+        val nav = uiPrefs.getString("nav_state", null)?.let { runCatching { JSONObject(it) }.getOrNull() }
+        if (nav != null) {
+            tab = runCatching { HomeTab.valueOf(nav.optString("tab")) }.getOrDefault(HomeTab.LIBRARY)
+                .let { if (it == HomeTab.PLAYLISTS) HomeTab.MOST_PLAYED else it }
+            detail = runCatching { Detail.valueOf(nav.optString("detail")) }.getOrDefault(Detail.NONE)
+            detailKey = nav.optString("detail_key")
+            if (detailKey.isBlank()) detail = Detail.NONE
+            pendingPlayerScreen = runCatching { PlayerScreen.valueOf(nav.optString("player")) }.getOrNull()?.takeIf { it != PlayerScreen.NONE }
+            pendingEditorId = nav.optString("editor_track").takeIf { it.isNotBlank() }
+            history.clear()
+            nav.optJSONArray("history")?.let { array ->
+                for (i in 0 until array.length()) decodeNavEntry(array.optJSONObject(i))?.let(history::add)
+            }
+        } else {
+            // Primeira abertura depois da atualização: usa a aba que o app guardava antes.
+            tab = when (uiPrefs.getString("home_tab", HomeTab.LIBRARY.name)) {
+                HomeTab.PLAYLISTS.name, HomeTab.MOST_PLAYED.name -> HomeTab.MOST_PLAYED
+                HomeTab.ALBUMS.name -> HomeTab.ALBUMS
+                else -> HomeTab.LIBRARY
+            }
         }
         uiStateLoaded = true
     }
-    LaunchedEffect(tab, detail, detailKey, editorOpen, playerScreen, uiStateLoaded) {
-        if (uiStateLoaded && !editorOpen && playerScreen == PlayerScreen.NONE) {
-            val savedTab = when {
-                detail == Detail.PLAYLIST -> HomeTab.MOST_PLAYED
-                detail == Detail.ALBUM -> HomeTab.ALBUMS
-                tab == HomeTab.PLAYLISTS || tab == HomeTab.ALBUMS || tab == HomeTab.MOST_PLAYED -> tab
-                else -> HomeTab.LIBRARY
-            }
-            val savedDetail = if (detail == Detail.PLAYLIST || detail == Detail.ALBUM) detail else Detail.NONE
-            uiPrefs.edit()
-                .putString("home_tab", savedTab.name)
-                .putString("detail", savedDetail.name)
-                .putString("detail_key", if (savedDetail == Detail.NONE) "" else detailKey)
-                .apply()
-        }
+    // Se a tag/o player não puderem ser restaurados (faixa apagada, nada tocando), desiste depois de um tempo.
+    LaunchedEffect(Unit) {
+        delay(15_000)
+        pendingEditorId = null
+        pendingPlayerScreen = null
+    }
+    LaunchedEffect(tracks, pendingEditorId, uiStateLoaded) {
+        val id = pendingEditorId ?: return@LaunchedEffect
+        if (!uiStateLoaded) return@LaunchedEffect
+        val track = tracks.firstOrNull { it.id == id } ?: return@LaunchedEffect
+        pendingEditorId = null
+        onSelectTrack(track)
+        editorOpen = true
+    }
+    LaunchedEffect(snapshot.current?.id, pendingPlayerScreen) {
+        val screen = pendingPlayerScreen ?: return@LaunchedEffect
+        if (snapshot.current == null) return@LaunchedEffect
+        pendingPlayerScreen = null
+        playerScreen = screen
+    }
+    LaunchedEffect(tab, detail, detailKey, editorOpen, playerScreen, uiStateLoaded, selectedTrack?.id, history.size) {
+        // Enquanto ainda restaura a tela de tag/player, não sobrescreve o que foi salvo.
+        if (!uiStateLoaded || pendingEditorId != null || pendingPlayerScreen != null) return@LaunchedEffect
+        uiPrefs.edit()
+            .putString("nav_state", encodeNav(tab, detail, detailKey, if (editorOpen) selectedTrack?.id else null, playerScreen, history.toList()))
+            .apply()
     }
     val store = remember { PlaylistStore(context) }
     val persistenceScope = rememberCoroutineScope()
@@ -483,6 +630,7 @@ fun TrueTaggerPlayerApp(
     val trackById by remember(tracks) { mutableStateOf(tracks.associateBy { it.id }) }
     val drafts = remember { mutableStateMapOf<String, EditableTags>() }
     val libraryListState = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    PersistListScroll(libraryListState, "library")
 
     fun reloadPlaylists() { playlists = store.load() }
 
@@ -902,6 +1050,7 @@ private fun QueueScreen(
     onRepeat: () -> Unit,
 ) {
     val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    PersistListScroll(state, "queue")
     LaunchedEffect(s.queue, s.current?.id) {
         val currentIndex = s.queue.indexOfFirst { it.id == s.current?.id }
         if (currentIndex >= 0) state.scrollToItem(currentIndex)
@@ -1317,6 +1466,14 @@ private fun CombinedMostPlayedPlaylistHost(
     val context = LocalContext.current
     val store = remember { PlayStatsStore(context) }
     var range by rememberSaveable { mutableStateOf(StatsRange.ALL) }
+    var confirmReset by remember { mutableStateOf(false) }
+    val resetScope = rememberCoroutineScope()
+    if (confirmReset) {
+        StatsResetDialog(
+            onConfirm = { confirmReset = false; resetScope.launch { PlayStatsState.reset(context) } },
+            onDismiss = { confirmReset = false },
+        )
+    }
     var creating by remember { mutableStateOf(false) }
     var createName by remember { mutableStateOf("") }
     var renaming by remember { mutableStateOf<PlaylistData?>(null) }
@@ -1347,6 +1504,7 @@ private fun CombinedMostPlayedPlaylistHost(
 
             if (mode == MostPlayedMode.OVERVIEW) {
                 val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+                PersistListScroll(state, "playlists_home")
                 Column(Modifier.fillMaxSize()) {
                     ActionButtonRow {
                         ActionButton("Criar", Icons.Rounded.Add, { creating = true; createName = "" }, Modifier.weight(1f))
@@ -1390,7 +1548,7 @@ private fun CombinedMostPlayedPlaylistHost(
                             item {
                                 Text("MAIS OUVIDAS", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = UiTokens.space2))
                             }
-                            item { StatsRangeChips(range) { range = it } }
+                            item { StatsRangeChips(range, onReset = { confirmReset = true }) { range = it } }
                             item {
                                 // A reprodução iniciada é o único gatilho necessário para
                                 // atualizar os cards de Mais Ouvidas. O estado de progresso
@@ -1435,7 +1593,8 @@ private fun CombinedMostPlayedPlaylistHost(
                 }
             } else {
                 val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
-                StatsRangeChips(range) { range = it }
+                PersistListScroll(state, "most_played_${mode.name}")
+                StatsRangeChips(range, onReset = { confirmReset = true }) { range = it }
                 when (mode) {
                     MostPlayedMode.TRACKS -> {
                         val values = remember(statsRevision, tracks, range) { store.topTracks(tracks, range) }
@@ -1825,6 +1984,7 @@ private fun PlaylistScreen(
     var renaming by remember { mutableStateOf<PlaylistData?>(null) }
     var renameText by remember { mutableStateOf("") }
     val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    PersistListScroll(state, "playlist_screen")
     Box(Modifier.fillMaxSize()) {
         LazyColumn(
             state = state,
@@ -1905,6 +2065,7 @@ private fun ArtistsScreen(tracks: List<AudioTrack>, open: (String) -> Unit) {
         SearchBar(value = search, onValueChange = { search = it }, placeholder = "Pesquisar artistas")
         Spacer(Modifier.height(UiTokens.standardListTopSpacing))
         val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    PersistListScroll(state, "artists")
         SongListContainer(state = state, modifier = Modifier.weight(1f)) {
             val grouped = artists.groupBy { it.name.firstOrNull()?.uppercaseChar()?.toString() ?: "#" }.toSortedMap()
             grouped.forEach { (letter, items) ->
@@ -1992,6 +2153,7 @@ private fun GenresScreen(tracks: List<AudioTrack>, open: (String) -> Unit) {
 @Composable
 private fun AlphabeticalGroupList(title: String, values: List<String>, open: (String) -> Unit, modifier: Modifier = Modifier) {
     val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    PersistListScroll(state, "alpha_list")
     val sections = values.groupBy { value -> value.firstOrNull()?.uppercaseChar()?.toString() ?: "#" }
     SongListContainer(
         state = state,
@@ -2014,6 +2176,7 @@ private fun AlphabeticalGroupList(title: String, values: List<String>, open: (St
 private fun AlbumsScreen(tracks: List<AudioTrack>, search: String, onSearchChange: (String) -> Unit, sortMode: AlbumSortMode, onSortModeChange: (AlbumSortMode) -> Unit, ascending: Boolean, onAscendingChange: () -> Unit, open: (String) -> Unit) {
     var filterOpen by remember { mutableStateOf(false) }
     val gridState = rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
+    PersistGridScroll(gridState, "albums")
     data class AlbumItem(val key: String, val name: String, val artist: String, val year: String, val duration: Long, val songs: Int, val artwork: ByteArray?)
     fun albumKey(value: String): String = Normalizer.normalize(value, Normalizer.Form.NFKC)
         .replace(Regex("[\\u200B-\\u200D\\uFEFF]"), "")
@@ -2157,6 +2320,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
     val shown = if (type == Detail.PLAYLIST) playlistShown else base.sortedWith(compareBy({ it.discNumber.toIntOrNull() ?: 0 }, { it.trackNumber.toIntOrNull() ?: Int.MAX_VALUE }, { it.displayTitle().lowercase() }))
     val duration = shown.sumOf { it.durationMs }
     val state = rememberSaveable(type, key, saver = LazyListState.Saver) { LazyListState() }
+    PersistListScroll(state, "detail_${type.name}_$key")
     val uiContext = LocalContext.current
     val uiPrefs = remember { uiContext.getSharedPreferences("truetagger_ui", Context.MODE_PRIVATE) }
     val scrollKey = remember(type, key) { "detail_scroll_${type.name}_${key.hashCode()}" }
@@ -2421,6 +2585,7 @@ private fun ScrollingText(
 private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, downloadFolderLabel: String, onChooseDownloadFolder: (() -> Unit)?, onReleaseDownloadFolder: (() -> Unit)?, appVersion: String, onOrganizeFolder: (() -> Unit)? = null, onCleanFolder: (() -> Unit)? = null, permissions: List<dev.truetagger.model.PermissionItem> = emptyList()) {
     val context = LocalContext.current
     val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
+    PersistListScroll(state, "settings")
     var confirmReleaseFolder by remember { mutableStateOf(false) }
 
     if (confirmReleaseFolder) {
@@ -2429,7 +2594,7 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
             title = { Text("Liberar pasta?") },
             text = {
                 Text(
-                    "O TrueTagger vai fechar os arquivos abertos e devolver a permissão da pasta ao Android. " +
+                    "O TruePlayer vai fechar os arquivos abertos e devolver a permissão da pasta ao Android. " +
                         "Sua biblioteca sai da tela até você escolher uma pasta de novo. " +
                         "Nenhuma música é apagada."
                 )
@@ -2446,6 +2611,15 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
         )
     }
 
+    var confirmResetStats by remember { mutableStateOf(false) }
+    val settingsScope = rememberCoroutineScope()
+    if (confirmResetStats) {
+        StatsResetDialog(
+            onConfirm = { confirmResetStats = false; settingsScope.launch { PlayStatsState.reset(context) } },
+            onDismiss = { confirmResetStats = false },
+        )
+    }
+
     StandardPage {
         ScreenHeaderRow(title = "Configurações")
         Spacer(Modifier.height(UiTokens.listHeaderGap))
@@ -2456,49 +2630,76 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                 verticalArrangement = Arrangement.spacedBy(UiTokens.songListSpacing),
                 contentPadding = PaddingValues(bottom = UiTokens.songListBottomPadding),
             ) {
-                item { SettingSwitch("Atualizar biblioteca automaticamente", settings.autoRefreshLibrary) { onChange(settings.copy(autoRefreshLibrary = it)) } }
-                item { SettingSwitch("Incorporar thumbnail do YouTube", settings.embedYoutubeThumbnail) { onChange(settings.copy(embedYoutubeThumbnail = it)) } }
-                item { SettingSwitch("Atualizar downloader automaticamente", settings.autoUpdateDownloader) { onChange(settings.copy(autoUpdateDownloader = it)) } }
+                item {
+                    SettingSwitch(
+                        "Atualizar biblioteca automaticamente",
+                        "Relê a pasta sozinho quando você adiciona, tira ou edita músicas.",
+                        settings.autoRefreshLibrary,
+                    ) { onChange(settings.copy(autoRefreshLibrary = it)) }
+                }
+                item {
+                    SettingSwitch(
+                        "Usar a imagem do vídeo como capa",
+                        "Nas músicas baixadas de um link, salva a imagem do vídeo como capa do arquivo.",
+                        settings.embedYoutubeThumbnail,
+                    ) { onChange(settings.copy(embedYoutubeThumbnail = it)) }
+                }
+                item {
+                    SettingSwitch(
+                        "Atualizar o baixador automaticamente",
+                        "Mantém em dia o programa que baixa as músicas dos links (yt-dlp). Costuma resolver quando um download para de funcionar.",
+                        settings.autoUpdateDownloader,
+                    ) { onChange(settings.copy(autoUpdateDownloader = it)) }
+                }
                 item {
                     Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.space2)) {
-                        Text("Pasta de download", fontWeight = FontWeight.SemiBold)
+                        Text("Pasta de músicas", fontWeight = FontWeight.SemiBold)
                         Text(
                             downloadFolderLabel.ifBlank { "Nenhuma selecionada" },
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
-                        Spacer(Modifier.height(UiTokens.sectionSpacing))
-                        ActionButtonRow {
-                            ActionButton("Escolher", Icons.Rounded.Folder, { onChooseDownloadFolder?.invoke() }, Modifier.weight(1f))
-                            ActionButton(
-                                "Liberar",
-                                Icons.Rounded.FolderOff,
-                                { confirmReleaseFolder = true },
-                                Modifier.weight(1f),
-                                enabled = downloadFolderLabel.isNotBlank(),
-                            )
-                        }
-                        Spacer(Modifier.height(UiTokens.sectionSpacing))
-                        ActionButtonRow {
-                            ActionButton(
-                                "Organizar pasta",
-                                Icons.Rounded.Folder,
-                                { onOrganizeFolder?.invoke() },
-                                Modifier.weight(1f),
-                                enabled = downloadFolderLabel.isNotBlank(),
-                            )
-                            ActionButton(
-                                "Limpar pasta",
-                                Icons.Rounded.FolderOff,
-                                { onCleanFolder?.invoke() },
-                                Modifier.weight(1f),
-                                enabled = downloadFolderLabel.isNotBlank(),
-                            )
-                        }
-                        if (permissions.isNotEmpty()) {
-                            Spacer(Modifier.height(UiTokens.sectionSpacing))
+                        val hasFolder = downloadFolderLabel.isNotBlank()
+                        SettingAction(
+                            "Escolher pasta", Icons.Rounded.Folder,
+                            "Define a pasta onde ficam suas músicas e downloads. Dentro dela o app usa as pastas songs (músicas) e playlists.",
+                        ) { onChooseDownloadFolder?.invoke() }
+                        SettingAction(
+                            "Organizar pasta", Icons.Rounded.Folder,
+                            "Move músicas e playlists que estão soltas para dentro de songs e playlists. Os arquivos só mudam de lugar, nada é apagado.",
+                            enabled = hasFolder,
+                        ) { onOrganizeFolder?.invoke() }
+                        SettingAction(
+                            "Limpar pasta", Icons.Rounded.FolderOff,
+                            "Mostra o que não é música nem playlist e, se você confirmar, manda para a pasta _lixeira. Dá pra desfazer pelo gerenciador de arquivos.",
+                            enabled = hasFolder,
+                        ) { onCleanFolder?.invoke() }
+                        SettingAction(
+                            "Liberar pasta", Icons.Rounded.FolderOff,
+                            "Devolve a permissão da pasta ao Android, para você renomear ou apagar a pasta pelo gerenciador de arquivos. A biblioteca some da tela até escolher a pasta de novo. Nada é apagado.",
+                            enabled = hasFolder,
+                        ) { confirmReleaseFolder = true }
+                    }
+                }
+                item {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.space2)) {
+                        Text("Estatísticas", fontWeight = FontWeight.SemiBold)
+                        SettingAction(
+                            "Resetar estatísticas", Icons.Rounded.Delete,
+                            "Zera o tempo ouvido e as vezes tocadas de tudo. O app guarda uma cópia antes, na pasta .trueplayer/backup.",
+                        ) { confirmResetStats = true }
+                    }
+                }
+                if (permissions.isNotEmpty()) {
+                    item {
+                        Column(Modifier.fillMaxWidth().padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.space2)) {
                             Text("Permissões", fontWeight = FontWeight.SemiBold)
+                            Text(
+                                "O que o app precisa do Android para funcionar. Toque em Conceder nas que faltam.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
                             permissions.forEach { item ->
                                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                     Text(item.label, modifier = Modifier.weight(1f))
@@ -2510,12 +2711,6 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                                 }
                             }
                         }
-                        Spacer(Modifier.height(UiTokens.space2))
-                        Text(
-                            "\"Liberar\" fecha os arquivos abertos pelo player e devolve a permissão da pasta ao Android. Use antes de renomear ou excluir a pasta pelo gerenciador de arquivos.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
                     }
                 }
                 item {
@@ -2531,8 +2726,34 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
     }
 }
 
+/** Botão de configuração com uma frase dizendo o que ele faz logo abaixo. */
 @Composable
-private fun SettingSwitch(label: String, value: Boolean, onChange: (Boolean) -> Unit) { ListItem(headlineContent = { Text(label) }, trailingContent = { Switch(value, onCheckedChange = onChange) }) }
+private fun SettingAction(
+    label: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    description: String,
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+) {
+    Column(Modifier.fillMaxWidth().padding(top = UiTokens.sectionSpacing)) {
+        ActionButton(label, icon, onClick, Modifier.fillMaxWidth(), enabled = enabled)
+        Text(
+            description,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 4.dp),
+        )
+    }
+}
+
+@Composable
+private fun SettingSwitch(label: String, description: String, value: Boolean, onChange: (Boolean) -> Unit) {
+    ListItem(
+        headlineContent = { Text(label) },
+        supportingContent = { Text(description) },
+        trailingContent = { Switch(value, onCheckedChange = onChange) },
+    )
+}
 
 
 @Composable
