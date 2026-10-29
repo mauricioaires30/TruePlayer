@@ -20,7 +20,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
+import dev.truetagger.data.ThemeMode
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Text
 import androidx.compose.material3.Typography
@@ -66,14 +70,21 @@ internal val TruePlayerShapes = Shapes(
 
 /** Tema do TruePlayer: cores, tipografia e formas. Use em toda tela e diálogo. */
 @Composable
-internal fun TruePlayerTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = TruePlayerDarkScheme,
-        typography = TruePlayerTypography,
-        shapes = TruePlayerShapes,
-        content = content,
-    )
+internal fun TruePlayerTheme(mode: ThemeMode = LocalThemeMode.current, content: @Composable () -> Unit) {
+    val dark = mode.isDark(isSystemInDarkTheme())
+    // Quem abre diálogos dentro do app herda a escolha sem precisar repassá-la.
+    CompositionLocalProvider(LocalThemeMode provides mode) {
+        MaterialTheme(
+            colorScheme = if (dark) TruePlayerDarkScheme else TruePlayerLightScheme,
+            typography = TruePlayerTypography,
+            shapes = TruePlayerShapes,
+            content = content,
+        )
+    }
 }
+
+/** Aparência escolhida em Configurações; "Sistema" segue o claro/escuro do Android. */
+internal val LocalThemeMode = compositionLocalOf { ThemeMode.SYSTEM }
 
 /**
  * Nome de música, álbum, artista, playlist ou gênero em uma linha. Se não cabe, rola em loop para a esquerda

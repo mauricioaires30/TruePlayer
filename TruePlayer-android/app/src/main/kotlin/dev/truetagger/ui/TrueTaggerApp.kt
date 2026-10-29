@@ -52,6 +52,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.LaunchedEffect
@@ -84,6 +85,28 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
+
+val TruePlayerLightScheme = lightColorScheme(
+    primary = Color(0xFF7B2CBF),
+    onPrimary = Color(0xFFFFFFFF),
+    secondary = Color(0xFF7A3FD8),
+    onSecondary = Color(0xFFFFFFFF),
+    tertiary = Color(0xFFA24BD0),
+    background = Color(0xFFFBF8FF),
+    onBackground = Color(0xFF1E1626),
+    surface = Color(0xFFF1E9F9),
+    onSurface = Color(0xFF1E1626),
+    surfaceVariant = Color(0xFFE8DDF3),
+    onSurfaceVariant = Color(0xFF5C4D6B),
+    primaryContainer = Color(0xFFE9D3FF),
+    onPrimaryContainer = Color(0xFF2B0A4A),
+    secondaryContainer = Color(0xFFEBDDFA),
+    onSecondaryContainer = Color(0xFF2A1244),
+    errorContainer = Color(0xFFFFDAD6),
+    outline = Color(0xFF85758F),
+    outlineVariant = Color(0xFFD8CBE3),
+    tertiaryContainer = Color(0xFFF3DCFF),
+)
 
 val TruePlayerDarkScheme = darkColorScheme(
     primary = Color(0xFFC77DFF),
@@ -747,13 +770,14 @@ private fun HorizontalLazyScrollbar(state: LazyListState, modifier: Modifier = M
     val visible = info.visibleItemsInfo.size
     if (total <= visible || total <= 0) return
     val first = info.visibleItemsInfo.firstOrNull()?.index ?: 0
+    val thumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f)
     Canvas(modifier) {
         val minThumb = 36.dp.toPx()
         val thumb = maxOf(minThumb, size.width * (visible.toFloat() / total.toFloat()))
         val maxIndex = maxOf(1, total - visible)
         val left = (size.width - thumb) * (first.toFloat() / maxIndex.toFloat()).coerceIn(0f, 1f)
         drawRoundRect(
-            color = Color.White.copy(alpha = 0.28f),
+            color = thumbColor,
             topLeft = androidx.compose.ui.geometry.Offset(left, 0f),
             size = androidx.compose.ui.geometry.Size(thumb, size.height),
             cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.height / 2f),

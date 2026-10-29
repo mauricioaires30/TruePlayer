@@ -4,6 +4,7 @@ import android.content.Context
 import dev.truetagger.data.AppConfigCodec
 import dev.truetagger.data.AppConfigFile
 import dev.truetagger.data.MigrationPlanner
+import dev.truetagger.data.ThemeMode
 import dev.truetagger.model.AppSettings
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -35,6 +36,7 @@ object SettingsBackup {
             autoUpdateDownloader = prefs.getBoolean(ShareContract.PREF_AUTO_UPDATE_DOWNLOADER, true),
             autoTag = prefs.getBoolean(ShareContract.PREF_AUTO_TAG, true),
             autoCheckUpdates = prefs.getBoolean(ShareContract.PREF_AUTO_CHECK_UPDATES, true),
+            themeMode = ThemeMode.fromKey(prefs.getString(ShareContract.PREF_THEME_MODE, null)),
         )
     }
 
@@ -52,6 +54,7 @@ object SettingsBackup {
             libraryAscending = filters.getBoolean("library_ascending", true),
             albumSort = filters.getString("album_sort", "").orEmpty(),
             albumAscending = filters.getBoolean("album_ascending", true),
+            themeMode = settings.themeMode.key,
         )
     }
 
@@ -93,6 +96,7 @@ object SettingsBackup {
             autoUpdateDownloader = file.autoUpdateDownloader,
             autoTag = file.autoTag,
             autoCheckUpdates = file.autoCheckUpdates,
+            themeMode = ThemeMode.fromKey(file.themeMode),
         )
     }
 

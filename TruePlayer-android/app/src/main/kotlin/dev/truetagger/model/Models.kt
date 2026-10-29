@@ -84,6 +84,7 @@ data class AppSettings(
     val autoUpdateDownloader: Boolean = true,
     val autoTag: Boolean = true,
     val autoCheckUpdates: Boolean = true,
+    val themeMode: dev.truetagger.data.ThemeMode = dev.truetagger.data.ThemeMode.SYSTEM,
 )
 
 /** Uma permissão que o app precisa, para o checklist de Configurações. */

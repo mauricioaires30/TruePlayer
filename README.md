@@ -8,6 +8,7 @@ No account, no ads, no tracking. Your library stays on your phone.
 
 ## Features
 - **Library and player:** songs, albums, artists, genres and playlists, with queue, shuffle, repeat, and control from headphones, the lock screen and the system media buttons. The song that is playing gets animated waves behind its row and a wavy progress bar.
+- **Light and dark theme:** follows the phone's setting by default, and you can force either one in Settings.
 - **Tag editor:** title, artist, album, cover art, year, track number, genre and more.
 - **Download by link:** share a YouTube or SoundCloud link to TruePlayer. A playlist link becomes an app playlist with the songs in their original order, downloaded one at a time.
 - **Automatic tag fixing:** after a download it looks the song up on Apple Music, Deezer and Genius and fills in title, artist, album and cover. If it is not sure, it leaves the tags alone.

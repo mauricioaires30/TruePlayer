@@ -22,6 +22,7 @@ data class AppConfigFile(
     val libraryAscending: Boolean = true,
     val albumSort: String = "",
     val albumAscending: Boolean = true,
+    val themeMode: String = ThemeMode.SYSTEM.key,
 )
 
 object AppConfigCodec {

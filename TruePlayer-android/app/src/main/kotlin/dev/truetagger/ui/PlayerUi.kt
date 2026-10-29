@@ -91,6 +91,7 @@ import dev.truetagger.android.R
 import dev.truetagger.android.PlayerSnapshot
 import dev.truetagger.android.PlayerState
 import dev.truetagger.android.RepeatMode
+import dev.truetagger.data.ThemeMode
 import dev.truetagger.model.AppSettings
 import dev.truetagger.model.AudioTrack
 import dev.truetagger.android.AppEvents
@@ -433,7 +434,7 @@ private data class NavEntry(
 @Composable
 private fun TruePlayerIntro() {
     Box(
-        modifier = Modifier.fillMaxSize().background(Color(0xFF050307)).appInsetsPadding(),
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).appInsetsPadding(),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -458,12 +459,12 @@ private fun TruePlayerIntro() {
                 text = "TruePlayer",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFFF7F0FF),
+                color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
                 text = "Carregando app…",
                 style = MaterialTheme.typography.bodyMedium,
-                color = Color(0xFFBDB1C8),
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -498,7 +499,7 @@ fun TrueTaggerPlayerApp(
     }
 
     if (showIntro) {
-        TruePlayerTheme {
+        TruePlayerTheme(settings.themeMode) {
             TruePlayerIntro()
         }
         return
@@ -718,7 +719,7 @@ fun TrueTaggerPlayerApp(
 
     BackHandler { goBack() }
 
-    TruePlayerTheme {
+    TruePlayerTheme(settings.themeMode) {
         Box(Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = MaterialTheme.colorScheme.background,
@@ -1983,10 +1984,10 @@ private fun SongItem(
             // Música atual: véu escuro e ícone de ondas sobre a capa, além da borda colorida.
             if (isCurrent && !selectionMode) {
                 Box(
-                    Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp)).background(Color.Black.copy(alpha = 0.5f)),
+                    Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp)).background(Color.Black.copy(alpha = 0.55f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    EqualizerBars(playing = nowPlaying, color = MaterialTheme.colorScheme.primary)
+                    EqualizerBars(playing = nowPlaying, color = TruePlayerDarkScheme.primary)
                 }
             }
         }
@@ -2758,12 +2759,34 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
         }
     }
 
+private fun themeModeLabel(mode: ThemeMode): String = when (mode) {
+    ThemeMode.SYSTEM -> "Sistema"
+    ThemeMode.LIGHT -> "Claro"
+    ThemeMode.DARK -> "Escuro"
+}
+
+@Composable
+private fun ThemeModeDialog(current: ThemeMode, onPick: (ThemeMode) -> Unit, onDismiss: () -> Unit) {
+    AppDialog(title = "Tema", onDismiss = onDismiss) {
+        ThemeMode.entries.forEach { mode ->
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onPick(mode) },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(selected = mode == current, onClick = { onPick(mode) })
+                Text(themeModeLabel(mode), style = MaterialTheme.typography.bodyLarge)
+            }
+        }
+    }
+}
+
 @Composable
 private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, downloadFolderLabel: String, onChooseDownloadFolder: (() -> Unit)?, onReleaseDownloadFolder: (() -> Unit)?, appVersion: String, onOrganizeFolder: (() -> Unit)? = null, onCleanFolder: (() -> Unit)? = null, permissions: List<dev.truetagger.model.PermissionItem> = emptyList(), onCheckUpdate: (() -> Unit)? = null) {
     val context = LocalContext.current
     val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
     PersistListScroll(state, "settings")
     var confirmReleaseFolder by remember { mutableStateOf(false) }
+    var themeDialog by remember { mutableStateOf(false) }
     var confirmResetStats by remember { mutableStateOf(false) }
     val settingsScope = rememberCoroutineScope()
 
@@ -2776,6 +2799,13 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
         ) {
             Text("A biblioteca some da tela até você escolher a pasta de novo. Nenhuma música é apagada.")
         }
+    }
+    if (themeDialog) {
+        ThemeModeDialog(
+            current = settings.themeMode,
+            onPick = { themeDialog = false; onChange(settings.copy(themeMode = it)) },
+            onDismiss = { themeDialog = false },
+        )
     }
     if (confirmResetStats) {
         StatsResetDialog(
@@ -2812,6 +2842,14 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
                 contentPadding = PaddingValues(bottom = UiTokens.songListBottomPadding),
             ) {
                 if (missingPermissions > 0) item { permissionsGroup() }
+                item {
+                    SettingsGroup("Aparência") {
+                        SettingsRow(
+                            Icons.Rounded.Palette, "Tema", "Claro, escuro ou o mesmo do celular",
+                            trailing = { RowHint(themeModeLabel(settings.themeMode)) },
+                        ) { themeDialog = true }
+                    }
+                }
                 item {
                     SettingsGroup("Biblioteca") {
                         SettingsRow(
@@ -2924,6 +2962,7 @@ private fun TouchGridScrollbar(state: LazyGridState, modifier: Modifier, topInse
     val top = with(density) { topInset.toPx() }
     val bottom = with(density) { bottomInset.toPx() }
     var dragY by remember { mutableFloatStateOf(0f) }
+    val thumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
     Canvas(modifier.width(UiTokens.scrollbarTouchWidth).pointerInput(total, visible, top, bottom) {
         detectDragGestures(
             onDragStart = {
@@ -2955,7 +2994,7 @@ private fun TouchGridScrollbar(state: LazyGridState, modifier: Modifier, topInse
         val y = (fraction * maxY).coerceIn(0f, maxY)
         val thumbW = with(density) { UiTokens.scrollbarWidth.toPx() }
         val thumbX = ((size.width - thumbW) / 2f).coerceAtLeast(0f)
-        drawRoundRect(Color.White.copy(alpha = 0.38f), Offset(thumbX, top + y), androidx.compose.ui.geometry.Size(thumbW, thumbH), CornerRadius(thumbW / 2f, thumbW / 2f))
+        drawRoundRect(thumbColor, Offset(thumbX, top + y), androidx.compose.ui.geometry.Size(thumbW, thumbH), CornerRadius(thumbW / 2f, thumbW / 2f))
     }
 }
 
@@ -2980,6 +3019,7 @@ private fun TouchScrollbar(state: LazyListState, modifier: Modifier, topInset: D
     val bottom = with(density) { bottomInset.toPx() }
     var dragY by remember { mutableFloatStateOf(0f) }
     var scrollJob by remember { mutableStateOf<kotlinx.coroutines.Job?>(null) }
+    val thumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
     Canvas(modifier.width(UiTokens.scrollbarTouchWidth).pointerInput(total, visible, top, bottom) {
         detectDragGestures(
             onDragStart = {
@@ -3009,7 +3049,7 @@ private fun TouchScrollbar(state: LazyListState, modifier: Modifier, topInset: D
         val y = (fraction * maxY).coerceIn(0f, maxY)
         val thumbW = with(density) { UiTokens.scrollbarWidth.toPx() }
         val thumbX = ((size.width - thumbW) / 2f).coerceAtLeast(0f)
-        drawRoundRect(Color.White.copy(alpha = 0.38f), Offset(thumbX, top + y), androidx.compose.ui.geometry.Size(thumbW, thumbH), CornerRadius(thumbW / 2f, thumbW / 2f))
+        drawRoundRect(thumbColor, Offset(thumbX, top + y), androidx.compose.ui.geometry.Size(thumbW, thumbH), CornerRadius(thumbW / 2f, thumbW / 2f))
     }
 }
 

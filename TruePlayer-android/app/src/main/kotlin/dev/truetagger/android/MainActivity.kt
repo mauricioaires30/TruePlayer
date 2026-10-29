@@ -24,6 +24,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import dev.truetagger.data.ThemeMode
 import dev.truetagger.model.AppSettings
 import dev.truetagger.model.AudioTrack
 import dev.truetagger.model.EditableTags
@@ -146,15 +147,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         // Tela cheia declarada de forma explícita (no Android 15+ ela já é obrigatória): barras do sistema
         // transparentes com ícones claros, e o app pinta o fundo até as bordas, inclusive atrás do recorte da câmera.
-        enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
-            navigationBarStyle = SystemBarStyle.dark(android.graphics.Color.TRANSPARENT),
-        )
+        settings = loadSettings()
+        applySystemBars()
         super.onCreate(savedInstanceState)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         audioService = AndroidAudioService(this)
         downloadFolderLabel = savedDownloadTree()?.let(::folderLabel).orEmpty()
-        settings = loadSettings()
         ConnectivityObserver.start(this)
         whatsNew = UpdateManager.takeWhatsNew(this)
         UpdateWorker.schedule(this, settings.autoCheckUpdates)
@@ -713,10 +711,33 @@ class MainActivity : ComponentActivity() {
         autoUpdateDownloader = prefs.getBoolean(ShareContract.PREF_AUTO_UPDATE_DOWNLOADER, true),
         autoTag = prefs.getBoolean(ShareContract.PREF_AUTO_TAG, true),
         autoCheckUpdates = prefs.getBoolean(ShareContract.PREF_AUTO_CHECK_UPDATES, true),
+        themeMode = ThemeMode.fromKey(prefs.getString(ShareContract.PREF_THEME_MODE, null)),
     )
 
+    /**
+     * Barras do sistema transparentes (o app pinta o fundo até as bordas) com ícones claros no tema escuro e
+     * escuros no claro. Também pinta o fundo da janela, para a troca de tema não piscar a cor errada.
+     */
+    private fun applySystemBars() {
+        val systemDark = (resources.configuration.uiMode and android.content.res.Configuration.UI_MODE_NIGHT_MASK) ==
+            android.content.res.Configuration.UI_MODE_NIGHT_YES
+        val dark = settings.themeMode.isDark(systemDark)
+        val transparent = android.graphics.Color.TRANSPARENT
+        enableEdgeToEdge(
+            statusBarStyle = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent),
+            navigationBarStyle = if (dark) SystemBarStyle.dark(transparent) else SystemBarStyle.light(transparent, transparent),
+        )
+        window.setBackgroundDrawable(
+            android.graphics.drawable.ColorDrawable(
+                if (dark) 0xFF050307.toInt() else 0xFFFBF8FF.toInt(),
+            ),
+        )
+    }
+
     private fun updateSettings(newSettings: AppSettings) {
+        val themeChanged = settings.themeMode != newSettings.themeMode
         settings = newSettings
+        if (themeChanged) applySystemBars()
         UpdateWorker.schedule(this, newSettings.autoCheckUpdates)
         SettingsBackup.scheduleWrite(this, newSettings)
         prefs.edit()
@@ -725,6 +746,7 @@ class MainActivity : ComponentActivity() {
             .putBoolean(ShareContract.PREF_AUTO_UPDATE_DOWNLOADER, newSettings.autoUpdateDownloader)
             .putBoolean(ShareContract.PREF_AUTO_TAG, newSettings.autoTag)
             .putBoolean(ShareContract.PREF_AUTO_CHECK_UPDATES, newSettings.autoCheckUpdates)
+            .putString(ShareContract.PREF_THEME_MODE, newSettings.themeMode.key)
             .apply()
     }
 

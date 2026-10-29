@@ -8,6 +8,7 @@ object ShareContract {
     const val PREF_AUTO_UPDATE_DOWNLOADER = "auto_update_downloader"
     const val PREF_AUTO_TAG = "auto_tag"
     const val PREF_AUTO_CHECK_UPDATES = "auto_check_updates"
+    const val PREF_THEME_MODE = "theme_mode"
 
     const val EXTRA_SHARED_URL = "shared_url"
     const val ACTION_CONFIGURE_SHARE = "dev.truetagger.action.CONFIGURE_SHARE"
