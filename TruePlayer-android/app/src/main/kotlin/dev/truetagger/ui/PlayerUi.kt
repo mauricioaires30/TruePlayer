@@ -1112,7 +1112,7 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
             val album = s.current?.album.orEmpty()
             val artist = s.current?.artist.orEmpty()
             if (album.isNotBlank()) {
-                PlayerInfoLink(album, MaterialTheme.colorScheme.onSurfaceVariant, onAlbum, Modifier.padding(top = 2.dp))
+                PlayerInfoLink(album, MaterialTheme.colorScheme.primary, onAlbum, Modifier.padding(top = 2.dp))
             }
             if (artist.isNotBlank()) {
                 PlayerInfoLink(artist, MaterialTheme.colorScheme.primary, onArtist)
@@ -1220,7 +1220,7 @@ private fun QueueScreen(
                     SongItem(
                         track = t,
                         onPlay = { onSelect(i) },
-                        onEdit = {}, onShare = {}, onAddToPlaylist = {}, onAlbum = {}, onArtist = {}, onGenre = {},
+                        onEdit = {}, onShare = {}, onAddToPlaylist = {}, onAlbum = null, onArtist = null, onGenre = {},
                         onRemoveFromPlaylist = null,
                         isCurrent = s.current?.id == t.id,
                     )
@@ -1957,8 +1957,8 @@ private fun SongItem(
     onEdit: () -> Unit,
     onShare: () -> Unit,
     onAddToPlaylist: () -> Unit,
-    onAlbum: () -> Unit,
-    onArtist: () -> Unit,
+    onAlbum: (() -> Unit)?,
+    onArtist: (() -> Unit)?,
     onGenre: () -> Unit,
     onDelete: (() -> Unit)? = null,
     onRemoveFromPlaylist: (() -> Unit)? = null,
@@ -2086,7 +2086,21 @@ private fun SongItem(
 }
 
 @Composable
-private fun InfoDialog(track: AudioTrack, onArtist: () -> Unit, onAlbum: () -> Unit, onDismiss: () -> Unit) {
+private fun InfoDialog(listed: AudioTrack, onArtist: (() -> Unit)?, onAlbum: (() -> Unit)?, onDismiss: () -> Unit) {
+    // A lista vem do MediaStore, que demora a refletir tags editadas (ano, gênero): a ficha confere no arquivo.
+    val context = LocalContext.current
+    val track by produceState(listed, listed.id) {
+        val fromFile = withContext(Dispatchers.IO) {
+            runCatching { dev.truetagger.android.AndroidAudioService(context).read(Uri.parse(listed.id)) }.getOrNull()
+        }
+        if (fromFile != null) {
+            value = listed.copy(
+                year = fromFile.year.ifBlank { listed.year },
+                genre = fromFile.genre.ifBlank { listed.genre },
+                trackNumber = fromFile.trackNumber.ifBlank { listed.trackNumber },
+            )
+        }
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(track.displayTitle()) },
@@ -2094,7 +2108,7 @@ private fun InfoDialog(track: AudioTrack, onArtist: () -> Unit, onAlbum: () -> U
             Column(Modifier.fillMaxWidth()) {
                 InfoRow(t(R.string.album), track.album, onAlbum)
                 InfoRow(t(R.string.artista), track.artist, onArtist)
-                InfoRow("Ano", track.year)
+                InfoRow(t(R.string.sort_year), track.year)
                 InfoRow(t(R.string.genero), track.genre)
                 InfoRow(t(R.string.faixa), track.trackNumber)
                 InfoRow(t(R.string.duracao), formatDuration(track.durationMs))
@@ -2687,7 +2701,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                                 { onPlay(shown, shown.indexOfFirst { it.id == t.id }) },
                                 { onEdit(t) },
                                 { onShare(t) },
-                                {}, {}, {}, {},
+                                {}, { onOpenAlbum(t.album) }, { onOpenArtist(t.artist) }, {},
                                 { onRemoveFromPlaylist(t.id) },
                                 showAddToPlaylist = false,
                                 isCurrent = t.id == currentTrackId,
@@ -2720,12 +2734,12 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                         verticalArrangement = Arrangement.spacedBy(UiTokens.itemSpacing),
                     ) {
                         ScrollingText(key, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        TextButton(
-                            onClick = { onOpenArtist(artist) },
-                            contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp),
-                        ) {
-                            ScrollingText(artist.ifBlank { t(R.string.artista_desconhecido) }, color = MaterialTheme.colorScheme.primary)
-                        }
+                        // Sem TextButton: a altura mínima dele (40 dp) deixava o artista longe do título e da linha de baixo.
+                        ScrollingText(
+                            artist.ifBlank { t(R.string.artista_desconhecido) },
+                            modifier = Modifier.clip(RoundedCornerShape(UiTokens.space1)).clickable { onOpenArtist(artist) },
+                            color = MaterialTheme.colorScheme.primary,
+                        )
                         ScrollingText(
                             listOfNotNull(
                                 tp(R.plurals.n_musicas, shown.size),
@@ -2745,7 +2759,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                 Spacer(Modifier.height(UiTokens.sectionSpacing))
                 SongListContainer(state = state, modifier = Modifier.fillMaxWidth().weight(1f)) {
                         items(shown, key = { it.id }) { t ->
-                            SongItem(t, { onPlay(shown, shown.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, {}, {}, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId, showTrackNumber = true)
+                            SongItem(t, { onPlay(shown, shown.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, null, { onOpenArtist(t.artist) }, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId, showTrackNumber = true)
                         }
                     }
              } else if (type == Detail.ARTIST) {
@@ -2788,7 +2802,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                                 }
                             }
                             items(albumTracks, key = { it.id }) { t ->
-                                SongItem(t, { onPlay(playOrder, playOrder.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, {}, {}, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId)
+                                SongItem(t, { onPlay(playOrder, playOrder.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, { onOpenAlbum(t.album) }, null, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId)
                             }
                         }
                     }
@@ -2801,7 +2815,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                     }
                     Spacer(Modifier.height(UiTokens.sectionSpacing))
                     SongListContainer(state = state, modifier = Modifier.fillMaxWidth().weight(1f)) {
-                        items(shown, key = { it.id }) { t -> SongItem(t, { onPlay(shown, shown.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, {}, {}, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId) }
+                        items(shown, key = { it.id }) { t -> SongItem(t, { onPlay(shown, shown.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, { onOpenAlbum(t.album) }, { onOpenArtist(t.artist) }, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId) }
                     }
                 }
             }

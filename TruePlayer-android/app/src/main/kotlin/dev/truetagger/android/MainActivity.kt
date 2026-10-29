@@ -87,6 +87,8 @@ class MainActivity : ComponentActivity() {
     private var writeContinuation: CancellableContinuation<Boolean>? = null
     private var mediaRefreshJob: Job? = null
     private var lastLibraryTrackIds: Set<String>? = null
+    /** Tags salvas pelo editor nesta sessão: valem para ano e gênero enquanto o MediaStore não os relê. */
+    private val savedTags = HashMap<String, AudioTrack>()
     private var lastRefreshAtMs = 0L
     private var refreshInFlight = false
     private lateinit var mediaObserver: ContentObserver
@@ -387,7 +389,10 @@ class MainActivity : ComponentActivity() {
         appScope.launch {
             val scan = withContext(Dispatchers.IO) { runCatching { audioService.scanLibrary(savedDownloadTree()) } }
             // Se a varredura falhar, a biblioteca anterior continua valendo: nada pode parecer "removido".
-            val refreshedTracks = scan.getOrNull() ?: tracks
+            val refreshedTracks = (scan.getOrNull() ?: tracks).map { track ->
+                val saved = savedTags[track.id] ?: return@map track
+                track.copy(year = saved.year, genre = saved.genre)
+            }
             val reliable = scan.isSuccess && refreshedTracks.isNotEmpty()
             LibraryIndex.update(refreshedTracks, reliable)
             val refreshedIds = refreshedTracks.asSequence().map { it.id }.toSet()
@@ -663,6 +668,7 @@ class MainActivity : ComponentActivity() {
                         sizeBytes = track.sizeBytes,
                         location = track.location,
                     )
+                    savedTags[updated.id] = updated
                     selectedTrack = updated
                     tracks = tracks.map { current -> if (current.id == updated.id) updated else current }
                     AppEvents.bump()

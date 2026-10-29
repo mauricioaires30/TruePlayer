@@ -347,7 +347,7 @@ fun CurrentTrackScreen(
             SectionTitle(t(R.string.detalhes))
             FormCard {
                 Row(horizontalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
-                    Box(Modifier.weight(1f)) { EditableField("Ano", editor.year) { updateEditor(editor.copy(year = it)) } }
+                    Box(Modifier.weight(1f)) { EditableField(t(R.string.sort_year), editor.year) { updateEditor(editor.copy(year = it)) } }
                     Box(Modifier.weight(1f)) { EditableField(t(R.string.genero), editor.genre) { updateEditor(editor.copy(genre = it)) } }
                 }
                 if (track.durationMs > 0) {
@@ -360,18 +360,8 @@ fun CurrentTrackScreen(
             item { Text(feedback, color = MaterialTheme.colorScheme.secondary, style = MaterialTheme.typography.bodyMedium) }
         }
 
-        item {
-            Button(
-                enabled = !saving && editor.title.isNotBlank(),
-                modifier = Modifier.fillMaxWidth().height(UiTokens.controlHeight),
-                shape = RoundedCornerShape(UiTokens.buttonRadius),
-                onClick = { saveNow() },
-            ) {
-                Icon(Icons.Rounded.Save, contentDescription = null)
-                Spacer(Modifier.width(8.dp))
-                Text(if (saving) t(R.string.salvando) else t(R.string.salvar_alteracoes))
-            }
-        }
+        // Espaço para a barra de salvar (embaixo, ao alterar algo) não cobrir o último campo.
+        item { Spacer(Modifier.height(72.dp)) }
     }
     }
     // Barra de salvar: aparece assim que algo é alterado, sem precisar rolar até o fim do formulário.

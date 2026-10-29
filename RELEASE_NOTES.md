@@ -1,106 +1,127 @@
-## TruePlayer 1.10.0
+## TruePlayer 1.10.1
 
 ### English [en]
-- The mini player shows the current and total time, with a marker at the current point.
-- Title, album and artist sit closer together in the full player.
-- Most played now lists up to 100 items, sorted by minutes or by plays (choose at the top).
+- The tag editor has a single Save button.
+- The year and genre you edit now show in the song info.
+- Album and artist in the song info open their screen (also inside playlists and albums); the album name in the full player is purple.
+- The album header is more compact.
 
 ### Português [pt]
-- O mini player mostra o tempo atual e o total, com uma barrinha no ponto atual.
-- Título, álbum e artista ficaram mais juntos no player grande.
-- Mais ouvidas agora mostra até 100 itens, por minutos ou por vezes tocadas (escolha no topo).
+- O editor de tags tem um só botão de salvar.
+- O ano e o gênero editados agora aparecem nas informações da música.
+- Álbum e artista nas informações da música abrem a tela deles (também dentro de playlists e álbuns); o álbum no player grande ficou roxo.
+- O cabeçalho do álbum ficou mais compacto.
 
 ### Español [es]
-- El minirreproductor muestra el tiempo actual y el total, con una marca en el punto actual.
-- Título, álbum y artista están más juntos en el reproductor completo.
-- Lo más escuchado ahora muestra hasta 100 elementos, por minutos o por reproducciones (se elige arriba).
+- El editor de etiquetas tiene un solo botón de guardar.
+- El año y el género editados ahora aparecen en la información de la canción.
+- Álbum y artista en la información de la canción abren su pantalla (también dentro de listas y álbumes); el álbum en el reproductor completo es morado.
+- El encabezado del álbum es más compacto.
 
 ### Français [fr]
-- Le mini lecteur affiche le temps écoulé et la durée totale, avec un repère à la position actuelle.
-- Titre, album et artiste sont plus rapprochés dans le lecteur complet.
-- Les plus écoutés affichent jusqu'à 100 éléments, par minutes ou par écoutes (choix en haut).
+- L'éditeur de tags n'a plus qu'un seul bouton Enregistrer.
+- L'année et le genre modifiés apparaissent maintenant dans les infos du morceau.
+- Album et artiste dans les infos du morceau ouvrent leur écran (aussi dans les playlists et albums) ; l'album est en violet dans le lecteur complet.
+- L'en-tête de l'album est plus compact.
 
 ### Deutsch [de]
-- Der Mini-Player zeigt die aktuelle und die Gesamtzeit, mit einer Markierung an der aktuellen Stelle.
-- Titel, Album und Künstler stehen im großen Player enger beieinander.
-- Meistgehört zeigt jetzt bis zu 100 Einträge, nach Minuten oder nach Wiedergaben (Auswahl oben).
+- Der Tag-Editor hat nur noch eine Speichern-Schaltfläche.
+- Bearbeitetes Jahr und Genre erscheinen jetzt in den Titelinfos.
+- Album und Künstler in den Titelinfos öffnen ihre Seite (auch in Playlists und Alben); das Album im großen Player ist lila.
+- Der Album-Kopfbereich ist kompakter.
 
 ### Italiano [it]
-- Il mini lettore mostra il tempo attuale e quello totale, con un indicatore nel punto attuale.
-- Titolo, album e artista sono più vicini nel lettore completo.
-- I più ascoltati ora mostrano fino a 100 elementi, per minuti o per ascolti (scelta in alto).
+- L'editor dei tag ha un solo pulsante Salva.
+- Anno e genere modificati ora compaiono nelle info del brano.
+- Album e artista nelle info del brano aprono la loro schermata (anche in playlist e album); l'album nel lettore completo è viola.
+- L'intestazione dell'album è più compatta.
 
 ### Nederlands [nl]
-- De minispeler toont de huidige en de totale tijd, met een markering op het huidige punt.
-- Titel, album en artiest staan dichter bij elkaar in de grote speler.
-- Meest beluisterd toont nu tot 100 items, op minuten of op aantal keer afgespeeld (kies bovenaan).
+- De tag-editor heeft nog maar één Opslaan-knop.
+- Bewerkt jaar en genre verschijnen nu in de nummerinfo.
+- Album en artiest in de nummerinfo openen hun scherm (ook in afspeellijsten en albums); het album in de grote speler is paars.
+- De albumkop is compacter.
 
 ### Svenska [sv]
-- Minispelaren visar aktuell och total tid, med en markering vid aktuell position.
-- Titel, album och artist står närmare varandra i den stora spelaren.
-- Mest spelade visar nu upp till 100 objekt, efter minuter eller spelningar (välj högst upp).
+- Taggredigeraren har bara en Spara-knapp.
+- Redigerat år och genre visas nu i låtinformationen.
+- Album och artist i låtinformationen öppnar sin sida (även i spellistor och album); albumet i den stora spelaren är lila.
+- Albumhuvudet är mer kompakt.
 
 ### Polski [pl]
-- Mini odtwarzacz pokazuje bieżący i całkowity czas oraz znacznik w bieżącym miejscu.
-- Tytuł, album i wykonawca są bliżej siebie w pełnym odtwarzaczu.
-- Najczęściej słuchane pokazują teraz do 100 pozycji, według minut lub odtworzeń (wybór na górze).
+- Edytor tagów ma jeden przycisk Zapisz.
+- Edytowany rok i gatunek są teraz widoczne w informacjach o utworze.
+- Album i wykonawca w informacjach o utworze otwierają swój ekran (także w playlistach i albumach); album w pełnym odtwarzaczu jest fioletowy.
+- Nagłówek albumu jest bardziej zwarty.
 
 ### Türkçe [tr]
-- Mini oynatıcı geçen ve toplam süreyi, o anki noktada bir işaretle gösterir.
-- Büyük oynatıcıda başlık, albüm ve sanatçı birbirine daha yakın.
-- En çok dinlenenler artık 100 öğeye kadar, dakikaya veya dinlenme sayısına göre gösterilir (seçim en üstte).
+- Etiket düzenleyicide tek bir Kaydet düğmesi var.
+- Düzenlenen yıl ve tür artık şarkı bilgisinde görünür.
+- Şarkı bilgisindeki albüm ve sanatçı kendi ekranını açar (çalma listelerinde ve albümlerde de); büyük oynatıcıda albüm mor.
+- Albüm başlığı daha derli toplu.
 
 ### Русский [ru]
-- Мини-плеер показывает текущее и общее время и отметку в текущем месте.
-- Название, альбом и исполнитель стоят ближе друг к другу в полном плеере.
-- В «Часто слушаемом» теперь до 100 позиций, по минутам или по прослушиваниям (выбор вверху).
+- В редакторе тегов осталась одна кнопка «Сохранить».
+- Изменённые год и жанр теперь видны в информации о треке.
+- Альбом и исполнитель в информации о треке открывают свои экраны (в том числе в плейлистах и альбомах); альбом в полном плеере фиолетовый.
+- Шапка альбома стала компактнее.
 
 ### Українська [uk]
-- Міні-програвач показує поточний і загальний час та позначку в поточному місці.
-- Назва, альбом і виконавець стоять ближче одне до одного в повному програвачі.
-- У «Найчастіше слухаю» тепер до 100 позицій, за хвилинами або за прослуховуваннями (вибір угорі).
+- У редакторі тегів одна кнопка «Зберегти».
+- Змінені рік і жанр тепер видно в інформації про трек.
+- Альбом і виконавець в інформації про трек відкривають свої екрани (також у плейлистах і альбомах); альбом у повному програвачі фіолетовий.
+- Шапка альбому стала компактнішою.
 
 ### العربية [ar]
-- يعرض المشغّل المصغّر الوقت الحالي والإجمالي، مع علامة عند الموضع الحالي.
-- أصبح العنوان والألبوم والفنان أقرب إلى بعضها في المشغّل الكامل.
-- تعرض قائمة الأكثر استماعًا الآن حتى 100 عنصر، حسب الدقائق أو مرات التشغيل (الاختيار في الأعلى).
+- محرر الوسوم فيه زر حفظ واحد فقط.
+- السنة والنوع اللذان تعدّلهما يظهران الآن في معلومات المقطع.
+- الألبوم والفنان في معلومات المقطع يفتحان شاشتيهما (وكذلك داخل القوائم والألبومات)، واسم الألبوم في المشغّل الكامل بالبنفسجي.
+- رأس شاشة الألبوم أصبح أكثر إحكامًا.
 
 ### हिन्दी [hi]
-- मिनी प्लेयर अब मौजूदा और कुल समय दिखाता है, मौजूदा जगह पर एक निशान के साथ।
-- बड़े प्लेयर में शीर्षक, एल्बम और कलाकार अब पास-पास हैं।
-- सबसे ज़्यादा सुने गए में अब 100 आइटम तक दिखते हैं, मिनट या कितनी बार चला के हिसाब से (ऊपर चुनें)।
+- टैग एडिटर में अब सिर्फ़ एक सेव बटन है।
+- बदला हुआ साल और शैली अब गाने की जानकारी में दिखते हैं।
+- गाने की जानकारी में एल्बम और कलाकार अपनी स्क्रीन खोलते हैं (प्लेलिस्ट और एल्बम के अंदर भी); बड़े प्लेयर में एल्बम बैंगनी है।
+- एल्बम का हेडर अब ज़्यादा सघन है।
 
 ### Bahasa Indonesia [id]
-- Pemutar mini menampilkan waktu saat ini dan total, dengan penanda di posisi saat ini.
-- Judul, album, dan artis lebih berdekatan di pemutar penuh.
-- Paling sering diputar kini menampilkan hingga 100 item, berdasarkan menit atau jumlah diputar (pilih di atas).
+- Editor tag kini hanya punya satu tombol Simpan.
+- Tahun dan genre yang diedit kini tampil di info lagu.
+- Album dan artis di info lagu membuka layarnya (juga di dalam playlist dan album); album di pemutar penuh berwarna ungu.
+- Header album lebih ringkas.
 
 ### Tiếng Việt [vi]
-- Trình phát mini hiển thị thời gian hiện tại và tổng thời gian, kèm vạch ở vị trí hiện tại.
-- Tên bài, album và nghệ sĩ nằm gần nhau hơn trong trình phát lớn.
-- Nghe nhiều nhất giờ hiển thị tối đa 100 mục, theo phút hoặc theo lượt phát (chọn ở trên cùng).
+- Trình sửa thẻ chỉ còn một nút Lưu.
+- Năm và thể loại đã sửa giờ hiện trong thông tin bài hát.
+- Album và nghệ sĩ trong thông tin bài hát mở màn hình của chúng (cả trong danh sách phát và album); album trong trình phát lớn có màu tím.
+- Phần đầu album gọn hơn.
 
 ### ไทย [th]
-- เครื่องเล่นขนาดเล็กแสดงเวลาปัจจุบันและเวลาทั้งหมด พร้อมขีดบอกตำแหน่งปัจจุบัน
-- ชื่อเพลง อัลบั้ม และศิลปินอยู่ใกล้กันมากขึ้นในเครื่องเล่นแบบเต็ม
-- ฟังมากที่สุดแสดงได้ถึง 100 รายการ เรียงตามนาทีหรือจำนวนครั้ง (เลือกที่ด้านบน)
+- ตัวแก้แท็กเหลือปุ่มบันทึกเพียงปุ่มเดียว
+- ปีและแนวเพลงที่แก้ไขจะแสดงในข้อมูลเพลงแล้ว
+- อัลบั้มและศิลปินในข้อมูลเพลงเปิดหน้าของตัวเองได้ (รวมถึงในเพลย์ลิสต์และอัลบั้ม) และชื่ออัลบั้มในเครื่องเล่นแบบเต็มเป็นสีม่วง
+- ส่วนหัวของอัลบั้มกะทัดรัดขึ้น
 
 ### 日本語 [ja]
-- ミニプレーヤーに現在の時間と全体の時間、現在位置の目印が表示されるようになりました。
-- フルプレーヤーで曲名、アルバム、アーティストの間隔を詰めました。
-- よく聴く曲は最大100件まで表示し、再生時間か再生回数で並べ替えられます（上部で選択）。
+- タグエディターの保存ボタンを1つにしました。
+- 編集した年とジャンルが曲の情報に表示されるようになりました。
+- 曲の情報のアルバムとアーティストから、それぞれの画面を開けます（プレイリストやアルバムの中でも）。フルプレーヤーのアルバム名は紫になりました。
+- アルバムのヘッダーをコンパクトにしました。
 
 ### 한국어 [ko]
-- 미니 플레이어에 현재 시간과 전체 시간, 현재 위치 표시가 나옵니다.
-- 전체 플레이어에서 제목, 앨범, 아티스트 사이가 좁아졌습니다.
-- 많이 들은 곡이 최대 100개까지 표시되며, 재생 시간이나 재생 횟수로 정렬됩니다(위에서 선택).
+- 태그 편집기에 저장 버튼이 하나만 있습니다.
+- 수정한 연도와 장르가 곡 정보에 표시됩니다.
+- 곡 정보의 앨범과 아티스트를 누르면 해당 화면이 열립니다(재생목록과 앨범 안에서도). 전체 플레이어의 앨범 이름은 보라색입니다.
+- 앨범 머리글이 더 간결해졌습니다.
 
 ### 简体中文 [zh-CN]
-- 迷你播放器显示当前时间和总时长，并在当前位置显示标记。
-- 完整播放器中的标题、专辑和艺人靠得更近了。
-- 最常听现在最多显示 100 项，可按播放时长或播放次数排序（在顶部选择）。
+- 标签编辑器只保留一个保存按钮。
+- 编辑后的年份和流派现在会显示在歌曲信息中。
+- 歌曲信息里的专辑和艺人可以打开对应页面（播放列表和专辑内也可以）；完整播放器里的专辑名为紫色。
+- 专辑页顶部更紧凑。
 
 ### 繁體中文 [zh-TW]
-- 迷你播放器會顯示目前時間和總長度，並在目前位置顯示標記。
-- 完整播放器中的標題、專輯和藝人靠得更近了。
-- 最常聽現在最多顯示 100 項，可依播放時間或播放次數排序（在頂部選擇）。
+- 標籤編輯器只保留一個儲存按鈕。
+- 編輯後的年份和曲風現在會顯示在歌曲資訊中。
+- 歌曲資訊裡的專輯和藝人可以開啟對應頁面（播放清單和專輯內也可以）；完整播放器裡的專輯名稱為紫色。
+- 專輯頁頂部更緊湊。
