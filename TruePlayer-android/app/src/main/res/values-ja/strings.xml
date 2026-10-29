@@ -73,7 +73,7 @@
     <string name="dl_baixando_musica">曲をダウンロード中</string>
     <string name="dl_conectando">接続中…</string>
     <string name="dl_confira_se_o_link_esta">リンクが正しく、プレイリストが公開されているか確認してください。</string>
-    <string name="dl_convertendo_para_mp3">MP3に変換中...</string>
+    <string name="dl_convertendo_para_mp3">MP3に変換中…</string>
     <string name="dl_de_musicas">%1$s: %3$s曲中%2$s曲%4$s</string>
     <string name="dl_download_concluido">ダウンロード完了</string>
     <string name="dl_downloads_do_trueplayer">TruePlayerのダウンロード</string>
@@ -145,7 +145,6 @@
     <string name="git_a_pasta_precisa_estar_no">フォルダは端末の内部ストレージにある必要があります</string>
     <string name="git_abra_o_app_para_confirmar">アプリを開いて送信を確認してください。</string>
     <string name="git_acima_de_100_mb_o">\n\n100 MBを超えるファイル(GitHubは受け付けません)は除外しました: %1$s: %2$s。</string>
-    <string name="git_arquivos_acima_de_100_mb"># 100 MBを超えるファイル(GitHubは受け付けません)</string>
     <string name="git_atualizacao_da_pasta">フォルダの更新</string>
     <string name="git_baixando_do_github">GitHubからダウンロード中…</string>
     <string name="git_baixar">ダウンロード</string>
@@ -249,7 +248,6 @@
     <string name="git_registrando_arquivos">ファイルを記録中</string>
     <string name="git_repositorio_criado_e_enviado_ao">リポジトリを作成してGitHubに送信しました。</string>
     <string name="git_repositorio_trocado_para">リポジトリを%1$sに変更しました。</string>
-    <string name="git_retrying">GitHubで失敗しました(%1$s)。%2$s秒後に再試行します(%3$s / %4$s)…</string>
     <string name="git_roda_em_segundo_plano_se">バックグラウンドで実行します。失敗しても、次の送信は途中から再開します。</string>
     <string name="git_salva_o_que_mudou_so">変更を保存します(この端末のみ)</string>
     <string name="git_salvando_capas_de">カバーを保存中: %2$s中%1$s</string>

@@ -1,5 +1,6 @@
 package dev.truetagger.android
 
+import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
 import android.content.res.Configuration
@@ -14,6 +15,7 @@ import java.util.Locale
  * Textos do app no idioma escolhido, de qualquer lugar (telas, serviços, notificações, mensagens).
  * Trocar o idioma recria a tela; o que está guardado aqui é atualizado antes disso por [LocaleHelper.apply].
  */
+@SuppressLint("StaticFieldLeak")
 object AppText {
     @Volatile
     private var localized: Context? = null
@@ -28,7 +30,16 @@ object AppText {
     var testResolver: TestResolver? = null
 
     fun init(app: Context) {
-        localized = LocaleHelper.wrap(app.applicationContext, LocaleHelper.saved(app))
+        val language = LocaleHelper.saved(app)
+        localized = LocaleHelper.wrap(app.applicationContext, language)
+        // Antes do Android 13 o sistema não sabe do idioma escolhido no app, e datas relativas ("há 5 min") e
+        // números formatados usam o idioma padrão do processo; ele passa a acompanhar a escolha.
+        if (Build.VERSION.SDK_INT < 33) {
+            Locale.setDefault(
+                if (language == AppLanguages.SYSTEM) android.content.res.Resources.getSystem().configuration.locales[0]
+                else Locale.forLanguageTag(language),
+            )
+        }
     }
 
     fun context(): Context = checkNotNull(localized) { "AppText.init não foi chamado" }

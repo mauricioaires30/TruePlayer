@@ -99,4 +99,9 @@ class StringResourcesTest {
         val listed = Regex("""android:name="([^"]+)"""").findAll(text).map { it.groupValues[1] }.toSet()
         assertEquals(AppLanguages.all.map { it.tag }.toSet(), listed)
     }
+
+    @Test fun bothIndonesianFoldersHaveTheSameTexts() {
+        // O Android antigo procura "values-in" e o novo "values-id"; as duas precisam estar iguais.
+        assertEquals(File(res, "values-in/strings.xml").readText(), File(res, "values-id/strings.xml").readText())
+    }
 }

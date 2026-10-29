@@ -73,7 +73,7 @@
     <string name="dl_baixando_musica">गाना डाउनलोड हो रहा है</string>
     <string name="dl_conectando">कनेक्ट हो रहा है…</string>
     <string name="dl_confira_se_o_link_esta">जाँचें कि लिंक सही है और प्लेलिस्ट सार्वजनिक है।</string>
-    <string name="dl_convertendo_para_mp3">MP3 में बदला जा रहा है...</string>
+    <string name="dl_convertendo_para_mp3">MP3 में बदला जा रहा है…</string>
     <string name="dl_de_musicas">%1$s: %3$s में से %2$s गाने%4$s</string>
     <string name="dl_download_concluido">डाउनलोड पूरा हुआ</string>
     <string name="dl_downloads_do_trueplayer">TruePlayer डाउनलोड</string>
@@ -145,7 +145,6 @@
     <string name="git_a_pasta_precisa_estar_no">फ़ोल्डर फ़ोन के आंतरिक संग्रहण में होना चाहिए</string>
     <string name="git_abra_o_app_para_confirmar">भेजना पुष्टि करने के लिए ऐप खोलें।</string>
     <string name="git_acima_de_100_mb_o">\n\n100 MB से ऊपर (GitHub मना करता है), छोड़े गए: %1$s: %2$s।</string>
-    <string name="git_arquivos_acima_de_100_mb"># 100 MB से बड़ी फ़ाइलें (GitHub मना करता है)</string>
     <string name="git_atualizacao_da_pasta">फ़ोल्डर अपडेट</string>
     <string name="git_baixando_do_github">GitHub से डाउनलोड हो रहा है…</string>
     <string name="git_baixar">डाउनलोड</string>
@@ -249,7 +248,6 @@
     <string name="git_registrando_arquivos">फ़ाइलें दर्ज की जा रही हैं</string>
     <string name="git_repositorio_criado_e_enviado_ao">रिपॉज़िटरी बनी और GitHub पर भेजी गई।</string>
     <string name="git_repositorio_trocado_para">रिपॉज़िटरी बदलकर %1$s कर दी गई।</string>
-    <string name="git_retrying">GitHub विफल रहा (%1$s)। %2$s से. में दोबारा कोशिश (%3$s / %4$s)…</string>
     <string name="git_roda_em_segundo_plano_se">बैकग्राउंड में चलता है। विफल होने पर अगला भेजना वहीं से जारी रहता है जहाँ रुका था।</string>
     <string name="git_salva_o_que_mudou_so">जो बदला उसे सहेजता है, केवल इसी फ़ोन में</string>
     <string name="git_salvando_capas_de">कवर सहेजे जा रहे हैं: %2$s में से %1$s</string>

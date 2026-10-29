@@ -156,7 +156,7 @@ object UpdateManager {
     }
 
     fun canInstallPackages(context: Context): Boolean =
-        Build.VERSION.SDK_INT < Build.VERSION_CODES.O || context.packageManager.canRequestPackageInstalls()
+        context.packageManager.canRequestPackageInstalls()
 
     /** Abre a tela do Android onde o usuário libera "instalar apps desconhecidos" para o TruePlayer. */
     fun openInstallPermissionSettings(context: Context) {
@@ -226,7 +226,7 @@ object UpdateManager {
             check(target.length() > 0) { t(R.string.upd_o_arquivo_baixado_veio_vazio) }
             if (release.apkSizeBytes > 0) check(target.length() == release.apkSizeBytes) { t(R.string.upd_o_arquivo_baixado_esta_incompleto) }
             release.sha256?.let { expected ->
-                val actual = digest.digest().joinToString("") { "%02x".format(it) }
+                val actual = digest.digest().joinToString("") { String.format(java.util.Locale.ROOT, "%02x", it) }
                 check(actual == expected) { t(R.string.upd_o_arquivo_baixado_nao_confere) }
             }
             return target
@@ -308,9 +308,7 @@ object UpdateManager {
 
     private fun notifyAvailable(context: Context, release: ReleaseInfo) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            manager.createNotificationChannel(NotificationChannel(CHANNEL, t(R.string.upd_atualizacoes_do_trueplayer), NotificationManager.IMPORTANCE_DEFAULT))
-        }
+        manager.createNotificationChannel(NotificationChannel(CHANNEL, t(R.string.upd_atualizacoes_do_trueplayer), NotificationManager.IMPORTANCE_DEFAULT))
         val open = PendingIntent.getActivity(
             context, 0, Intent(context, MainActivity::class.java).apply { action = ShareContract.ACTION_OPEN_APP },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,

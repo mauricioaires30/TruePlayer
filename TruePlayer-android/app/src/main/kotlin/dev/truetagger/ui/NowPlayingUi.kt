@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -81,9 +81,8 @@ internal fun Modifier.nowPlayingWaves(playing: Boolean, color: Color): Modifier 
     val amount = animateFloatAsState(if (playing) 1f else 0f, tween(600), label = "wavesAmount")
     val clock = rememberWaveClock(running = playing || amount.value > 0.01f, cycleMs = 5200)
     val path = remember { Path() }
-    return drawBehind {
-        val a = amount.value
-        if (a <= 0.01f) return@drawBehind
+    // As camadas só mudam com o tamanho do item; o desenho de cada quadro só lê a fase e a amplitude.
+    return drawWithCache {
         val height = size.height
         val width = size.width
         val step = 6.dp.toPx()
@@ -93,6 +92,9 @@ internal fun Modifier.nowPlayingWaves(playing: Boolean, color: Color): Modifier 
             Layer(0.72f, 0.11f * height, 96.dp.toPx(), -1.6f, 0.30f, 0.08f),
             Layer(0.82f, 0.09f * height, 70.dp.toPx(), 2.3f, 0.60f, 0.06f),
         )
+        onDrawBehind {
+        val a = amount.value
+        if (a <= 0.01f) return@onDrawBehind
         for (layer in layers) {
             path.rewind()
             val baseY = height * layer.level
@@ -105,6 +107,7 @@ internal fun Modifier.nowPlayingWaves(playing: Boolean, color: Color): Modifier 
             path.lineTo(width, height)
             path.close()
             drawPath(path, color.copy(alpha = layer.alpha * a))
+        }
         }
     }
 }

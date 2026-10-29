@@ -73,7 +73,7 @@
     <string name="dl_baixando_musica">Загрузка трека</string>
     <string name="dl_conectando">Подключение…</string>
     <string name="dl_confira_se_o_link_esta">Проверьте, что ссылка верна, а плейлист открыт для всех.</string>
-    <string name="dl_convertendo_para_mp3">Конвертация в MP3...</string>
+    <string name="dl_convertendo_para_mp3">Конвертация в MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s из %3$s треков%4$s</string>
     <string name="dl_download_concluido">Загрузка завершена</string>
     <string name="dl_downloads_do_trueplayer">Загрузки TruePlayer</string>
@@ -145,7 +145,6 @@
     <string name="git_a_pasta_precisa_estar_no">папка должна быть во внутренней памяти телефона</string>
     <string name="git_abra_o_app_para_confirmar">Откройте приложение, чтобы подтвердить отправку.</string>
     <string name="git_acima_de_100_mb_o">\n\nСвыше 100 МБ (GitHub отклоняет), не вошли: %1$s: %2$s.</string>
-    <string name="git_arquivos_acima_de_100_mb"># Файлы больше 100 МБ (GitHub их отклоняет)</string>
     <string name="git_atualizacao_da_pasta">Обновление папки</string>
     <string name="git_baixando_do_github">Загрузка с GitHub…</string>
     <string name="git_baixar">Загрузка</string>
@@ -249,7 +248,6 @@
     <string name="git_registrando_arquivos">Запись файлов</string>
     <string name="git_repositorio_criado_e_enviado_ao">Репозиторий создан и отправлен на GitHub.</string>
     <string name="git_repositorio_trocado_para">Репозиторий изменён на %1$s.</string>
-    <string name="git_retrying">Сбой GitHub (%1$s). Повтор через %2$s с (%3$s из %4$s)…</string>
     <string name="git_roda_em_segundo_plano_se">Работает в фоне. Если не получится, следующая отправка продолжится с того же места.</string>
     <string name="git_salva_o_que_mudou_so">Сохраняет изменения только на этом телефоне</string>
     <string name="git_salvando_capas_de">Сохранение обложек: %1$s из %2$s</string>

@@ -107,7 +107,7 @@ class GitWorkService : Service() {
         runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
         inForeground = false
         val text = ui.message ?: if (ui.replaceBranch != null) t(R.string.git_abra_o_app_para_confirmar) else null
-        if (text != null && !AppVisibility.visible) notifyManager().notify(RESULT_ID, result(text))
+        if (text != null && !AppVisibility.visible) notifyManager().notify(RESULT_ID, result(text, ui.failed))
         stopSelf(lastStartId)
     }
 
@@ -130,9 +130,9 @@ class GitWorkService : Service() {
             .build()
     }
 
-    private fun result(text: String): Notification =
+    private fun result(text: String, failed: Boolean): Notification =
         NotificationCompat.Builder(this, RESULT_CHANNEL)
-            .setSmallIcon(if (text.startsWith(t(R.string.git_nao_deu_certo, "").trimEnd())) android.R.drawable.stat_notify_error else android.R.drawable.stat_sys_upload_done)
+            .setSmallIcon(if (failed) android.R.drawable.stat_notify_error else android.R.drawable.stat_sys_upload_done)
             .setContentTitle("GitHub")
             .setContentText(text.lineSequence().first())
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
@@ -172,7 +172,6 @@ class GitWorkService : Service() {
     }
 
     private fun ensureChannels() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = notifyManager()
         manager.createNotificationChannel(NotificationChannel(PROGRESS_CHANNEL, t(R.string.git_git_em_andamento), NotificationManager.IMPORTANCE_LOW))
         manager.createNotificationChannel(NotificationChannel(RESULT_CHANNEL, t(R.string.git_git_concluido), NotificationManager.IMPORTANCE_DEFAULT))
@@ -201,7 +200,7 @@ class GitWorkService : Service() {
         fun start(context: Context) {
             val intent = Intent(context, GitWorkService::class.java)
             runCatching {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) context.startForegroundService(intent) else context.startService(intent)
+                context.startForegroundService(intent)
             }
         }
     }

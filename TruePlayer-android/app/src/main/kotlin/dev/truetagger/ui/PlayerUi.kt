@@ -533,7 +533,7 @@ fun TrueTaggerPlayerApp(
     var albumAscending by rememberSaveable { mutableStateOf(true) }
     val history = remember { mutableStateListOf<NavEntry>() }
     val context = LocalContext.current
-    remember { ScrollMemory.beginSession(context) }
+    remember { ScrollMemory.beginSession(context); true }
     LaunchedEffect(Unit) {
         (context as? Activity)?.title = "TruePlayer"
     }
@@ -1294,10 +1294,11 @@ private fun LibraryPlayerScreen(
                 if (context.contentResolver.delete(Uri.parse(id), null, null) > 0) {
                     deleted += id
                 }
-            } catch (error: RecoverableSecurityException) {
-                recoverableAction = error.userAction.actionIntent.intentSender
-                break
             } catch (error: SecurityException) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && error is RecoverableSecurityException) {
+                    recoverableAction = error.userAction.actionIntent.intentSender
+                    break
+                }
                 Log.w("TruePlayer", "Exclusão direta negada para $id; usando autorização do MediaStore", error)
             }
         }
@@ -2494,7 +2495,8 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
         Detail.ARTIST -> tracks.filter { it.artist.equals(key, true) }
         Detail.ALBUM -> tracks.filter { it.album.equals(key, true) }
         Detail.GENRE -> if (key.equals(t(R.string.sem_genero), true)) tracks.filter { it.genre.isBlank() } else tracks.filter { it.genre.equals(key, true) }
-        Detail.PLAYLIST -> playlistOrderIds.mapNotNull(detailTrackById::get)
+        // Sem repetidas: a lista usa o id da música como chave, e chave repetida fecha o app.
+        Detail.PLAYLIST -> playlistOrderIds.distinct().mapNotNull(detailTrackById::get)
         else -> emptyList()
     }
     val playlistFiltered = if (type == Detail.PLAYLIST && playlistSearch.isNotBlank()) {
@@ -3156,7 +3158,7 @@ private fun rememberArtworkBitmap(bytes: ByteArray?, uri: String?, maxDimension:
                         context.contentResolver.loadThumbnail(parsed, Size(maxDimension, maxDimension), null)
                     } else null
                 }.getOrNull() ?: runCatching {
-                    MediaMetadataRetriever().use { retriever ->
+                    dev.truetagger.android.withRetriever { retriever ->
                         retriever.setDataSource(context, Uri.parse(uri))
                         retriever.embeddedPicture?.let { raw ->
                             val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }

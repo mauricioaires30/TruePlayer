@@ -14,7 +14,9 @@ object ReleaseNotesLocalizer {
     /** Escolhe as notas de [languageTag] (ex.: "pt-BR"): a etiqueta exata, depois o idioma, depois o inglês. */
     fun pick(body: String, languageTag: String): String {
         val lines = body.replace("\r\n", "\n").replace('\r', '\n').split('\n')
-        val starts = lines.indices.filter { marker.matches(lines[it]) }
+        // Só vale como bloco de idioma um título com a etiqueta de um idioma do app (um "[novo]" qualquer não conta).
+        val known = AppLanguages.all.map { it.tag.lowercase() }.toSet()
+        val starts = lines.indices.filter { i -> marker.matchEntire(lines[i])?.groupValues?.get(1)?.lowercase() in known }
         if (starts.isEmpty()) return body.trim()
 
         val preamble = lines.subList(0, starts.first()).joinToString("\n").trim()

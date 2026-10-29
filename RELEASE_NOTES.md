@@ -1,85 +1,106 @@
-## TruePlayer 1.9.1
+## TruePlayer 1.9.2
 
 ### English [en]
-- The app now follows the phone's language and offers 21 languages (Settings > Appearance > Language), including Japanese and Chinese (simplified and traditional).
-- Update notes show in your language. Translations were written without native-speaker review. Arabic uses a right-to-left layout.
+- Fixed the library and covers on Android 8, 9 and 10.
+- The mini player bar now seeks to the right point after the song changes.
+- Long tab names shrink to fit, dialogs follow the chosen theme, and changing the language no longer reloads the screen twice.
 
 ### Português [pt]
-- O app agora segue o idioma do celular e tem 21 idiomas (Configurações > Aparência > Idioma), incluindo japonês e chinês (simplificado e tradicional).
-- As notas de atualização aparecem no seu idioma. As traduções não foram revisadas por quem fala cada idioma. O árabe usa layout da direita para a esquerda.
+- Corrigidas a biblioteca e as capas no Android 8, 9 e 10.
+- A barra do mini player agora vai ao ponto certo depois que a música muda.
+- Nomes de abas longos diminuem para caber, os diálogos seguem o tema escolhido e trocar o idioma não recarrega a tela duas vezes.
 
 ### Español [es]
-- La app ahora sigue el idioma del teléfono y ofrece 21 idiomas (Ajustes > Apariencia > Idioma), incluidos japonés y chino (simplificado y tradicional).
-- Las notas de actualización se muestran en tu idioma. Las traducciones no han sido revisadas por hablantes nativos. El árabe usa un diseño de derecha a izquierda.
+- Se corrigieron la biblioteca y las portadas en Android 8, 9 y 10.
+- La barra del minirreproductor ahora salta al punto correcto después de cambiar de canción.
+- Los nombres largos de pestañas se reducen para caber, los diálogos siguen el tema elegido y cambiar el idioma ya no recarga la pantalla dos veces.
 
 ### Français [fr]
-- L'appli suit désormais la langue du téléphone et propose 21 langues (Réglages > Apparence > Langue), dont le japonais et le chinois (simplifié et traditionnel).
-- Les notes de mise à jour s'affichent dans votre langue. Les traductions n'ont pas été relues par des locuteurs natifs. L'arabe utilise une mise en page de droite à gauche.
+- Bibliothèque et pochettes corrigées sous Android 8, 9 et 10.
+- La barre du mini lecteur va au bon endroit après un changement de morceau.
+- Les noms d'onglets longs rétrécissent pour tenir, les boîtes de dialogue suivent le thème choisi et changer de langue ne recharge plus l'écran deux fois.
 
 ### Deutsch [de]
-- Die App folgt jetzt der Sprache des Telefons und bietet 21 Sprachen (Einstellungen > Darstellung > Sprache), darunter Japanisch und Chinesisch (vereinfacht und traditionell).
-- Update-Hinweise erscheinen in deiner Sprache. Die Übersetzungen wurden nicht von Muttersprachlern geprüft. Arabisch nutzt ein Layout von rechts nach links.
+- Bibliothek und Cover unter Android 8, 9 und 10 korrigiert.
+- Die Leiste im Mini-Player springt nach einem Titelwechsel an die richtige Stelle.
+- Lange Tab-Namen werden verkleinert, Dialoge folgen dem gewählten Design und ein Sprachwechsel lädt den Bildschirm nicht mehr zweimal neu.
 
 ### Italiano [it]
-- L'app ora segue la lingua del telefono e offre 21 lingue (Impostazioni > Aspetto > Lingua), tra cui giapponese e cinese (semplificato e tradizionale).
-- Le note di aggiornamento compaiono nella tua lingua. Le traduzioni non sono state riviste da madrelingua. L'arabo usa un layout da destra a sinistra.
+- Corrette la libreria e le copertine su Android 8, 9 e 10.
+- La barra del mini lettore va al punto giusto dopo il cambio di brano.
+- I nomi lunghi delle schede si rimpiccioliscono per entrare, le finestre seguono il tema scelto e cambiare lingua non ricarica più lo schermo due volte.
 
 ### Nederlands [nl]
-- De app volgt nu de taal van de telefoon en biedt 21 talen (Instellingen > Weergave > Taal), waaronder Japans en Chinees (vereenvoudigd en traditioneel).
-- Updatenotities verschijnen in jouw taal. De vertalingen zijn niet door moedertaalsprekers nagekeken. Arabisch gebruikt een indeling van rechts naar links.
+- Bibliotheek en hoezen gerepareerd op Android 8, 9 en 10.
+- De balk van de minispeler springt na een nummerwissel naar de juiste plek.
+- Lange tabnamen worden kleiner zodat ze passen, dialogen volgen het gekozen thema en van taal wisselen laadt het scherm niet meer twee keer.
 
 ### Svenska [sv]
-- Appen följer nu telefonens språk och har 21 språk (Inställningar > Utseende > Språk), bland annat japanska och kinesiska (förenklad och traditionell).
-- Uppdateringsanteckningar visas på ditt språk. Översättningarna har inte granskats av modersmålstalare. Arabiska använder en layout från höger till vänster.
+- Biblioteket och omslagen fungerar nu på Android 8, 9 och 10.
+- Minispelarens reglage hoppar till rätt ställe efter låtbyte.
+- Långa fliknamn krymper så att de får plats, dialogrutor följer valt tema och språkbyte laddar inte om skärmen två gånger.
 
 ### Polski [pl]
-- Aplikacja podąża teraz za językiem telefonu i oferuje 21 języków (Ustawienia > Wygląd > Język), w tym japoński i chiński (uproszczony i tradycyjny).
-- Informacje o aktualizacji pojawiają się w Twoim języku. Tłumaczenia nie zostały sprawdzone przez native speakerów. Arabski używa układu od prawej do lewej.
+- Naprawiono bibliotekę i okładki na Androidzie 8, 9 i 10.
+- Pasek mini odtwarzacza przewija we właściwe miejsce po zmianie utworu.
+- Długie nazwy kart zmniejszają się, by się zmieścić, okna dialogowe używają wybranego motywu, a zmiana języka nie przeładowuje ekranu dwa razy.
 
 ### Türkçe [tr]
-- Uygulama artık telefonun dilini izliyor ve Japonca ile Çince (Basitleştirilmiş ve Geleneksel) dahil 21 dil sunuyor (Ayarlar > Görünüm > Dil).
-- Güncelleme notları sizin dilinizde görünür. Çeviriler ana dili konuşanlarca denetlenmedi. Arapça sağdan sola düzen kullanır.
+- Android 8, 9 ve 10'da kitaplık ve kapaklar düzeltildi.
+- Mini oynatıcı çubuğu şarkı değiştikten sonra doğru noktaya gider.
+- Uzun sekme adları sığmak için küçülür, iletişim kutuları seçilen temayı izler ve dil değiştirmek ekranı iki kez yenilemez.
 
 ### Русский [ru]
-- Приложение теперь следует языку телефона и предлагает 21 язык (Настройки > Оформление > Язык), включая японский и китайский (упрощённый и традиционный).
-- Заметки об обновлении показываются на вашем языке. Переводы не проверяли носители языка. Арабский использует разметку справа налево.
+- Исправлены библиотека и обложки на Android 8, 9 и 10.
+- Полоса мини-плеера после смены трека перематывает в нужное место.
+- Длинные названия вкладок уменьшаются, чтобы поместиться, диалоги следуют выбранной теме, а смена языка больше не перезагружает экран дважды.
 
 ### Українська [uk]
-- Застосунок тепер дотримується мови телефона й пропонує 21 мову (Налаштування > Вигляд > Мова), зокрема японську та китайську (спрощену й традиційну).
-- Примітки до оновлення показуються вашою мовою. Переклади не перевіряли носії мови. Арабська використовує розмітку справа наліво.
+- Виправлено бібліотеку й обкладинки на Android 8, 9 і 10.
+- Смуга міні-програвача після зміни треку перемотує в потрібне місце.
+- Довгі назви вкладок зменшуються, щоб вміститися, діалоги дотримуються вибраної теми, а зміна мови більше не перезавантажує екран двічі.
 
 ### العربية [ar]
-- يتبع التطبيق الآن لغة الهاتف ويوفّر 21 لغة (الإعدادات > المظهر > اللغة)، منها اليابانية والصينية (المبسطة والتقليدية).
-- تظهر ملاحظات التحديث بلغتك. لم يراجع الترجمات متحدثون أصليون. تستخدم العربية تخطيطًا من اليمين إلى اليسار.
+- تم إصلاح المكتبة والأغلفة على Android 8 و9 و10.
+- شريط المشغّل المصغّر ينتقل الآن إلى الموضع الصحيح بعد تغيير المقطع.
+- تصغر أسماء التبويبات الطويلة لتتسع، وتتبع مربعات الحوار السمة المختارة، ولم يعد تغيير اللغة يعيد تحميل الشاشة مرتين.
 
 ### हिन्दी [hi]
-- ऐप अब फ़ोन की भाषा अपनाता है और 21 भाषाएँ देता है (सेटिंग > दिखावट > भाषा), जिनमें जापानी और चीनी (सरलीकृत और पारंपरिक) शामिल हैं।
-- अपडेट नोट आपकी भाषा में दिखते हैं। अनुवादों की समीक्षा मूल भाषा बोलने वालों ने नहीं की है। अरबी में लेआउट दाएँ से बाएँ है।
+- Android 8, 9 और 10 पर लाइब्रेरी और कवर ठीक किए गए।
+- गाना बदलने के बाद मिनी प्लेयर की बार अब सही जगह पर जाती है।
+- लंबे टैब नाम फ़िट होने के लिए छोटे हो जाते हैं, डायलॉग चुनी गई थीम अपनाते हैं और भाषा बदलने पर स्क्रीन दो बार लोड नहीं होती।
 
 ### Bahasa Indonesia [id]
-- Aplikasi kini mengikuti bahasa ponsel dan menyediakan 21 bahasa (Pengaturan > Tampilan > Bahasa), termasuk Jepang dan Mandarin (sederhana dan tradisional).
-- Catatan pembaruan tampil dalam bahasa Anda. Terjemahan belum ditinjau penutur asli. Bahasa Arab memakai tata letak kanan ke kiri.
+- Pustaka dan sampul diperbaiki di Android 8, 9, dan 10.
+- Bilah pemutar mini kini melompat ke titik yang tepat setelah lagu berganti.
+- Nama tab yang panjang mengecil agar muat, dialog mengikuti tema pilihan, dan mengganti bahasa tidak lagi memuat ulang layar dua kali.
 
 ### Tiếng Việt [vi]
-- Ứng dụng giờ theo ngôn ngữ của điện thoại và có 21 ngôn ngữ (Cài đặt > Giao diện > Ngôn ngữ), gồm tiếng Nhật và tiếng Trung (giản thể và phồn thể).
-- Ghi chú cập nhật hiển thị bằng ngôn ngữ của bạn. Bản dịch chưa được người bản ngữ rà soát. Tiếng Ả Rập dùng bố cục từ phải sang trái.
+- Đã sửa thư viện và ảnh bìa trên Android 8, 9 và 10.
+- Thanh của trình phát mini giờ nhảy đúng chỗ sau khi đổi bài.
+- Tên tab dài sẽ thu nhỏ cho vừa, hộp thoại theo chủ đề đã chọn và đổi ngôn ngữ không còn tải lại màn hình hai lần.
 
 ### ไทย [th]
-- แอปตามภาษาของโทรศัพท์แล้ว และมี 21 ภาษา (การตั้งค่า > การแสดงผล > ภาษา) รวมถึงภาษาญี่ปุ่นและภาษาจีน (ตัวย่อและตัวเต็ม)
-- บันทึกการอัปเดตแสดงเป็นภาษาของคุณ คำแปลยังไม่ได้รับการตรวจสอบโดยเจ้าของภาษา ภาษาอาหรับใช้เลย์เอาต์จากขวาไปซ้าย
+- แก้ไขคลังเพลงและปกบน Android 8, 9 และ 10
+- แถบของเครื่องเล่นขนาดเล็กเลื่อนไปยังจุดที่ถูกต้องหลังเปลี่ยนเพลงแล้ว
+- ชื่อแท็บที่ยาวจะย่อให้พอดี กล่องโต้ตอบใช้ธีมที่เลือก และการเปลี่ยนภาษาไม่โหลดหน้าจอซ้ำสองครั้งอีก
 
 ### 日本語 [ja]
-- アプリが端末の言語に合わせるようになり、日本語と中国語(簡体字・繁体字)を含む21言語に対応しました(設定 > 外観 > 言語)。
-- アップデートのメモもお使いの言語で表示されます。翻訳はネイティブスピーカーによる確認を受けていません。アラビア語は右から左のレイアウトです。
+- Android 8、9、10でライブラリとカバーが表示されない問題を修正しました。
+- 曲が変わった後も、ミニプレーヤーのバーで正しい位置に移動できるようになりました。
+- 長いタブ名は収まるように縮小され、ダイアログは選んだテーマに従い、言語を変えても画面が2回再読み込みされなくなりました。
 
 ### 한국어 [ko]
-- 앱이 이제 휴대전화의 언어를 따르며 일본어와 중국어(간체·번체)를 포함한 21개 언어를 지원합니다(설정 > 모양 > 언어).
-- 업데이트 노트도 내 언어로 표시됩니다. 번역은 원어민 검수를 거치지 않았습니다. 아랍어는 오른쪽에서 왼쪽 레이아웃을 사용합니다.
+- Android 8, 9, 10에서 라이브러리와 커버 문제를 고쳤습니다.
+- 곡이 바뀐 뒤에도 미니 플레이어 막대가 올바른 위치로 이동합니다.
+- 긴 탭 이름은 맞게 줄어들고, 대화상자는 선택한 테마를 따르며, 언어를 바꿔도 화면이 두 번 다시 로드되지 않습니다.
 
 ### 简体中文 [zh-CN]
-- 应用现在跟随手机语言，并提供 21 种语言（设置 > 外观 > 语言），包括日语和中文（简体和繁体）。
-- 更新说明会以你的语言显示。翻译未经母语者审校。阿拉伯语使用从右到左的布局。
+- 修复了 Android 8、9 和 10 上的音乐库和封面问题。
+- 换歌后，迷你播放器的进度条现在能跳到正确位置。
+- 较长的标签名会缩小以适应，对话框跟随所选主题，切换语言不再让屏幕重新加载两次。
 
 ### 繁體中文 [zh-TW]
-- 應用程式現在跟隨手機語言，並提供 21 種語言（設定 > 外觀 > 語言），包括日文和中文（簡體和繁體）。
-- 更新說明會以你的語言顯示。翻譯未經母語人士審校。阿拉伯文使用由右至左的版面。
+- 修正了 Android 8、9 和 10 上的音樂庫和封面問題。
+- 換歌後，迷你播放器的進度列現在能跳到正確位置。
+- 較長的分頁名稱會縮小以容納，對話框會跟隨所選主題，切換語言不再讓畫面重新載入兩次。

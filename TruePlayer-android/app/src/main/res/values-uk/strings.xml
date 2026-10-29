@@ -73,7 +73,7 @@
     <string name="dl_baixando_musica">Завантаження треку</string>
     <string name="dl_conectando">З’єднання…</string>
     <string name="dl_confira_se_o_link_esta">Перевірте, що посилання правильне, а плейлист публічний.</string>
-    <string name="dl_convertendo_para_mp3">Конвертація в MP3...</string>
+    <string name="dl_convertendo_para_mp3">Конвертація в MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s з %3$s треків%4$s</string>
     <string name="dl_download_concluido">Завантаження завершено</string>
     <string name="dl_downloads_do_trueplayer">Завантаження TruePlayer</string>
@@ -145,7 +145,6 @@
     <string name="git_a_pasta_precisa_estar_no">тека має бути у внутрішній пам’яті телефона</string>
     <string name="git_abra_o_app_para_confirmar">Відкрийте застосунок, щоб підтвердити надсилання.</string>
     <string name="git_acima_de_100_mb_o">\n\nПонад 100 МБ (GitHub відхиляє), не ввійшли: %1$s: %2$s.</string>
-    <string name="git_arquivos_acima_de_100_mb"># Файли понад 100 МБ (GitHub їх відхиляє)</string>
     <string name="git_atualizacao_da_pasta">Оновлення теки</string>
     <string name="git_baixando_do_github">Завантаження з GitHub…</string>
     <string name="git_baixar">Завантаження</string>
@@ -249,7 +248,6 @@
     <string name="git_registrando_arquivos">Запис файлів</string>
     <string name="git_repositorio_criado_e_enviado_ao">Репозиторій створено й надіслано на GitHub.</string>
     <string name="git_repositorio_trocado_para">Репозиторій змінено на %1$s.</string>
-    <string name="git_retrying">Збій GitHub (%1$s). Повтор за %2$s с (%3$s з %4$s)…</string>
     <string name="git_roda_em_segundo_plano_se">Працює у фоні. Якщо не вийде, наступне надсилання продовжить з того самого місця.</string>
     <string name="git_salva_o_que_mudou_so">Зберігає зміни лише на цьому телефоні</string>
     <string name="git_salvando_capas_de">Збереження обкладинок: %1$s з %2$s</string>

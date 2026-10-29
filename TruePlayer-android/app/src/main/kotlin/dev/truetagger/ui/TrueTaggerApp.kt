@@ -773,11 +773,14 @@ private fun HorizontalLazyScrollbar(state: LazyListState, modifier: Modifier = M
     if (total <= visible || total <= 0) return
     val first = info.visibleItemsInfo.firstOrNull()?.index ?: 0
     val thumbColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.28f)
+    val rtl = androidx.compose.ui.platform.LocalLayoutDirection.current == androidx.compose.ui.unit.LayoutDirection.Rtl
     Canvas(modifier) {
         val minThumb = 36.dp.toPx()
         val thumb = maxOf(minThumb, size.width * (visible.toFloat() / total.toFloat()))
         val maxIndex = maxOf(1, total - visible)
-        val left = (size.width - thumb) * (first.toFloat() / maxIndex.toFloat()).coerceIn(0f, 1f)
+        val start = (size.width - thumb) * (first.toFloat() / maxIndex.toFloat()).coerceIn(0f, 1f)
+        // A lista anda ao contrário em idiomas da direita para a esquerda; a barrinha acompanha.
+        val left = if (rtl) size.width - thumb - start else start
         drawRoundRect(
             color = thumbColor,
             topLeft = androidx.compose.ui.geometry.Offset(left, 0f),

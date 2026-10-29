@@ -73,7 +73,7 @@
     <string name="dl_baixando_musica">Descargando canción</string>
     <string name="dl_conectando">Conectando…</string>
     <string name="dl_confira_se_o_link_esta">Comprueba que el enlace sea correcto y que la playlist sea pública.</string>
-    <string name="dl_convertendo_para_mp3">Convirtiendo a MP3...</string>
+    <string name="dl_convertendo_para_mp3">Convirtiendo a MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s de %3$s canciones%4$s</string>
     <string name="dl_download_concluido">Descarga terminada</string>
     <string name="dl_downloads_do_trueplayer">Descargas de TruePlayer</string>
@@ -145,7 +145,6 @@
     <string name="git_a_pasta_precisa_estar_no">la carpeta debe estar en el almacenamiento interno del teléfono</string>
     <string name="git_abra_o_app_para_confirmar">Abre la app para confirmar el envío.</string>
     <string name="git_acima_de_100_mb_o">\n\nMás de 100 MB (GitHub lo rechaza), quedaron fuera: %1$s: %2$s.</string>
-    <string name="git_arquivos_acima_de_100_mb"># Archivos de más de 100 MB (GitHub los rechaza)</string>
     <string name="git_atualizacao_da_pasta">Actualización de la carpeta</string>
     <string name="git_baixando_do_github">Descargando de GitHub…</string>
     <string name="git_baixar">Descarga</string>
@@ -249,7 +248,6 @@
     <string name="git_registrando_arquivos">Registrando archivos</string>
     <string name="git_repositorio_criado_e_enviado_ao">Repositorio creado y enviado a GitHub.</string>
     <string name="git_repositorio_trocado_para">Repositorio cambiado a %1$s.</string>
-    <string name="git_retrying">GitHub falló (%1$s). Reintentando en %2$s s (%3$s de %4$s)…</string>
     <string name="git_roda_em_segundo_plano_se">Se ejecuta en segundo plano. Si falla, el siguiente envío continúa donde se quedó.</string>
     <string name="git_salva_o_que_mudou_so">Guarda lo que cambió, solo en este teléfono</string>
     <string name="git_salvando_capas_de">Guardando portadas: %1$s de %2$s</string>
@@ -491,78 +489,97 @@
     <string name="zerar_estatisticas_2">Restablecer estadísticas</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s playlist</item>
+        <item quantity="many">+%1$s playlists</item>
         <item quantity="other">+%1$s playlists</item>
     </plurals>
     <plurals name="commit_playlists_changed">
         <item quantity="one">%1$s playlist modificada</item>
+        <item quantity="many">%1$s playlists modificadas</item>
         <item quantity="other">%1$s playlists modificadas</item>
     </plurals>
     <plurals name="commit_playlists_removed">
         <item quantity="one">-%1$s playlist</item>
+        <item quantity="many">-%1$s playlists</item>
         <item quantity="other">-%1$s playlists</item>
     </plurals>
     <plurals name="commit_songs_added">
         <item quantity="one">+%1$s canción</item>
+        <item quantity="many">+%1$s canciones</item>
         <item quantity="other">+%1$s canciones</item>
     </plurals>
     <plurals name="commit_songs_removed">
         <item quantity="one">-%1$s canción</item>
+        <item quantity="many">-%1$s canciones</item>
         <item quantity="other">-%1$s canciones</item>
     </plurals>
     <plurals name="commit_tags_edited">
         <item quantity="one">%1$s etiqueta editada</item>
+        <item quantity="many">%1$s etiquetas editadas</item>
         <item quantity="other">%1$s etiquetas editadas</item>
     </plurals>
     <plurals name="git_n_removed">
         <item quantity="one">%1$s eliminada</item>
+        <item quantity="many">%1$s eliminadas</item>
         <item quantity="other">%1$s eliminadas</item>
     </plurals>
     <plurals name="git_n_songs_added">
         <item quantity="one">%1$s canción nueva</item>
+        <item quantity="many">%1$s canciones nuevas</item>
         <item quantity="other">%1$s canciones nuevas</item>
     </plurals>
     <plurals name="git_n_tags_edited">
         <item quantity="one">%1$s etiqueta editada</item>
+        <item quantity="many">%1$s etiquetas editadas</item>
         <item quantity="other">%1$s etiquetas editadas</item>
     </plurals>
     <plurals name="git_skipped_files">
         <item quantity="one">%1$s archivo no se pudo leer y quedó fuera: %2$s.</item>
+        <item quantity="many">%1$s archivos no se pudieron leer y quedaron fuera: %2$s.</item>
         <item quantity="other">%1$s archivos no se pudieron leer y quedaron fuera: %2$s.</item>
     </plurals>
     <plurals name="n_albuns">
         <item quantity="one">%1$s álbum</item>
+        <item quantity="many">%1$s álbumes</item>
         <item quantity="other">%1$s álbumes</item>
     </plurals>
     <plurals name="n_arquivos">
         <item quantity="one">%1$s archivo</item>
+        <item quantity="many">%1$s archivos</item>
         <item quantity="other">%1$s archivos</item>
     </plurals>
     <plurals name="n_arquivos_baixados">
         <item quantity="one">%1$s archivo descargado</item>
+        <item quantity="many">%1$s archivos descargados</item>
         <item quantity="other">%1$s archivos descargados</item>
     </plurals>
     <plurals name="n_artistas">
         <item quantity="one">%1$s artista</item>
+        <item quantity="many">%1$s artistas</item>
         <item quantity="other">%1$s artistas</item>
     </plurals>
     <plurals name="n_capas_salvas">
         <item quantity="one">%1$s portada guardada</item>
+        <item quantity="many">%1$s portadas guardadas</item>
         <item quantity="other">%1$s portadas guardadas</item>
     </plurals>
     <plurals name="n_itens_movidos">
         <item quantity="one">%1$s elemento movido</item>
+        <item quantity="many">%1$s elementos movidos</item>
         <item quantity="other">%1$s elementos movidos</item>
     </plurals>
     <plurals name="n_musicas">
         <item quantity="one">%1$s canción</item>
+        <item quantity="many">%1$s canciones</item>
         <item quantity="other">%1$s canciones</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="one">%1$s playlist</item>
+        <item quantity="many">%1$s playlists</item>
         <item quantity="other">%1$s playlists</item>
     </plurals>
     <plurals name="n_selected">
         <item quantity="one">%1$s seleccionada</item>
+        <item quantity="many">%1$s seleccionadas</item>
         <item quantity="other">%1$s seleccionadas</item>
     </plurals>
 </resources>

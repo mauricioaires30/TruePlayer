@@ -53,6 +53,8 @@ data class GitUi(
     val replaceBranch: String? = null,
     /** Resultado ou erro para mostrar uma vez. */
     val message: String? = null,
+    /** A última operação terminou com erro (para a notificação usar o ícone de erro). */
+    val failed: Boolean = false,
 ) {
     enum class Availability { UNKNOWN, NO_FOLDER, UNSUPPORTED, NO_REPO, REPO_NEEDS_ACCESS, READY }
 
@@ -290,7 +292,7 @@ object GitController {
             val where = whereIs(e)
             t(R.string.git_nao_deu_certo, reason(e)) + if (where.isNotBlank()) t(R.string.git_onde, where) else ""
         })
-        _ui.update { it.copy(busy = null, busyFraction = null, busyStep = 0, busySteps = 0, busyTitle = "", progressHidden = false, busySinceMs = 0L, message = text) }
+        _ui.update { it.copy(busy = null, busyFraction = null, busyStep = 0, busySteps = 0, busyTitle = "", progressHidden = false, busySinceMs = 0L, message = text, failed = outcome.isFailure && !cancelled) }
         refresh(app)
     }
 

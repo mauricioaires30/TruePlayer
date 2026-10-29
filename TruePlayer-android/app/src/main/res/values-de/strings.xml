@@ -73,7 +73,7 @@
     <string name="dl_baixando_musica">Titel wird heruntergeladen</string>
     <string name="dl_conectando">Verbinden…</string>
     <string name="dl_confira_se_o_link_esta">Prüfe, ob der Link stimmt und die Playlist öffentlich ist.</string>
-    <string name="dl_convertendo_para_mp3">Konvertierung in MP3...</string>
+    <string name="dl_convertendo_para_mp3">Konvertierung in MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s von %3$s Titeln%4$s</string>
     <string name="dl_download_concluido">Download abgeschlossen</string>
     <string name="dl_downloads_do_trueplayer">TruePlayer-Downloads</string>
@@ -145,7 +145,6 @@
     <string name="git_a_pasta_precisa_estar_no">der Ordner muss im internen Speicher des Telefons liegen</string>
     <string name="git_abra_o_app_para_confirmar">Öffne die App, um das Senden zu bestätigen.</string>
     <string name="git_acima_de_100_mb_o">\n\nÜber 100 MB (GitHub lehnt sie ab), ausgelassen: %1$s: %2$s.</string>
-    <string name="git_arquivos_acima_de_100_mb"># Dateien über 100 MB (GitHub lehnt sie ab)</string>
     <string name="git_atualizacao_da_pasta">Ordner-Update</string>
     <string name="git_baixando_do_github">Download von GitHub…</string>
     <string name="git_baixar">Download</string>
@@ -249,7 +248,6 @@
     <string name="git_registrando_arquivos">Dateien werden erfasst</string>
     <string name="git_repositorio_criado_e_enviado_ao">Repository erstellt und an GitHub gesendet.</string>
     <string name="git_repositorio_trocado_para">Repository gewechselt zu %1$s.</string>
-    <string name="git_retrying">GitHub-Fehler (%1$s). Neuer Versuch in %2$s Sek. (%3$s von %4$s)…</string>
     <string name="git_roda_em_segundo_plano_se">Läuft im Hintergrund. Schlägt es fehl, macht das nächste Senden dort weiter, wo es aufgehört hat.</string>
     <string name="git_salva_o_que_mudou_so">Speichert die Änderungen, nur auf diesem Telefon</string>
     <string name="git_salvando_capas_de">Cover werden gespeichert: %1$s von %2$s</string>

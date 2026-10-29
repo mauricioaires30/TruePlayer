@@ -65,4 +65,9 @@ class ReleaseNotesLocalizerTest {
             assertFalse("${language.tag} com marcador", Regex("""\[[A-Za-z-]{2,5}]\s*$""", RegexOption.MULTILINE).containsMatchIn(text))
         }
     }
+
+    @Test fun aHeadingWithBracketsThatIsNotALanguageIsJustText() {
+        val notes = "## v\n\n### Fixes [new]\n- a"
+        assertEquals(notes, ReleaseNotesLocalizer.pick(notes, "en"))
+    }
 }

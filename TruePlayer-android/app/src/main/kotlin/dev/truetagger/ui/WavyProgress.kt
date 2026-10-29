@@ -16,6 +16,7 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -154,6 +155,8 @@ internal fun SeekableWavyBar(
             justSought = null
         }
     }
+    // Os gestos continuam vivos entre músicas: sempre chamam o onSeek atual (com a duração da música atual).
+    val seek by rememberUpdatedState(onSeek)
     val enabled = s.durationMs > 0L
     WavyProgressBar(
         progress = { dragging ?: justSought ?: smooth.value },
@@ -168,7 +171,7 @@ internal fun SeekableWavyBar(
                 detectTapGestures { offset ->
                     val f = (offset.x / size.width).coerceIn(0f, 1f)
                     justSought = f
-                    onSeek(f)
+                    seek(f)
                 }
             }
             .pointerInput(enabled) {
@@ -182,7 +185,7 @@ internal fun SeekableWavyBar(
                     onDragEnd = {
                         dragging?.let { f ->
                             justSought = f
-                            onSeek(f)
+                            seek(f)
                         }
                         dragging = null
                     },

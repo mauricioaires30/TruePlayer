@@ -44,21 +44,23 @@ class AndroidAudioService(private val context: Context) {
             MediaStore.Audio.Media.DATA
         }
 
+        // A coluna de gênero só existe no MediaStore a partir do Android 11; antes dela a consulta inteira falhava.
+        val hasGenreColumn = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
         collections.forEach { collection ->
-            val projection = arrayOf(
+            val projection = listOfNotNull(
                 MediaStore.Audio.Media._ID,
                 MediaStore.Audio.Media.DISPLAY_NAME,
                 MediaStore.Audio.Media.TITLE,
                 MediaStore.Audio.Media.ARTIST,
                 MediaStore.Audio.Media.ALBUM,
-                MediaStore.Audio.Media.GENRE,
+                if (hasGenreColumn) MediaStore.Audio.Media.GENRE else null,
                 MediaStore.Audio.Media.TRACK,
                 MediaStore.Audio.Media.YEAR,
                 MediaStore.Audio.Media.DURATION,
                 MediaStore.Audio.Media.DATE_MODIFIED,
                 MediaStore.Audio.Media.SIZE,
                 pathColumn,
-            )
+            ).toTypedArray()
             val selection: String
             val selectionArgs: Array<String>?
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
@@ -81,7 +83,7 @@ class AndroidAudioService(private val context: Context) {
                 val title = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE)
                 val artist = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
                 val album = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
-                val genre = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.GENRE)
+                val genre = if (hasGenreColumn) cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.GENRE) else -1
                 val track = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
                 val year = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR)
                 val duration = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
@@ -107,7 +109,7 @@ class AndroidAudioService(private val context: Context) {
                         title = cursor.getString(title).orEmpty(),
                         artist = cursor.getString(artist).orEmpty().takeUnless { it == "<unknown>" }.orEmpty(),
                         album = cursor.getString(album).orEmpty().takeUnless { it == "<unknown>" }.orEmpty(),
-                        genre = cursor.getString(genre).orEmpty().takeUnless { it == "<unknown>" }.orEmpty(),
+                        genre = if (genre >= 0) cursor.getString(genre).orEmpty().takeUnless { it == "<unknown>" }.orEmpty() else "",
                         trackNumber = trackValue,
                         year = cursor.getInt(year).takeIf { it > 0 }?.toString().orEmpty(),
                         durationMs = cursor.getLong(duration),

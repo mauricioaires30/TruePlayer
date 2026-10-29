@@ -56,7 +56,7 @@ internal object CoverExport {
 
     private fun embeddedPicture(context: Context, track: AudioTrack): ByteArray? =
         runCatching {
-            MediaMetadataRetriever().use { retriever ->
+            withRetriever { retriever ->
                 retriever.setDataSource(context, Uri.parse(track.id))
                 retriever.embeddedPicture
             }

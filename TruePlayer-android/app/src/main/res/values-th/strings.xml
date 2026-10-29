@@ -73,7 +73,7 @@
     <string name="dl_baixando_musica">กำลังดาวน์โหลดเพลง</string>
     <string name="dl_conectando">กำลังเชื่อมต่อ…</string>
     <string name="dl_confira_se_o_link_esta">ตรวจสอบว่าลิงก์ถูกต้องและเพลย์ลิสต์เป็นสาธารณะ</string>
-    <string name="dl_convertendo_para_mp3">กำลังแปลงเป็น MP3...</string>
+    <string name="dl_convertendo_para_mp3">กำลังแปลงเป็น MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s จาก %3$s เพลง%4$s</string>
     <string name="dl_download_concluido">ดาวน์โหลดเสร็จแล้ว</string>
     <string name="dl_downloads_do_trueplayer">การดาวน์โหลดของ TruePlayer</string>
@@ -145,7 +145,6 @@
     <string name="git_a_pasta_precisa_estar_no">โฟลเดอร์ต้องอยู่ในที่เก็บข้อมูลภายในของโทรศัพท์</string>
     <string name="git_abra_o_app_para_confirmar">เปิดแอปเพื่อยืนยันการส่ง</string>
     <string name="git_acima_de_100_mb_o">\n\nเกิน 100 MB (GitHub ปฏิเสธ) ถูกข้ามไป: %1$s: %2$s</string>
-    <string name="git_arquivos_acima_de_100_mb"># ไฟล์ที่เกิน 100 MB (GitHub ปฏิเสธ)</string>
     <string name="git_atualizacao_da_pasta">อัปเดตโฟลเดอร์</string>
     <string name="git_baixando_do_github">กำลังดาวน์โหลดจาก GitHub…</string>
     <string name="git_baixar">ดาวน์โหลด</string>
@@ -249,7 +248,6 @@
     <string name="git_registrando_arquivos">กำลังบันทึกไฟล์</string>
     <string name="git_repositorio_criado_e_enviado_ao">สร้างที่เก็บและส่งไปยัง GitHub แล้ว</string>
     <string name="git_repositorio_trocado_para">เปลี่ยนที่เก็บเป็น %1$s แล้ว</string>
-    <string name="git_retrying">GitHub ล้มเหลว (%1$s) จะลองใหม่ใน %2$s วินาที (%3$s จาก %4$s)…</string>
     <string name="git_roda_em_segundo_plano_se">ทำงานเบื้องหลัง หากล้มเหลว การส่งครั้งถัดไปจะทำต่อจากจุดที่หยุด</string>
     <string name="git_salva_o_que_mudou_so">บันทึกสิ่งที่เปลี่ยน เฉพาะในโทรศัพท์เครื่องนี้</string>
     <string name="git_salvando_capas_de">กำลังบันทึกปก: %1$s จาก %2$s</string>

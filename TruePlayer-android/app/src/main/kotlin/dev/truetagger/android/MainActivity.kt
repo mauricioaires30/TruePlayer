@@ -21,11 +21,14 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.compose.setContent
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import dev.truetagger.data.ThemeMode
+import dev.truetagger.ui.LocalThemeMode
 import dev.truetagger.model.AppSettings
 import dev.truetagger.model.AudioTrack
 import dev.truetagger.model.EditableTags
@@ -74,7 +77,7 @@ class MainActivity : ComponentActivity() {
     private var cleanupScan by mutableStateOf<FolderOrganizer.Scan?>(null)
     private var folderAccessNeeded by mutableStateOf(false)
     private var accessPromptDismissed = false
-    private var permissionsRevision by mutableStateOf(0)
+    private var permissionsRevision by mutableIntStateOf(0)
     private var showTutorial by mutableStateOf(false)
     private var openSettingsIfDenied = false
     private var migrationRunning = false
@@ -188,6 +191,7 @@ class MainActivity : ComponentActivity() {
         showTutorial = OnboardingState.shouldShow(this)
 
         setContent {
+            CompositionLocalProvider(LocalThemeMode provides settings.themeMode) {
             TrueTaggerPlayerApp(
                 tracks = tracks,
                 selectedTrack = selectedTrack,
@@ -250,6 +254,7 @@ class MainActivity : ComponentActivity() {
                 },
                 onReportDismiss = { migrationReport = null },
             )
+            }
         }
 
         ensurePermissionThenRefresh()
@@ -663,13 +668,15 @@ class MainActivity : ComponentActivity() {
                     AppEvents.bump()
                 }
             }
-        } catch (error: RecoverableSecurityException) {
-            if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
-                val granted = requestIntentSender(error.userAction.actionIntent.intentSender)
-                if (granted) return saveEdits(track, edits)
-            }
-            return TagWriteResult(false, t(R.string.o_android_nao_concedeu_acesso))
         } catch (error: Throwable) {
+            // RecoverableSecurityException só existe no Android 10+: verifica a versão antes de olhar o tipo.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && error is RecoverableSecurityException) {
+                if (Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
+                    val granted = requestIntentSender(error.userAction.actionIntent.intentSender)
+                    if (granted) return saveEdits(track, edits)
+                }
+                return TagWriteResult(false, t(R.string.o_android_nao_concedeu_acesso))
+            }
             return TagWriteResult(false, t(R.string.erro_ao_salvar_tags, error.message ?: error::class.simpleName))
         }
     }
@@ -749,7 +756,8 @@ class MainActivity : ComponentActivity() {
         if (languageChanged) {
             LocaleHelper.apply(this, newSettings.language)
             // Recria a tela para todos os textos virem no idioma novo (e o sentido do layout, no árabe).
-            recreate()
+            // No Android 13+ o sistema já recria sozinho ao trocar o idioma do app.
+            if (Build.VERSION.SDK_INT < 33) recreate()
         }
         UpdateWorker.schedule(this, newSettings.autoCheckUpdates)
         SettingsBackup.scheduleWrite(this, newSettings)

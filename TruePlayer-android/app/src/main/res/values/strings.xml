@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">TruePlayer</string>
+    <string name="app_name" translatable="false">TruePlayer</string>
     <string name="a_biblioteca_some_da_tela">The library disappears from the screen until you choose the folder again. No songs are deleted.</string>
     <string name="abaixar_musica">Move song down</string>
     <string name="abra_o_menu_de_uma">Open a song\'s menu and choose Add to playlist.</string>
@@ -74,7 +74,7 @@
     <string name="dl_baixando_musica">Downloading song</string>
     <string name="dl_conectando">Connecting…</string>
     <string name="dl_confira_se_o_link_esta">Check that the link is right and the playlist is public.</string>
-    <string name="dl_convertendo_para_mp3">Converting to MP3...</string>
+    <string name="dl_convertendo_para_mp3">Converting to MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s of %3$s songs%4$s</string>
     <string name="dl_download_concluido">Download finished</string>
     <string name="dl_downloads_do_trueplayer">TruePlayer downloads</string>
@@ -146,7 +146,6 @@
     <string name="git_a_pasta_precisa_estar_no">the folder must be in the phone\'s internal storage</string>
     <string name="git_abra_o_app_para_confirmar">Open the app to confirm the send.</string>
     <string name="git_acima_de_100_mb_o">\n\nOver 100 MB (GitHub refuses it), left out: %1$s: %2$s.</string>
-    <string name="git_arquivos_acima_de_100_mb"># Files over 100 MB (GitHub refuses them)</string>
     <string name="git_atualizacao_da_pasta">Folder update</string>
     <string name="git_baixando_do_github">Downloading from GitHub…</string>
     <string name="git_baixar">Download</string>
@@ -250,7 +249,6 @@
     <string name="git_registrando_arquivos">Recording files</string>
     <string name="git_repositorio_criado_e_enviado_ao">Repository created and sent to GitHub.</string>
     <string name="git_repositorio_trocado_para">Repository changed to %1$s.</string>
-    <string name="git_retrying">GitHub failed (%1$s). Trying again in %2$s s (%3$s of %4$s)…</string>
     <string name="git_roda_em_segundo_plano_se">Runs in the background. If it fails, the next send continues where it stopped.</string>
     <string name="git_salva_o_que_mudou_so">Saves what changed, only on this phone</string>
     <string name="git_salvando_capas_de">Saving covers: %1$s of %2$s</string>

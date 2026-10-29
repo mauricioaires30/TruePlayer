@@ -101,12 +101,7 @@ class YoutubeDownloadService : Service() {
 
     private fun finishBatchIfIdle() {
         if (queuedDownloads.get() != 0) return
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
-        } else {
-            @Suppress("DEPRECATION")
-            runCatching { stopForeground(true) }
-        }
+        runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
         // Fila vazia: encerra o serviço em vez de ficar parado na memória. Se chegou um link depois do
         // último pedido visto aqui, o Android ignora este stopSelf e o serviço continua.
         synchronized(batchLock) {
@@ -250,12 +245,7 @@ class YoutubeDownloadService : Service() {
         completed: Boolean = false,
         failed: Boolean = false,
     ) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-            runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
-        } else {
-            @Suppress("DEPRECATION")
-            runCatching { stopForeground(true) }
-        }
+        runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
         notificationManager().notify(
             ShareContract.NOTIFICATION_RESULT_ID,
             buildNotification(
@@ -310,7 +300,6 @@ class YoutubeDownloadService : Service() {
     }
 
     private fun ensureNotificationChannel() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val channel = NotificationChannel(
             ShareContract.NOTIFICATION_CHANNEL_ID,
             t(R.string.dl_downloads_do_trueplayer),
@@ -349,7 +338,7 @@ class YoutubeDownloadService : Service() {
             if (queueStore(app).load().isEmpty()) return
             val intent = Intent(app, YoutubeDownloadService::class.java).apply { action = ShareContract.ACTION_START_DOWNLOAD }
             runCatching {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) app.startForegroundService(intent) else app.startService(intent)
+                app.startForegroundService(intent)
             }
         }
 
@@ -360,11 +349,7 @@ class YoutubeDownloadService : Service() {
                 action = ShareContract.ACTION_START_DOWNLOAD
                 putExtra(ShareContract.EXTRA_SHARED_URL, cleanUrl)
             }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(intent)
-            } else {
-                context.startService(intent)
-            }
+            context.startForegroundService(intent)
         }
     }
 }

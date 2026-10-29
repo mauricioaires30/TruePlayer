@@ -73,7 +73,7 @@
     <string name="dl_baixando_musica">Laddar ned låt</string>
     <string name="dl_conectando">Ansluter…</string>
     <string name="dl_confira_se_o_link_esta">Kontrollera att länken stämmer och att spellistan är offentlig.</string>
-    <string name="dl_convertendo_para_mp3">Konverterar till MP3...</string>
+    <string name="dl_convertendo_para_mp3">Konverterar till MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s av %3$s låtar%4$s</string>
     <string name="dl_download_concluido">Nedladdningen är klar</string>
     <string name="dl_downloads_do_trueplayer">TruePlayer-nedladdningar</string>
@@ -145,7 +145,6 @@
     <string name="git_a_pasta_precisa_estar_no">mappen måste ligga i telefonens interna lagring</string>
     <string name="git_abra_o_app_para_confirmar">Öppna appen för att bekräfta sändningen.</string>
     <string name="git_acima_de_100_mb_o">\n\nÖver 100 MB (GitHub nekar), utelämnade: %1$s: %2$s.</string>
-    <string name="git_arquivos_acima_de_100_mb"># Filer över 100 MB (GitHub nekar dem)</string>
     <string name="git_atualizacao_da_pasta">Mappuppdatering</string>
     <string name="git_baixando_do_github">Laddar ned från GitHub…</string>
     <string name="git_baixar">Nedladdning</string>
@@ -249,7 +248,6 @@
     <string name="git_registrando_arquivos">Registrerar filer</string>
     <string name="git_repositorio_criado_e_enviado_ao">Arkivet skapades och skickades till GitHub.</string>
     <string name="git_repositorio_trocado_para">Arkivet byttes till %1$s.</string>
-    <string name="git_retrying">GitHub misslyckades (%1$s). Försöker igen om %2$s s (%3$s av %4$s)…</string>
     <string name="git_roda_em_segundo_plano_se">Körs i bakgrunden. Om det misslyckas fortsätter nästa sändning där den slutade.</string>
     <string name="git_salva_o_que_mudou_so">Sparar det som ändrats, bara på den här telefonen</string>
     <string name="git_salvando_capas_de">Sparar omslag: %1$s av %2$s</string>

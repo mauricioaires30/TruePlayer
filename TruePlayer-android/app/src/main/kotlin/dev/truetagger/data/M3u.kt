@@ -35,7 +35,7 @@ object M3u {
         val entries = ArrayList<PlaylistEntry>()
         var label = ""
         var duration = -1
-        for (rawLine in text.removePrefix("﻿").lineSequence()) {
+        for (rawLine in text.removePrefix("\uFEFF").lineSequence()) {
             val line = rawLine.trim()
             if (line.isEmpty()) continue
             if (line.startsWith("#")) {

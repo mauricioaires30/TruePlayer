@@ -73,7 +73,7 @@
     <string name="dl_baixando_musica">Mengunduh lagu</string>
     <string name="dl_conectando">Menghubungkan…</string>
     <string name="dl_confira_se_o_link_esta">Periksa apakah tautannya benar dan playlist-nya publik.</string>
-    <string name="dl_convertendo_para_mp3">Mengonversi ke MP3...</string>
+    <string name="dl_convertendo_para_mp3">Mengonversi ke MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s dari %3$s lagu%4$s</string>
     <string name="dl_download_concluido">Unduhan selesai</string>
     <string name="dl_downloads_do_trueplayer">Unduhan TruePlayer</string>
@@ -145,7 +145,6 @@
     <string name="git_a_pasta_precisa_estar_no">folder harus berada di penyimpanan internal ponsel</string>
     <string name="git_abra_o_app_para_confirmar">Buka aplikasi untuk mengonfirmasi pengiriman.</string>
     <string name="git_acima_de_100_mb_o">\n\nDi atas 100 MB (ditolak GitHub), dikecualikan: %1$s: %2$s.</string>
-    <string name="git_arquivos_acima_de_100_mb"># File di atas 100 MB (ditolak GitHub)</string>
     <string name="git_atualizacao_da_pasta">Pembaruan folder</string>
     <string name="git_baixando_do_github">Mengunduh dari GitHub…</string>
     <string name="git_baixar">Unduhan</string>
@@ -249,7 +248,6 @@
     <string name="git_registrando_arquivos">Mencatat file</string>
     <string name="git_repositorio_criado_e_enviado_ao">Repositori dibuat dan dikirim ke GitHub.</string>
     <string name="git_repositorio_trocado_para">Repositori diganti ke %1$s.</string>
-    <string name="git_retrying">GitHub gagal (%1$s). Mencoba lagi dalam %2$s d (%3$s dari %4$s)…</string>
     <string name="git_roda_em_segundo_plano_se">Berjalan di latar belakang. Jika gagal, pengiriman berikutnya melanjutkan dari tempat berhenti.</string>
     <string name="git_salva_o_que_mudou_so">Menyimpan yang berubah, hanya di ponsel ini</string>
     <string name="git_salvando_capas_de">Menyimpan sampul: %1$s dari %2$s</string>

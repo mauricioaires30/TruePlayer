@@ -8,7 +8,9 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -187,13 +189,16 @@ internal fun CompactBottomBar(
                         )
                     }
                     Spacer(Modifier.height(2.dp))
-                    Text(
+                    // Em alguns idiomas o nome da aba é longo: a letra diminui até caber, sem cortar a palavra.
+                    BasicText(
                         item.label,
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontSize = UiTokens.bottomBarLabelSize,
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                        color = tint,
+                        style = LocalTextStyle.current.copy(
+                            color = tint,
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        ),
+                        autoSize = TextAutoSize.StepBased(minFontSize = 7.sp, maxFontSize = UiTokens.bottomBarLabelSize, stepSize = 0.5.sp),
                     )
                 }
             }

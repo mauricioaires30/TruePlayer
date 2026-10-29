@@ -73,7 +73,7 @@
     <string name="dl_baixando_musica">Đang tải bài hát</string>
     <string name="dl_conectando">Đang kết nối…</string>
     <string name="dl_confira_se_o_link_esta">Hãy kiểm tra liên kết đúng chưa và danh sách phát có công khai không.</string>
-    <string name="dl_convertendo_para_mp3">Đang chuyển sang MP3...</string>
+    <string name="dl_convertendo_para_mp3">Đang chuyển sang MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s/%3$s bài hát%4$s</string>
     <string name="dl_download_concluido">Tải xuống xong</string>
     <string name="dl_downloads_do_trueplayer">Tải xuống của TruePlayer</string>
@@ -145,7 +145,6 @@
     <string name="git_a_pasta_precisa_estar_no">thư mục phải nằm trong bộ nhớ trong của điện thoại</string>
     <string name="git_abra_o_app_para_confirmar">Hãy mở ứng dụng để xác nhận việc gửi.</string>
     <string name="git_acima_de_100_mb_o">\n\nTrên 100 MB (GitHub từ chối), đã loại ra: %1$s: %2$s.</string>
-    <string name="git_arquivos_acima_de_100_mb"># Các tệp trên 100 MB (GitHub từ chối)</string>
     <string name="git_atualizacao_da_pasta">Cập nhật thư mục</string>
     <string name="git_baixando_do_github">Đang tải xuống từ GitHub…</string>
     <string name="git_baixar">Tải xuống</string>
@@ -249,7 +248,6 @@
     <string name="git_registrando_arquivos">Đang ghi các tệp</string>
     <string name="git_repositorio_criado_e_enviado_ao">Đã tạo kho lưu trữ và gửi lên GitHub.</string>
     <string name="git_repositorio_trocado_para">Đã đổi kho lưu trữ sang %1$s.</string>
-    <string name="git_retrying">GitHub lỗi (%1$s). Thử lại sau %2$s giây (%3$s/%4$s)…</string>
     <string name="git_roda_em_segundo_plano_se">Chạy ở chế độ nền. Nếu thất bại, lần gửi sau sẽ tiếp tục từ chỗ đã dừng.</string>
     <string name="git_salva_o_que_mudou_so">Lưu những gì đã đổi, chỉ trên điện thoại này</string>
     <string name="git_salvando_capas_de">Đang lưu ảnh bìa: %1$s/%2$s</string>

@@ -868,12 +868,7 @@ class MusicPlaybackService : Service() {
     private fun hideNotificationNow() {
         notificationSuppressed = true
         notificationLastUpdateMs = android.os.SystemClock.uptimeMillis()
-        if (Build.VERSION.SDK_INT >= 24) {
-            stopForeground(STOP_FOREGROUND_REMOVE)
-        } else {
-            @Suppress("DEPRECATION")
-            stopForeground(true)
-        }
+        stopForeground(STOP_FOREGROUND_REMOVE)
         runCatching {
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.cancel(NOTIFICATION_ID)
@@ -1076,9 +1071,7 @@ class MusicPlaybackService : Service() {
                 .addAction(action(ACTION_NEXT, android.R.drawable.ic_media_next, t(R.string.proxima)))
                 .addAction(action(ACTION_REPEAT, if (repeat == RepeatMode.ONE) R.drawable.truetagger_repeat_on else R.drawable.truetagger_repeat_off, repeatTitle))
         }
-        if (Build.VERSION.SDK_INT >= 26) {
-            builder.setProgress(duration.toInt().coerceAtLeast(1), position.toInt().coerceIn(0, duration.toInt().coerceAtLeast(1)), false)
-        }
+        builder.setProgress(duration.toInt().coerceAtLeast(1), position.toInt().coerceIn(0, duration.toInt().coerceAtLeast(1)), false)
         if (notificationArtworkTrackId != track.id) {
             notificationArtwork = loadNotificationArtwork(track)
             notificationArtworkTrackId = track.id
@@ -1145,7 +1138,7 @@ class MusicPlaybackService : Service() {
         val embedded = track.artworkBytes?.takeIf { it.isNotEmpty() }?.let(::decode)
 
         val fromFile = embedded ?: runCatching {
-            MediaMetadataRetriever().use { retriever ->
+            withRetriever { retriever ->
                 retriever.setDataSource(this, Uri.parse(track.id))
                 retriever.embeddedPicture?.let(::decode)
             }
@@ -1170,17 +1163,15 @@ class MusicPlaybackService : Service() {
     }
 
     private fun createChannel() {
-        if (Build.VERSION.SDK_INT >= 26) {
-            val manager = getSystemService(NotificationManager::class.java)
-            manager.createNotificationChannel(
-                NotificationChannel(CHANNEL, t(R.string.pb_musica), NotificationManager.IMPORTANCE_LOW).apply {
-                    description = t(R.string.pb_player_de_musica_do_trueplayer)
-                    setSound(null, null)
-                    enableVibration(false)
-                    setShowBadge(false)
-                }
-            )
-        }
+        val manager = getSystemService(NotificationManager::class.java)
+        manager.createNotificationChannel(
+            NotificationChannel(CHANNEL, t(R.string.pb_musica), NotificationManager.IMPORTANCE_LOW).apply {
+                description = t(R.string.pb_player_de_musica_do_trueplayer)
+                setSound(null, null)
+                enableVibration(false)
+                setShowBadge(false)
+            }
+        )
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
