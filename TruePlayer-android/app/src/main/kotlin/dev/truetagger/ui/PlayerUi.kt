@@ -472,20 +472,13 @@ private fun TruePlayerIntro() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(UiTokens.sectionSpacing),
         ) {
-            Surface(
-                modifier = Modifier.size(120.dp),
-                shape = RoundedCornerShape(26.dp),
-                color = Color.Black,
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Image(
-                        painter = painterResource(R.drawable.trueplayer_icon),
-                        contentDescription = "TruePlayer",
-                        modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(20.dp)),
-                        contentScale = ContentScale.Crop,
-                    )
-                }
-            }
+            // Só o logo, sem o quadrado preto do ícone da tela inicial: serve nos temas claro e escuro.
+            Image(
+                painter = painterResource(R.drawable.trueplayer_logo),
+                contentDescription = "TruePlayer",
+                modifier = Modifier.size(112.dp),
+                contentScale = ContentScale.Fit,
+            )
             Text(
                 text = "TruePlayer",
                 style = MaterialTheme.typography.headlineSmall,
@@ -946,7 +939,8 @@ fun TrueTaggerPlayerApp(
             }
         }
         if (playerScreen == PlayerScreen.QUEUE) Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-          Box(Modifier.fillMaxSize().appInsetsPadding()) {
+          // Sem o espaço de baixo: o mini player cuida dele e a cor dele desce até a borda, como a barra de abas.
+          Box(Modifier.fillMaxSize().windowInsetsPadding(AppInsets.only(WindowInsetsSides.Top + WindowInsetsSides.Horizontal))) {
             QueueScreen(
                 s = snapshot,
                 onBack = { goBack() },
@@ -989,6 +983,8 @@ private fun MiniPlayer(
     onRepeat: () -> Unit,
     /** Abre a fila. Só o mini player da tela principal mostra o botão; na própria tela da fila fica sem. */
     onQueue: (() -> Unit)? = null,
+    /** Fora do Scaffold (fila): o fundo do mini player cobre também o espaço da barra de navegação do Android. */
+    extendBehindNavBar: Boolean = false,
 ) {
     val accent = MaterialTheme.colorScheme.primary
     val context = LocalContext.current
@@ -1000,6 +996,7 @@ private fun MiniPlayer(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .then(if (extendBehindNavBar) Modifier.navigationBarsPadding() else Modifier)
                 .height(UiTokens.miniPlayerHeight)
                 .clickable(onClick = onOpen),
         ) {
@@ -1233,6 +1230,7 @@ private fun QueueScreen(
             MiniPlayer(
                 s = s,
                 onOpen = {}, onToggle = onToggle, onPrevious = onPrevious, onNext = onNext, onShuffle = onShuffle, onRepeat = onRepeat,
+                extendBehindNavBar = true,
             )
         }
     }

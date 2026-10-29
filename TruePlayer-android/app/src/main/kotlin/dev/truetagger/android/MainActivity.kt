@@ -749,7 +749,7 @@ class MainActivity : ComponentActivity() {
         )
         window.setBackgroundDrawable(
             android.graphics.drawable.ColorDrawable(
-                if (dark) 0xFF050307.toInt() else 0xFFFBF8FF.toInt(),
+                if (dark) 0xFF050307.toInt() else 0xFFFBFAFC.toInt(),
             ),
         )
     }

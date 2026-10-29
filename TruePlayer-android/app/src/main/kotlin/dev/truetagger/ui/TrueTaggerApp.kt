@@ -90,25 +90,26 @@ import dev.truetagger.android.t
 import dev.truetagger.android.R
 
 val TruePlayerLightScheme = lightColorScheme(
-    primary = Color(0xFF7B2CBF),
+    // Roxo mais calmo e superfícies quase neutras: o roxo forte fica só nos destaques.
+    primary = Color(0xFF7C5CBF),
     onPrimary = Color(0xFFFFFFFF),
-    secondary = Color(0xFF7A3FD8),
+    secondary = Color(0xFF7D6A9E),
     onSecondary = Color(0xFFFFFFFF),
-    tertiary = Color(0xFFA24BD0),
-    background = Color(0xFFFBF8FF),
-    onBackground = Color(0xFF1E1626),
-    surface = Color(0xFFF1E9F9),
-    onSurface = Color(0xFF1E1626),
-    surfaceVariant = Color(0xFFE8DDF3),
-    onSurfaceVariant = Color(0xFF5C4D6B),
-    primaryContainer = Color(0xFFE9D3FF),
-    onPrimaryContainer = Color(0xFF2B0A4A),
-    secondaryContainer = Color(0xFFEBDDFA),
-    onSecondaryContainer = Color(0xFF2A1244),
+    tertiary = Color(0xFF9A74B8),
+    background = Color(0xFFFBFAFC),
+    onBackground = Color(0xFF1C1A21),
+    surface = Color(0xFFF3F1F6),
+    onSurface = Color(0xFF1C1A21),
+    surfaceVariant = Color(0xFFEBE8EF),
+    onSurfaceVariant = Color(0xFF5D5967),
+    primaryContainer = Color(0xFFEBE3F7),
+    onPrimaryContainer = Color(0xFF2B1D45),
+    secondaryContainer = Color(0xFFECE7F3),
+    onSecondaryContainer = Color(0xFF2A2236),
     errorContainer = Color(0xFFFFDAD6),
-    outline = Color(0xFF85758F),
-    outlineVariant = Color(0xFFD8CBE3),
-    tertiaryContainer = Color(0xFFF3DCFF),
+    outline = Color(0xFF8A8593),
+    outlineVariant = Color(0xFFDDD9E2),
+    tertiaryContainer = Color(0xFFF1E6F8),
 )
 
 val TruePlayerDarkScheme = darkColorScheme(
