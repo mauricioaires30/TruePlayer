@@ -325,6 +325,8 @@
     <string name="musicas_do_celular">Utwory na telefonie</string>
     <string name="musicas_ja_estao_em_songs">Utwory: %1$s (%2$s już w songs)\n</string>
     <string name="n_min">%1$s min</string>
+    <string name="stats_minutes">Minuty</string>
+    <string name="stats_plays">Odtworzenia</string>
     <string name="nada_encontrado">Nic nie znaleziono</string>
     <string name="nada_tocado_ainda">Nic jeszcze nie odtworzono</string>
     <string name="nao_consegui_criar">nie udało się utworzyć</string>
@@ -588,6 +590,12 @@
         <item quantity="few">%1$s utwory</item>
         <item quantity="many">%1$s utworów</item>
         <item quantity="other">%1$s utworu</item>
+    </plurals>
+    <plurals name="n_plays">
+        <item quantity="one">%1$s odtworzenie</item>
+        <item quantity="few">%1$s odtworzenia</item>
+        <item quantity="many">%1$s odtworzeń</item>
+        <item quantity="other">%1$s odtworzenia</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="one">%1$s playlista</item>

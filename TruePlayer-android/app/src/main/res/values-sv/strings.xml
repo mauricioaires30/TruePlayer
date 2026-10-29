@@ -325,6 +325,8 @@
     <string name="musicas_do_celular">Låtar på telefonen</string>
     <string name="musicas_ja_estao_em_songs">Låtar: %1$s (%2$s redan i songs)\n</string>
     <string name="n_min">%1$s min</string>
+    <string name="stats_minutes">Minuter</string>
+    <string name="stats_plays">Spelningar</string>
     <string name="nada_encontrado">Inget hittades</string>
     <string name="nada_tocado_ainda">Inget har spelats än</string>
     <string name="nao_consegui_criar">kunde inte skapa</string>
@@ -554,6 +556,10 @@
     <plurals name="n_musicas">
         <item quantity="one">%1$s låt</item>
         <item quantity="other">%1$s låtar</item>
+    </plurals>
+    <plurals name="n_plays">
+        <item quantity="one">%1$s spelning</item>
+        <item quantity="other">%1$s spelningar</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="one">%1$s spellista</item>

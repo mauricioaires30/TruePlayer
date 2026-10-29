@@ -15,6 +15,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import dev.truetagger.data.StatValue
+import dev.truetagger.data.StatsMetric
+import dev.truetagger.data.formatDuration
 import dev.truetagger.data.StatsRange
 import java.text.NumberFormat
 import dev.truetagger.android.ConnectivityObserver
@@ -252,56 +254,72 @@ private class PlayStatsStore(context: Context) {
         return tracks.associate { it.id to (totals[PlayStatsState.keyFor(it)] ?: StatValue()) }
     }
 
-    private fun StatValue.counts() = ms > 0L || plays > 0L
-
-    private fun <T> byTime(selector: (T) -> StatValue, name: (T) -> String): Comparator<T> =
-        compareByDescending<T> { selector(it).ms }.thenByDescending { selector(it).plays }.thenBy { name(it).lowercase(Locale.ROOT) }
-
-    fun topTracks(tracks: List<AudioTrack>, range: StatsRange, limit: Int = 10): List<Pair<AudioTrack, StatValue>> {
+    fun topTracks(tracks: List<AudioTrack>, range: StatsRange, metric: StatsMetric, limit: Int = MOST_PLAYED_LIMIT): List<Pair<AudioTrack, StatValue>> {
         val values = valuesFor(tracks, range)
         return tracks.asSequence()
             .map { it to (values[it.id] ?: StatValue()) }
-            .filter { it.second.counts() }
-            .sortedWith(byTime({ it.second }, { it.first.displayTitle() }))
+            .filter { metric.counts(it.second) }
+            .sortedWith(metric.order({ it.second }, { it.first.displayTitle() }))
             .take(limit)
             .toList()
     }
 
-    fun topAlbums(tracks: List<AudioTrack>, range: StatsRange, limit: Int = 10): List<Triple<String, String, StatValue>> {
+    fun topAlbums(tracks: List<AudioTrack>, range: StatsRange, metric: StatsMetric, limit: Int = MOST_PLAYED_LIMIT): List<Triple<String, String, StatValue>> {
         val values = valuesFor(tracks, range)
         return tracks.asSequence()
             .filter { it.album.isNotBlank() }
             .groupBy { Normalizer.normalize(it.album, Normalizer.Form.NFKC).trim().replace(Regex("\\s+"), " ").lowercase(Locale.ROOT) }
             .mapNotNull { (_, group) ->
                 val total = group.fold(StatValue()) { acc, t -> acc + (values[t.id] ?: StatValue()) }
-                if (!total.counts()) return@mapNotNull null
+                if (!metric.counts(total)) return@mapNotNull null
                 val first = group.first()
                 Triple(first.album, first.albumArtist.ifBlank { first.artist }, total)
             }
-            .sortedWith(byTime({ it.third }, { it.first }))
+            .sortedWith(metric.order({ it.third }, { it.first }))
             .take(limit)
             .toList()
     }
 
-    fun topArtists(tracks: List<AudioTrack>, range: StatsRange, limit: Int = 10): List<Pair<String, StatValue>> {
+    fun topArtists(tracks: List<AudioTrack>, range: StatsRange, metric: StatsMetric, limit: Int = MOST_PLAYED_LIMIT): List<Pair<String, StatValue>> {
         val values = valuesFor(tracks, range)
         return tracks.asSequence()
             .filter { it.artist.isNotBlank() && it.artist != "<unknown>" }
             .groupBy { Normalizer.normalize(it.artist, Normalizer.Form.NFKC).trim().replace(Regex("\\s+"), " ").lowercase(Locale.ROOT) }
             .mapNotNull { (_, group) ->
                 val total = group.fold(StatValue()) { acc, t -> acc + (values[t.id] ?: StatValue()) }
-                if (!total.counts()) null else (group.first().artist to total)
+                if (!metric.counts(total)) null else (group.first().artist to total)
             }
-            .sortedWith(byTime({ it.second }, { it.first }))
+            .sortedWith(metric.order({ it.second }, { it.first }))
             .take(limit)
             .toList()
     }
 }
 
+private const val MOST_PLAYED_LIMIT = 100
+
 private fun StatValue.minutesText(): String = when {
     ms <= 0L -> "—"
     ms < 60_000L -> t(R.string.less_than_1_min)
     else -> t(R.string.n_min, NumberFormat.getIntegerInstance(AppText.context().resources.configuration.locales[0]).format(minutes))
+}
+
+/** Só a medida escolhida: "25 min" ou "12 vezes". */
+private fun StatValue.text(metric: StatsMetric): String =
+    if (metric == StatsMetric.MINUTES) minutesText() else tp(R.plurals.n_plays, plays.coerceAtMost(Int.MAX_VALUE.toLong()).toInt())
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StatsMetricToggle(metric: StatsMetric, onChange: (StatsMetric) -> Unit) {
+    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(bottom = UiTokens.space2)) {
+        StatsMetric.entries.forEachIndexed { index, m ->
+            SegmentedButton(
+                selected = m == metric,
+                onClick = { onChange(m) },
+                shape = SegmentedButtonDefaults.itemShape(index, StatsMetric.entries.size),
+                label = { Text(t(if (m == StatsMetric.MINUTES) R.string.stats_minutes else R.string.stats_plays), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            )
+        }
+    }
 }
 
 @Composable
@@ -985,12 +1003,12 @@ private fun MiniPlayer(
                 .height(UiTokens.miniPlayerHeight)
                 .clickable(onClick = onOpen),
         ) {
-            // Linha ondulada de progresso no topo: anda com a música, acalma ao pausar e dá para tocar ou
-            // arrastar nela para mudar o ponto da música sem abrir o player grande.
+            // Linha ondulada de progresso no topo, com os tempos nas pontas: anda com a música, acalma ao pausar
+            // e dá para tocar ou arrastar nela para mudar o ponto da música sem abrir o player grande.
             SeekableWavyBar(
                 s = s,
                 onSeek = { f -> MusicPlaybackService.command(context, MusicPlaybackService.ACTION_SEEK, (f * s.durationMs).toLong()) },
-                modifier = Modifier.fillMaxWidth().height(17.dp).padding(horizontal = UiTokens.space3),
+                modifier = Modifier.fillMaxWidth().height(20.dp).padding(horizontal = UiTokens.space3),
             )
             Row(
                 modifier = Modifier.fillMaxWidth().weight(1f).padding(start = UiTokens.compactPadding, end = UiTokens.space2),
@@ -1072,7 +1090,8 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().padding(horizontal = UiTokens.screenHorizontalPadding, vertical = UiTokens.screenVerticalPadding), horizontalAlignment = Alignment.CenterHorizontally) {
             ScreenHeaderRow(title = t(R.string.reproduzindo), onBack = onClose)
-            Spacer(Modifier.height(UiTokens.sectionSpacing))
+            // Capa, nomes, barra e botões ficam juntos no meio do espaço que sobra (antes a sobra ia toda para baixo).
+            Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
             key(s.current?.id) {
                 PlayerArtworkBox(
                     s.current?.artworkBytes,
@@ -1088,21 +1107,17 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
-            // Álbum e artista em duas linhas, cada um tocável (abre a tela dele) e com rolagem se for grande.
-            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                val album = s.current?.album.orEmpty()
-                val artist = s.current?.artist.orEmpty()
-                if (album.isNotBlank()) {
-                    TextButton(onClick = onAlbum, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), modifier = Modifier.fillMaxWidth()) {
-                        ScrollingText(album, modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
-                    }
-                }
-                if (artist.isNotBlank()) {
-                    TextButton(onClick = onArtist, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), modifier = Modifier.fillMaxWidth()) {
-                        ScrollingText(artist, modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
-                    }
-                }
+            // Álbum e artista logo abaixo do título, cada um tocável (abre a tela dele) e com rolagem se for grande.
+            // Sem TextButton: a altura mínima dele (40 dp) deixava as linhas muito separadas.
+            val album = s.current?.album.orEmpty()
+            val artist = s.current?.artist.orEmpty()
+            if (album.isNotBlank()) {
+                PlayerInfoLink(album, MaterialTheme.colorScheme.onSurfaceVariant, onAlbum, Modifier.padding(top = 2.dp))
             }
+            if (artist.isNotBlank()) {
+                PlayerInfoLink(artist, MaterialTheme.colorScheme.primary, onArtist)
+            }
+            Spacer(Modifier.height(UiTokens.space2))
             // O Slider continua cuidando do toque e da acessibilidade; o trilho e a barrinha são desenhados por nós.
             // O seek só é enviado ao soltar o dedo (antes ia um comando a cada pixel arrastado).
             val smooth = rememberSmoothFraction(s)
@@ -1152,8 +1167,25 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
             ActionButtonRow {
                 ActionButton(t(R.string.abrir_fila), Icons.AutoMirrored.Rounded.QueueMusic, onQueue, Modifier.weight(1f))
             }
+            }
         }
     }
+}
+
+/** Nome do álbum ou do artista no player completo: uma linha tocável, com rolagem se for grande. */
+@Composable
+private fun PlayerInfoLink(text: String, color: Color, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    ScrollingText(
+        text,
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(UiTokens.space2))
+            .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick)
+            .padding(horizontal = 4.dp, vertical = 3.dp),
+        style = MaterialTheme.typography.bodyLarge,
+        color = color,
+        textAlign = TextAlign.Center,
+    )
 }
 
 @Composable
@@ -1608,6 +1640,7 @@ private fun CombinedMostPlayedPlaylistHost(
     val context = LocalContext.current
     val store = remember { PlayStatsStore(context) }
     var range by rememberSaveable { mutableStateOf(StatsRange.ALL) }
+    var metric by rememberSaveable { mutableStateOf(StatsMetric.MINUTES) }
     var creating by remember { mutableStateOf(false) }
     var createName by remember { mutableStateOf("") }
     var renaming by remember { mutableStateOf<PlaylistData?>(null) }
@@ -1620,9 +1653,9 @@ private fun CombinedMostPlayedPlaylistHost(
     // A revisão entra como chave do remember: os três cards são recalculados
     // pelo mesmo evento de reprodução, mas não a cada recomposição (o cálculo
     // percorre e ordena a biblioteca inteira).
-    val liveTopTrack = remember(statsRevision, tracks, range) { store.topTracks(tracks, range, 1).firstOrNull() }
-    val liveTopAlbum = remember(statsRevision, tracks, range) { store.topAlbums(tracks, range, 1).firstOrNull() }
-    val liveTopArtist = remember(statsRevision, tracks, range) { store.topArtists(tracks, range, 1).firstOrNull() }
+    val liveTopTrack = remember(statsRevision, tracks, range, metric) { store.topTracks(tracks, range, metric, 1).firstOrNull() }
+    val liveTopAlbum = remember(statsRevision, tracks, range, metric) { store.topAlbums(tracks, range, metric, 1).firstOrNull() }
+    val liveTopArtist = remember(statsRevision, tracks, range, metric) { store.topArtists(tracks, range, metric, 1).firstOrNull() }
 
     BackHandler(enabled = mode != MostPlayedMode.OVERVIEW) {
         mode = MostPlayedMode.OVERVIEW
@@ -1682,6 +1715,7 @@ private fun CombinedMostPlayedPlaylistHost(
                             item {
                                 Text(t(R.string.mais_ouvidas_2), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = UiTokens.space2))
                             }
+                            item { StatsMetricToggle(metric) { metric = it } }
                             item { StatsRangeChips(range) { range = it } }
                             item {
                                 // A reprodução iniciada é o único gatilho necessário para
@@ -1697,7 +1731,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                         }
                                         MostPlayedCategoryCard(
                                         title = t(R.string.musicas),
-                                        subtitle = topTrack?.let { "${it.displayTitle()} • ${liveTopTrack?.second?.minutesText().orEmpty()}" },
+                                        subtitle = topTrack?.let { "${it.displayTitle()} • ${liveTopTrack?.second?.text(metric).orEmpty()}" },
                                         artwork = topTrack?.artworkBytes,
                                         artworkUri = topTrack?.id,
                                         modifier = Modifier.weight(1f),
@@ -1705,7 +1739,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                     )
                                     MostPlayedCategoryCard(
                                         title = t(R.string.albuns),
-                                        subtitle = topAlbum?.let { "$it • ${liveTopAlbum?.third?.minutesText().orEmpty()}" },
+                                        subtitle = topAlbum?.let { "$it • ${liveTopAlbum?.third?.text(metric).orEmpty()}" },
                                         artwork = topAlbumTrack?.artworkBytes,
                                         artworkUri = topAlbumTrack?.id,
                                         modifier = Modifier.weight(1f),
@@ -1713,7 +1747,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                     )
                                         MostPlayedCategoryCard(
                                             title = t(R.string.artistas_caps),
-                                            subtitle = liveTopArtist?.let { "${it.first} • ${it.second.minutesText()}" },
+                                            subtitle = liveTopArtist?.let { "${it.first} • ${it.second.text(metric)}" },
                                             artistName = liveTopArtist?.first,
                                             modifier = Modifier.weight(1f),
                                             onClick = { mode = MostPlayedMode.ARTISTS },
@@ -1728,10 +1762,13 @@ private fun CombinedMostPlayedPlaylistHost(
             } else {
                 val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
                 PersistListScroll(state, "most_played_${mode.name}")
+                StatsMetricToggle(metric) { metric = it }
                 StatsRangeChips(range) { range = it }
+                // A ordem muda com a medida e o período: volta para o topo da lista.
+                LaunchedEffect(metric, range) { if (state.firstVisibleItemIndex > 0) state.scrollToItem(0) }
                 when (mode) {
                     MostPlayedMode.TRACKS -> {
-                        val values = remember(statsRevision, tracks, range) { store.topTracks(tracks, range) }
+                        val values = remember(statsRevision, tracks, range, metric) { store.topTracks(tracks, range, metric) }
                         if (values.isEmpty()) EmptyMostPlayed() else SongListContainer(state = state, modifier = Modifier.fillMaxSize()) {
                             itemsIndexed(values, key = { _, pair -> pair.first.id }) { index, (track, value) ->
                                 MostPlayedRow(
@@ -1739,7 +1776,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                     track.displayTitle(),
                                     track.artist,
                                     track.album,
-                                    value,
+                                    value.text(metric),
                                     track.artworkBytes,
                                     track.id,
                                 ) { play(listOf(track), 0) }
@@ -1747,7 +1784,7 @@ private fun CombinedMostPlayedPlaylistHost(
                         }
                     }
                     MostPlayedMode.ALBUMS -> {
-                        val values = remember(statsRevision, tracks, range) { store.topAlbums(tracks, range) }
+                        val values = remember(statsRevision, tracks, range, metric) { store.topAlbums(tracks, range, metric) }
                         if (values.isEmpty()) EmptyMostPlayed() else SongListContainer(state = state, modifier = Modifier.fillMaxSize()) {
                             itemsIndexed(values, key = { _, item -> item.first + "\u0000" + item.second }) { index, (album, artist, value) ->
                                 val artworkTrack = tracks.firstOrNull { it.album.equals(album, true) && it.artworkBytes?.isNotEmpty() == true }
@@ -1757,7 +1794,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                     album,
                                     artist,
                                     "",
-                                    value,
+                                    value.text(metric),
                                     artworkTrack?.artworkBytes,
                                     artworkTrack?.id,
                                 ) { onAlbum(album) }
@@ -1765,7 +1802,7 @@ private fun CombinedMostPlayedPlaylistHost(
                         }
                     }
                     MostPlayedMode.ARTISTS -> {
-                        val values = remember(statsRevision, tracks, range) { store.topArtists(tracks, range) }
+                        val values = remember(statsRevision, tracks, range, metric) { store.topArtists(tracks, range, metric) }
                         if (values.isEmpty()) EmptyMostPlayed() else SongListContainer(state = state, modifier = Modifier.fillMaxSize()) {
                             itemsIndexed(values, key = { _, item -> item.first }) { index, (artist, value) ->
                                 MostPlayedRow(
@@ -1773,7 +1810,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                     artist,
                                     "",
                                     "",
-                                    value,
+                                    value.text(metric),
                                     null,
                                     null,
                                     artist,
@@ -1866,7 +1903,7 @@ private fun EmptyMostPlayed() {
 }
 
 @Composable
-private fun MostPlayedRow(rank: Int, title: String, artist: String, album: String, value: StatValue, artwork: ByteArray?, artworkUri: String? = null, artistImageName: String? = null, onClick: () -> Unit) {
+private fun MostPlayedRow(rank: Int, title: String, artist: String, album: String, value: String, artwork: ByteArray?, artworkUri: String? = null, artistImageName: String? = null, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth()
             .heightIn(min = UiTokens.mostPlayedRowHeight)
@@ -1893,10 +1930,7 @@ private fun MostPlayedRow(rank: Int, title: String, artist: String, album: Strin
                 ScrollingText(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
-        Column(horizontalAlignment = Alignment.End) {
-            Text(value.minutesText(), color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
-            Text("${value.plays}×", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
+        Text(value, color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold, maxLines = 1)
     }
 }
 
@@ -3107,13 +3141,6 @@ private fun TouchScrollbar(state: LazyListState, modifier: Modifier, topInset: D
     }
 }
 
-private fun formatDuration(ms: Long): String {
-    val seconds = (ms / 1000).coerceAtLeast(0L)
-    val hours = seconds / 3600
-    val minutes = (seconds % 3600) / 60
-    val rest = (seconds % 60).toString().padStart(2, '0')
-    return if (hours > 0) String.format(Locale.getDefault(), "%02d:%02d:%s", hours, minutes, rest) else "$minutes:$rest"
-}
 private fun AudioTrack.displayTitle(): String = title.ifBlank { displayName.substringBeforeLast('.').ifBlank { t(R.string.sem_titulo) } }
 /** Artista principal, sem "feat.", vírgulas ou "&": serve para juntar as faixas de um mesmo álbum. */
 private fun primaryArtist(name: String): String =

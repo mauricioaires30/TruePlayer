@@ -1,5 +1,6 @@
 package dev.truetagger.ui
 
+import dev.truetagger.data.formatDuration
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Size
@@ -813,9 +814,3 @@ private fun AudioTrack.cleanDisplayTitle(): String = displayName
     .trim()
     .ifBlank { t(R.string.sem_titulo) }
 
-private fun formatDuration(ms: Long): String {
-    val seconds = ms / 1000
-    val minutes = seconds / 60
-    val rest = (seconds % 60).toString().padStart(2, '0')
-    return "$minutes:$rest"
-}

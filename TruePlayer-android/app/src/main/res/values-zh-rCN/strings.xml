@@ -325,6 +325,8 @@
     <string name="musicas_do_celular">手机上的歌曲</string>
     <string name="musicas_ja_estao_em_songs">歌曲：%1$s（其中%2$s已在 songs 中）\n</string>
     <string name="n_min">%1$s分钟</string>
+    <string name="stats_minutes">播放时长</string>
+    <string name="stats_plays">播放次数</string>
     <string name="nada_encontrado">未找到任何内容</string>
     <string name="nada_tocado_ainda">还没有播放过任何内容</string>
     <string name="nao_consegui_criar">无法创建</string>
@@ -537,6 +539,9 @@
     </plurals>
     <plurals name="n_musicas">
         <item quantity="other">%1$s首歌曲</item>
+    </plurals>
+    <plurals name="n_plays">
+        <item quantity="other">%1$s 次</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="other">%1$s个播放列表</item>

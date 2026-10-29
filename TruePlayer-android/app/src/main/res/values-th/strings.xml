@@ -325,6 +325,8 @@
     <string name="musicas_do_celular">เพลงในโทรศัพท์</string>
     <string name="musicas_ja_estao_em_songs">เพลง: %1$s (%2$s อยู่ใน songs แล้ว)\n</string>
     <string name="n_min">%1$s นาที</string>
+    <string name="stats_minutes">นาที</string>
+    <string name="stats_plays">จำนวนครั้ง</string>
     <string name="nada_encontrado">ไม่พบอะไร</string>
     <string name="nada_tocado_ainda">ยังไม่ได้เล่นอะไร</string>
     <string name="nao_consegui_criar">สร้างไม่ได้</string>
@@ -537,6 +539,9 @@
     </plurals>
     <plurals name="n_musicas">
         <item quantity="other">%1$s เพลง</item>
+    </plurals>
+    <plurals name="n_plays">
+        <item quantity="other">%1$s ครั้ง</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="other">%1$s เพลย์ลิสต์</item>

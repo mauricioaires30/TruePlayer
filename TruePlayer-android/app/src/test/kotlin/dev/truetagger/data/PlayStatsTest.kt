@@ -106,4 +106,27 @@ class PlayStatsTest {
     @Test fun allTimeIsTheFirstRange() {
         assertEquals(StatsRange.ALL, StatsRange.entries.first())
     }
+
+    private val ranked = listOf(
+        "long" to StatValue(600_000, 2),
+        "often" to StatValue(120_000, 9),
+        "tie b" to StatValue(120_000, 3),
+        "tie a" to StatValue(120_000, 3),
+        "old" to StatValue(0, 4),
+    )
+
+    private fun StatsMetric.names() = ranked.filter { counts(it.second) }.sortedWith(order({ it.second }, { it.first })).map { it.first }
+
+    @Test fun minutesSortByTimeThenPlaysThenName() {
+        assertEquals(listOf("long", "often", "tie a", "tie b", "old"), StatsMetric.MINUTES.names())
+    }
+
+    @Test fun playsSortByCountThenTime() {
+        assertEquals(listOf("often", "old", "tie a", "tie b", "long"), StatsMetric.PLAYS.names())
+    }
+
+    @Test fun playsSkipSongsThatWereNeverStarted() {
+        assertFalse(StatsMetric.PLAYS.counts(StatValue(90_000, 0)))
+        assertTrue(StatsMetric.MINUTES.counts(StatValue(0, 1)))
+    }
 }

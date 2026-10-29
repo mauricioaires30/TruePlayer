@@ -325,6 +325,8 @@
     <string name="musicas_do_celular">Telefondaki şarkılar</string>
     <string name="musicas_ja_estao_em_songs">Şarkılar: %1$s (%2$s zaten songs içinde)\n</string>
     <string name="n_min">%1$s dk</string>
+    <string name="stats_minutes">Dakika</string>
+    <string name="stats_plays">Dinlenme</string>
     <string name="nada_encontrado">Bir şey bulunamadı</string>
     <string name="nada_tocado_ainda">Henüz hiçbir şey çalınmadı</string>
     <string name="nao_consegui_criar">oluşturulamadı</string>
@@ -554,6 +556,10 @@
     <plurals name="n_musicas">
         <item quantity="one">%1$s şarkı</item>
         <item quantity="other">%1$s şarkı</item>
+    </plurals>
+    <plurals name="n_plays">
+        <item quantity="one">%1$s kez</item>
+        <item quantity="other">%1$s kez</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="one">%1$s çalma listesi</item>

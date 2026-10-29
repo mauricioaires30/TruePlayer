@@ -325,6 +325,8 @@
     <string name="musicas_do_celular">Nummers op de telefoon</string>
     <string name="musicas_ja_estao_em_songs">Nummers: %1$s (%2$s al in songs)\n</string>
     <string name="n_min">%1$s min</string>
+    <string name="stats_minutes">Minuten</string>
+    <string name="stats_plays">Keer afgespeeld</string>
     <string name="nada_encontrado">Niets gevonden</string>
     <string name="nada_tocado_ainda">Nog niets afgespeeld</string>
     <string name="nao_consegui_criar">kan niet maken</string>
@@ -554,6 +556,10 @@
     <plurals name="n_musicas">
         <item quantity="one">%1$s nummer</item>
         <item quantity="other">%1$s nummers</item>
+    </plurals>
+    <plurals name="n_plays">
+        <item quantity="one">%1$s keer</item>
+        <item quantity="other">%1$s keer</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="one">%1$s playlist</item>

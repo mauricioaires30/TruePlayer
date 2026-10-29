@@ -325,6 +325,8 @@
     <string name="musicas_do_celular">Lagu di ponsel</string>
     <string name="musicas_ja_estao_em_songs">Lagu: %1$s (%2$s sudah ada di songs)\n</string>
     <string name="n_min">%1$s mnt</string>
+    <string name="stats_minutes">Menit</string>
+    <string name="stats_plays">Diputar</string>
     <string name="nada_encontrado">Tidak ada yang ditemukan</string>
     <string name="nada_tocado_ainda">Belum ada yang diputar</string>
     <string name="nao_consegui_criar">tidak bisa membuat</string>
@@ -537,6 +539,9 @@
     </plurals>
     <plurals name="n_musicas">
         <item quantity="other">%1$s lagu</item>
+    </plurals>
+    <plurals name="n_plays">
+        <item quantity="other">%1$s kali</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="other">%1$s playlist</item>

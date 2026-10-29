@@ -325,6 +325,8 @@
     <string name="musicas_do_celular">المقاطع على الهاتف</string>
     <string name="musicas_ja_estao_em_songs">المقاطع: %1$s (%2$s موجودة بالفعل في songs)\n</string>
     <string name="n_min">%1$s د</string>
+    <string name="stats_minutes">الدقائق</string>
+    <string name="stats_plays">مرات التشغيل</string>
     <string name="nada_encontrado">لم يُعثر على شيء</string>
     <string name="nada_tocado_ainda">لم يُشغَّل شيء بعد</string>
     <string name="nao_consegui_criar">تعذّر الإنشاء</string>
@@ -622,6 +624,14 @@
         <item quantity="few">%1$s مقاطع</item>
         <item quantity="many">%1$s مقطعًا</item>
         <item quantity="other">%1$s مقطع</item>
+    </plurals>
+    <plurals name="n_plays">
+        <item quantity="zero">%1$s مرة</item>
+        <item quantity="one">مرة واحدة</item>
+        <item quantity="two">مرتان</item>
+        <item quantity="few">%1$s مرات</item>
+        <item quantity="many">%1$s مرة</item>
+        <item quantity="other">%1$s مرة</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="zero">لا قوائم تشغيل</item>

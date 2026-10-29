@@ -1,106 +1,106 @@
-## TruePlayer 1.9.2
+## TruePlayer 1.10.0
 
 ### English [en]
-- Fixed the library and covers on Android 8, 9 and 10.
-- The mini player bar now seeks to the right point after the song changes.
-- Long tab names shrink to fit, dialogs follow the chosen theme, and changing the language no longer reloads the screen twice.
+- The mini player shows the current and total time, with a marker at the current point.
+- Title, album and artist sit closer together in the full player.
+- Most played now lists up to 100 items, sorted by minutes or by plays (choose at the top).
 
 ### Português [pt]
-- Corrigidas a biblioteca e as capas no Android 8, 9 e 10.
-- A barra do mini player agora vai ao ponto certo depois que a música muda.
-- Nomes de abas longos diminuem para caber, os diálogos seguem o tema escolhido e trocar o idioma não recarrega a tela duas vezes.
+- O mini player mostra o tempo atual e o total, com uma barrinha no ponto atual.
+- Título, álbum e artista ficaram mais juntos no player grande.
+- Mais ouvidas agora mostra até 100 itens, por minutos ou por vezes tocadas (escolha no topo).
 
 ### Español [es]
-- Se corrigieron la biblioteca y las portadas en Android 8, 9 y 10.
-- La barra del minirreproductor ahora salta al punto correcto después de cambiar de canción.
-- Los nombres largos de pestañas se reducen para caber, los diálogos siguen el tema elegido y cambiar el idioma ya no recarga la pantalla dos veces.
+- El minirreproductor muestra el tiempo actual y el total, con una marca en el punto actual.
+- Título, álbum y artista están más juntos en el reproductor completo.
+- Lo más escuchado ahora muestra hasta 100 elementos, por minutos o por reproducciones (se elige arriba).
 
 ### Français [fr]
-- Bibliothèque et pochettes corrigées sous Android 8, 9 et 10.
-- La barre du mini lecteur va au bon endroit après un changement de morceau.
-- Les noms d'onglets longs rétrécissent pour tenir, les boîtes de dialogue suivent le thème choisi et changer de langue ne recharge plus l'écran deux fois.
+- Le mini lecteur affiche le temps écoulé et la durée totale, avec un repère à la position actuelle.
+- Titre, album et artiste sont plus rapprochés dans le lecteur complet.
+- Les plus écoutés affichent jusqu'à 100 éléments, par minutes ou par écoutes (choix en haut).
 
 ### Deutsch [de]
-- Bibliothek und Cover unter Android 8, 9 und 10 korrigiert.
-- Die Leiste im Mini-Player springt nach einem Titelwechsel an die richtige Stelle.
-- Lange Tab-Namen werden verkleinert, Dialoge folgen dem gewählten Design und ein Sprachwechsel lädt den Bildschirm nicht mehr zweimal neu.
+- Der Mini-Player zeigt die aktuelle und die Gesamtzeit, mit einer Markierung an der aktuellen Stelle.
+- Titel, Album und Künstler stehen im großen Player enger beieinander.
+- Meistgehört zeigt jetzt bis zu 100 Einträge, nach Minuten oder nach Wiedergaben (Auswahl oben).
 
 ### Italiano [it]
-- Corrette la libreria e le copertine su Android 8, 9 e 10.
-- La barra del mini lettore va al punto giusto dopo il cambio di brano.
-- I nomi lunghi delle schede si rimpiccioliscono per entrare, le finestre seguono il tema scelto e cambiare lingua non ricarica più lo schermo due volte.
+- Il mini lettore mostra il tempo attuale e quello totale, con un indicatore nel punto attuale.
+- Titolo, album e artista sono più vicini nel lettore completo.
+- I più ascoltati ora mostrano fino a 100 elementi, per minuti o per ascolti (scelta in alto).
 
 ### Nederlands [nl]
-- Bibliotheek en hoezen gerepareerd op Android 8, 9 en 10.
-- De balk van de minispeler springt na een nummerwissel naar de juiste plek.
-- Lange tabnamen worden kleiner zodat ze passen, dialogen volgen het gekozen thema en van taal wisselen laadt het scherm niet meer twee keer.
+- De minispeler toont de huidige en de totale tijd, met een markering op het huidige punt.
+- Titel, album en artiest staan dichter bij elkaar in de grote speler.
+- Meest beluisterd toont nu tot 100 items, op minuten of op aantal keer afgespeeld (kies bovenaan).
 
 ### Svenska [sv]
-- Biblioteket och omslagen fungerar nu på Android 8, 9 och 10.
-- Minispelarens reglage hoppar till rätt ställe efter låtbyte.
-- Långa fliknamn krymper så att de får plats, dialogrutor följer valt tema och språkbyte laddar inte om skärmen två gånger.
+- Minispelaren visar aktuell och total tid, med en markering vid aktuell position.
+- Titel, album och artist står närmare varandra i den stora spelaren.
+- Mest spelade visar nu upp till 100 objekt, efter minuter eller spelningar (välj högst upp).
 
 ### Polski [pl]
-- Naprawiono bibliotekę i okładki na Androidzie 8, 9 i 10.
-- Pasek mini odtwarzacza przewija we właściwe miejsce po zmianie utworu.
-- Długie nazwy kart zmniejszają się, by się zmieścić, okna dialogowe używają wybranego motywu, a zmiana języka nie przeładowuje ekranu dwa razy.
+- Mini odtwarzacz pokazuje bieżący i całkowity czas oraz znacznik w bieżącym miejscu.
+- Tytuł, album i wykonawca są bliżej siebie w pełnym odtwarzaczu.
+- Najczęściej słuchane pokazują teraz do 100 pozycji, według minut lub odtworzeń (wybór na górze).
 
 ### Türkçe [tr]
-- Android 8, 9 ve 10'da kitaplık ve kapaklar düzeltildi.
-- Mini oynatıcı çubuğu şarkı değiştikten sonra doğru noktaya gider.
-- Uzun sekme adları sığmak için küçülür, iletişim kutuları seçilen temayı izler ve dil değiştirmek ekranı iki kez yenilemez.
+- Mini oynatıcı geçen ve toplam süreyi, o anki noktada bir işaretle gösterir.
+- Büyük oynatıcıda başlık, albüm ve sanatçı birbirine daha yakın.
+- En çok dinlenenler artık 100 öğeye kadar, dakikaya veya dinlenme sayısına göre gösterilir (seçim en üstte).
 
 ### Русский [ru]
-- Исправлены библиотека и обложки на Android 8, 9 и 10.
-- Полоса мини-плеера после смены трека перематывает в нужное место.
-- Длинные названия вкладок уменьшаются, чтобы поместиться, диалоги следуют выбранной теме, а смена языка больше не перезагружает экран дважды.
+- Мини-плеер показывает текущее и общее время и отметку в текущем месте.
+- Название, альбом и исполнитель стоят ближе друг к другу в полном плеере.
+- В «Часто слушаемом» теперь до 100 позиций, по минутам или по прослушиваниям (выбор вверху).
 
 ### Українська [uk]
-- Виправлено бібліотеку й обкладинки на Android 8, 9 і 10.
-- Смуга міні-програвача після зміни треку перемотує в потрібне місце.
-- Довгі назви вкладок зменшуються, щоб вміститися, діалоги дотримуються вибраної теми, а зміна мови більше не перезавантажує екран двічі.
+- Міні-програвач показує поточний і загальний час та позначку в поточному місці.
+- Назва, альбом і виконавець стоять ближче одне до одного в повному програвачі.
+- У «Найчастіше слухаю» тепер до 100 позицій, за хвилинами або за прослуховуваннями (вибір угорі).
 
 ### العربية [ar]
-- تم إصلاح المكتبة والأغلفة على Android 8 و9 و10.
-- شريط المشغّل المصغّر ينتقل الآن إلى الموضع الصحيح بعد تغيير المقطع.
-- تصغر أسماء التبويبات الطويلة لتتسع، وتتبع مربعات الحوار السمة المختارة، ولم يعد تغيير اللغة يعيد تحميل الشاشة مرتين.
+- يعرض المشغّل المصغّر الوقت الحالي والإجمالي، مع علامة عند الموضع الحالي.
+- أصبح العنوان والألبوم والفنان أقرب إلى بعضها في المشغّل الكامل.
+- تعرض قائمة الأكثر استماعًا الآن حتى 100 عنصر، حسب الدقائق أو مرات التشغيل (الاختيار في الأعلى).
 
 ### हिन्दी [hi]
-- Android 8, 9 और 10 पर लाइब्रेरी और कवर ठीक किए गए।
-- गाना बदलने के बाद मिनी प्लेयर की बार अब सही जगह पर जाती है।
-- लंबे टैब नाम फ़िट होने के लिए छोटे हो जाते हैं, डायलॉग चुनी गई थीम अपनाते हैं और भाषा बदलने पर स्क्रीन दो बार लोड नहीं होती।
+- मिनी प्लेयर अब मौजूदा और कुल समय दिखाता है, मौजूदा जगह पर एक निशान के साथ।
+- बड़े प्लेयर में शीर्षक, एल्बम और कलाकार अब पास-पास हैं।
+- सबसे ज़्यादा सुने गए में अब 100 आइटम तक दिखते हैं, मिनट या कितनी बार चला के हिसाब से (ऊपर चुनें)।
 
 ### Bahasa Indonesia [id]
-- Pustaka dan sampul diperbaiki di Android 8, 9, dan 10.
-- Bilah pemutar mini kini melompat ke titik yang tepat setelah lagu berganti.
-- Nama tab yang panjang mengecil agar muat, dialog mengikuti tema pilihan, dan mengganti bahasa tidak lagi memuat ulang layar dua kali.
+- Pemutar mini menampilkan waktu saat ini dan total, dengan penanda di posisi saat ini.
+- Judul, album, dan artis lebih berdekatan di pemutar penuh.
+- Paling sering diputar kini menampilkan hingga 100 item, berdasarkan menit atau jumlah diputar (pilih di atas).
 
 ### Tiếng Việt [vi]
-- Đã sửa thư viện và ảnh bìa trên Android 8, 9 và 10.
-- Thanh của trình phát mini giờ nhảy đúng chỗ sau khi đổi bài.
-- Tên tab dài sẽ thu nhỏ cho vừa, hộp thoại theo chủ đề đã chọn và đổi ngôn ngữ không còn tải lại màn hình hai lần.
+- Trình phát mini hiển thị thời gian hiện tại và tổng thời gian, kèm vạch ở vị trí hiện tại.
+- Tên bài, album và nghệ sĩ nằm gần nhau hơn trong trình phát lớn.
+- Nghe nhiều nhất giờ hiển thị tối đa 100 mục, theo phút hoặc theo lượt phát (chọn ở trên cùng).
 
 ### ไทย [th]
-- แก้ไขคลังเพลงและปกบน Android 8, 9 และ 10
-- แถบของเครื่องเล่นขนาดเล็กเลื่อนไปยังจุดที่ถูกต้องหลังเปลี่ยนเพลงแล้ว
-- ชื่อแท็บที่ยาวจะย่อให้พอดี กล่องโต้ตอบใช้ธีมที่เลือก และการเปลี่ยนภาษาไม่โหลดหน้าจอซ้ำสองครั้งอีก
+- เครื่องเล่นขนาดเล็กแสดงเวลาปัจจุบันและเวลาทั้งหมด พร้อมขีดบอกตำแหน่งปัจจุบัน
+- ชื่อเพลง อัลบั้ม และศิลปินอยู่ใกล้กันมากขึ้นในเครื่องเล่นแบบเต็ม
+- ฟังมากที่สุดแสดงได้ถึง 100 รายการ เรียงตามนาทีหรือจำนวนครั้ง (เลือกที่ด้านบน)
 
 ### 日本語 [ja]
-- Android 8、9、10でライブラリとカバーが表示されない問題を修正しました。
-- 曲が変わった後も、ミニプレーヤーのバーで正しい位置に移動できるようになりました。
-- 長いタブ名は収まるように縮小され、ダイアログは選んだテーマに従い、言語を変えても画面が2回再読み込みされなくなりました。
+- ミニプレーヤーに現在の時間と全体の時間、現在位置の目印が表示されるようになりました。
+- フルプレーヤーで曲名、アルバム、アーティストの間隔を詰めました。
+- よく聴く曲は最大100件まで表示し、再生時間か再生回数で並べ替えられます（上部で選択）。
 
 ### 한국어 [ko]
-- Android 8, 9, 10에서 라이브러리와 커버 문제를 고쳤습니다.
-- 곡이 바뀐 뒤에도 미니 플레이어 막대가 올바른 위치로 이동합니다.
-- 긴 탭 이름은 맞게 줄어들고, 대화상자는 선택한 테마를 따르며, 언어를 바꿔도 화면이 두 번 다시 로드되지 않습니다.
+- 미니 플레이어에 현재 시간과 전체 시간, 현재 위치 표시가 나옵니다.
+- 전체 플레이어에서 제목, 앨범, 아티스트 사이가 좁아졌습니다.
+- 많이 들은 곡이 최대 100개까지 표시되며, 재생 시간이나 재생 횟수로 정렬됩니다(위에서 선택).
 
 ### 简体中文 [zh-CN]
-- 修复了 Android 8、9 和 10 上的音乐库和封面问题。
-- 换歌后，迷你播放器的进度条现在能跳到正确位置。
-- 较长的标签名会缩小以适应，对话框跟随所选主题，切换语言不再让屏幕重新加载两次。
+- 迷你播放器显示当前时间和总时长，并在当前位置显示标记。
+- 完整播放器中的标题、专辑和艺人靠得更近了。
+- 最常听现在最多显示 100 项，可按播放时长或播放次数排序（在顶部选择）。
 
 ### 繁體中文 [zh-TW]
-- 修正了 Android 8、9 和 10 上的音樂庫和封面問題。
-- 換歌後，迷你播放器的進度列現在能跳到正確位置。
-- 較長的分頁名稱會縮小以容納，對話框會跟隨所選主題，切換語言不再讓畫面重新載入兩次。
+- 迷你播放器會顯示目前時間和總長度，並在目前位置顯示標記。
+- 完整播放器中的標題、專輯和藝人靠得更近了。
+- 最常聽現在最多顯示 100 項，可依播放時間或播放次數排序（在頂部選擇）。

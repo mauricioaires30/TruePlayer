@@ -325,6 +325,8 @@
     <string name="musicas_do_celular">Músicas do celular</string>
     <string name="musicas_ja_estao_em_songs">Músicas: %1$s (%2$s já estão em songs)\n</string>
     <string name="n_min">%1$s min</string>
+    <string name="stats_minutes">Minutos</string>
+    <string name="stats_plays">Vezes tocadas</string>
     <string name="nada_encontrado">Nada encontrado</string>
     <string name="nada_tocado_ainda">Nada tocado ainda</string>
     <string name="nao_consegui_criar">não consegui criar</string>
@@ -571,6 +573,11 @@
         <item quantity="one">%1$s música</item>
         <item quantity="many">%1$s músicas</item>
         <item quantity="other">%1$s músicas</item>
+    </plurals>
+    <plurals name="n_plays">
+        <item quantity="one">%1$s vez</item>
+        <item quantity="many">%1$s vezes</item>
+        <item quantity="other">%1$s vezes</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="one">%1$s playlist</item>

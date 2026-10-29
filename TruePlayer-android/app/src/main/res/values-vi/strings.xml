@@ -325,6 +325,8 @@
     <string name="musicas_do_celular">Bài hát trên điện thoại</string>
     <string name="musicas_ja_estao_em_songs">Bài hát: %1$s (%2$s đã ở trong songs)\n</string>
     <string name="n_min">%1$s phút</string>
+    <string name="stats_minutes">Phút</string>
+    <string name="stats_plays">Lượt phát</string>
     <string name="nada_encontrado">Không tìm thấy gì</string>
     <string name="nada_tocado_ainda">Chưa phát gì cả</string>
     <string name="nao_consegui_criar">không tạo được</string>
@@ -537,6 +539,9 @@
     </plurals>
     <plurals name="n_musicas">
         <item quantity="other">%1$s bài hát</item>
+    </plurals>
+    <plurals name="n_plays">
+        <item quantity="other">%1$s lượt</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="other">%1$s danh sách phát</item>

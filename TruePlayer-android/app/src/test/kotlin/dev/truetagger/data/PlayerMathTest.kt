@@ -40,4 +40,12 @@ class PlayerMathTest {
         assertEquals(10_000L, extrapolatedPosition(10_000L, 5_000L, 4_000L, playing = true, durationMs = 200_000L))
         assertTrue(extrapolatedPosition(10_000L, 1_000L, 1_100L, playing = true, durationMs = 0L) > 10_000L)
     }
+
+    @Test fun durationsUseMinutesAndSecondsAndHoursWhenNeeded() {
+        assertEquals("0:00", formatDuration(0L))
+        assertEquals("0:08", formatDuration(8_900L))
+        assertEquals("2:47", formatDuration(167_000L))
+        assertEquals("1:02:09", formatDuration(3_729_000L))
+        assertEquals("0:00", formatDuration(-5_000L))
+    }
 }

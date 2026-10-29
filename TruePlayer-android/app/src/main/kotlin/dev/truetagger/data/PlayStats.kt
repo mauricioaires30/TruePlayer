@@ -11,6 +11,25 @@ data class StatValue(val ms: Long = 0L, val plays: Long = 0L) {
     operator fun plus(other: StatValue) = StatValue(ms + other.ms, plays + other.plays)
 }
 
+/** O que a lista de mais ouvidas usa para ordenar e mostra: tempo ouvido ou vezes tocadas. */
+enum class StatsMetric {
+    MINUTES,
+    PLAYS;
+
+    /** Em minutos entram também as músicas que só têm vezes tocadas (de antes das estatísticas por tempo). */
+    fun counts(value: StatValue): Boolean = when (this) {
+        MINUTES -> value.ms > 0L || value.plays > 0L
+        PLAYS -> value.plays > 0L
+    }
+
+    /** Maior primeiro; empate decide pela outra medida e depois pelo nome. */
+    fun <T> order(value: (T) -> StatValue, name: (T) -> String): Comparator<T> {
+        val primary: (T) -> Long = if (this == MINUTES) { item -> value(item).ms } else { item -> value(item).plays }
+        val secondary: (T) -> Long = if (this == MINUTES) { item -> value(item).plays } else { item -> value(item).ms }
+        return compareByDescending(primary).thenByDescending(secondary).thenBy { name(it).lowercase(java.util.Locale.ROOT) }
+    }
+}
+
 enum class StatsRange(val days: Int?) {
     ALL(null),
     WEEK(7),

@@ -325,6 +325,8 @@
     <string name="musicas_do_celular">Brani del telefono</string>
     <string name="musicas_ja_estao_em_songs">Brani: %1$s (%2$s già in songs)\n</string>
     <string name="n_min">%1$s min</string>
+    <string name="stats_minutes">Minuti</string>
+    <string name="stats_plays">Ascolti</string>
     <string name="nada_encontrado">Nessun risultato</string>
     <string name="nada_tocado_ainda">Ancora nulla riprodotto</string>
     <string name="nao_consegui_criar">impossibile creare</string>
@@ -571,6 +573,11 @@
         <item quantity="one">%1$s brano</item>
         <item quantity="many">%1$s brani</item>
         <item quantity="other">%1$s brani</item>
+    </plurals>
+    <plurals name="n_plays">
+        <item quantity="one">%1$s ascolto</item>
+        <item quantity="many">%1$s ascolti</item>
+        <item quantity="other">%1$s ascolti</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="one">%1$s playlist</item>

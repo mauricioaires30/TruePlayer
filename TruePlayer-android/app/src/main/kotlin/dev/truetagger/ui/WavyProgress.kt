@@ -7,7 +7,12 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -17,6 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -26,10 +32,12 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.truetagger.android.PlayerSnapshot
 import dev.truetagger.data.extrapolatedPosition
+import dev.truetagger.data.formatDuration
 import dev.truetagger.data.waveY
 import kotlin.math.min
 
@@ -76,7 +84,7 @@ internal fun rememberSmoothFraction(s: PlayerSnapshot): State<Float> {
 /**
  * Barra de progresso ondulada (como a do Samsung): o trecho já tocado é uma onda que corre enquanto a música
  * toca e vai se achatando ao pausar; o resto é uma linha reta. [progress] é lido só no desenho.
- * Com [showThumb] desenha também uma barrinha vertical na posição atual (usada no player completo).
+ * Com [showThumb] desenha também uma barrinha vertical na posição atual.
  */
 @Composable
 internal fun WavyProgressBar(
@@ -89,6 +97,7 @@ internal fun WavyProgressBar(
     wavelength: Dp = 26.dp,
     stroke: Dp = 3.dp,
     showThumb: Boolean = false,
+    thumbWidth: Dp = 4.dp,
 ) {
     // Amplitude suave: some ao pausar e volta ao tocar. Só anima quadros enquanto for preciso.
     val amount = animateFloatAsState(if (playing) 1f else 0f, tween(450), label = "waveAmount")
@@ -98,7 +107,7 @@ internal fun WavyProgressBar(
         val width = size.width
         val centerY = size.height / 2f
         val strokePx = stroke.toPx()
-        val thumbWidth = 4.dp.toPx()
+        val thumbWidth = thumbWidth.toPx()
         val x = progress().coerceIn(0f, 1f) * width
         val amplitudePx = amplitude.toPx() * amount.value
         val wavelengthPx = wavelength.toPx()
@@ -134,8 +143,9 @@ internal fun WavyProgressBar(
 
 /**
  * Barra ondulada que também mexe na música: toque para ir a um ponto, ou arraste. Durante o arrasto a barra
- * segue o dedo (com a barrinha à mostra); o seek só é enviado ao soltar. Depois de soltar, fica no ponto
- * escolhido até o player confirmar a nova posição.
+ * segue o dedo; o seek só é enviado ao soltar. Depois de soltar, fica no ponto escolhido até o player
+ * confirmar a nova posição. A barrinha na posição atual fica sempre à mostra, para mostrar que dá para mexer,
+ * e os tempos (atual e total) ficam nas pontas; o tempo atual acompanha o dedo durante o arrasto.
  */
 @Composable
 internal fun SeekableWavyBar(
@@ -158,42 +168,72 @@ internal fun SeekableWavyBar(
     // Os gestos continuam vivos entre músicas: sempre chamam o onSeek atual (com a duração da música atual).
     val seek by rememberUpdatedState(onSeek)
     val enabled = s.durationMs > 0L
-    WavyProgressBar(
-        progress = { dragging ?: justSought ?: smooth.value },
-        playing = s.playing && dragging == null,
-        showThumb = dragging != null,
-        amplitude = amplitude,
-        wavelength = wavelength,
-        stroke = stroke,
-        modifier = modifier
-            .pointerInput(enabled) {
-                if (!enabled) return@pointerInput
-                detectTapGestures { offset ->
-                    val f = (offset.x / size.width).coerceIn(0f, 1f)
-                    justSought = f
-                    seek(f)
-                }
-            }
-            .pointerInput(enabled) {
-                if (!enabled) return@pointerInput
-                detectHorizontalDragGestures(
-                    onDragStart = { offset -> dragging = (offset.x / size.width).coerceIn(0f, 1f) },
-                    onHorizontalDrag = { change, _ ->
-                        change.consume()
-                        dragging = (change.position.x / size.width).coerceIn(0f, 1f)
-                    },
-                    onDragEnd = {
-                        dragging?.let { f ->
+    val picked = dragging ?: justSought
+    val timeStyle = MaterialTheme.typography.labelSmall.copy(fontFeatureSettings = "tnum")
+    val timeColor = MaterialTheme.colorScheme.onSurfaceVariant
+    LtrContent {
+        Row(modifier, verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                formatDuration(picked?.let { (it * s.durationMs).toLong() } ?: s.positionMs),
+                style = timeStyle,
+                color = if (dragging != null) MaterialTheme.colorScheme.primary else timeColor,
+                textAlign = TextAlign.Start,
+                maxLines = 1,
+                modifier = Modifier.widthIn(min = TIME_WIDTH),
+            )
+            WavyProgressBar(
+                progress = { picked ?: smooth.value },
+                playing = s.playing && dragging == null,
+                showThumb = enabled,
+                thumbWidth = 3.dp,
+                amplitude = amplitude,
+                wavelength = wavelength,
+                stroke = stroke,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .padding(horizontal = 6.dp)
+                    .pointerInput(enabled) {
+                        if (!enabled) return@pointerInput
+                        detectTapGestures { offset ->
+                            val f = (offset.x / size.width).coerceIn(0f, 1f)
                             justSought = f
                             seek(f)
                         }
-                        dragging = null
+                    }
+                    .pointerInput(enabled) {
+                        if (!enabled) return@pointerInput
+                        detectHorizontalDragGestures(
+                            onDragStart = { offset -> dragging = (offset.x / size.width).coerceIn(0f, 1f) },
+                            onHorizontalDrag = { change, _ ->
+                                change.consume()
+                                dragging = (change.position.x / size.width).coerceIn(0f, 1f)
+                            },
+                            onDragEnd = {
+                                dragging?.let { f ->
+                                    justSought = f
+                                    seek(f)
+                                }
+                                dragging = null
+                            },
+                            onDragCancel = { dragging = null },
+                        )
                     },
-                    onDragCancel = { dragging = null },
-                )
-            },
-    )
+            )
+            Text(
+                if (enabled) formatDuration(s.durationMs) else "",
+                style = timeStyle,
+                color = timeColor,
+                textAlign = TextAlign.End,
+                maxLines = 1,
+                modifier = Modifier.widthIn(min = TIME_WIDTH),
+            )
+        }
+    }
 }
+
+/** Largura mínima dos tempos, para a barra não pular de tamanho quando "9:59" vira "10:00". */
+private val TIME_WIDTH = 34.dp
 
 /** Barras de progresso e tempos andam sempre da esquerda para a direita, também em idiomas escritos da direita para a esquerda. */
 @Composable

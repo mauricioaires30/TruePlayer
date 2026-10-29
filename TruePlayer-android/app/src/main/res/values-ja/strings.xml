@@ -325,6 +325,8 @@
     <string name="musicas_do_celular">端末内の曲</string>
     <string name="musicas_ja_estao_em_songs">曲: %1$s(%2$sはすでにsongs内)\n</string>
     <string name="n_min">%1$s分</string>
+    <string name="stats_minutes">再生時間</string>
+    <string name="stats_plays">再生回数</string>
     <string name="nada_encontrado">見つかりませんでした</string>
     <string name="nada_tocado_ainda">まだ何も再生していません</string>
     <string name="nao_consegui_criar">作成できませんでした</string>
@@ -537,6 +539,9 @@
     </plurals>
     <plurals name="n_musicas">
         <item quantity="other">%1$s曲</item>
+    </plurals>
+    <plurals name="n_plays">
+        <item quantity="other">%1$s回</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="other">%1$s件のプレイリスト</item>

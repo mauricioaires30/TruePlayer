@@ -325,6 +325,8 @@
     <string name="musicas_do_celular">Треки на телефоні</string>
     <string name="musicas_ja_estao_em_songs">Треків: %1$s (%2$s уже в songs)\n</string>
     <string name="n_min">%1$s хв</string>
+    <string name="stats_minutes">Хвилини</string>
+    <string name="stats_plays">Прослуховування</string>
     <string name="nada_encontrado">Нічого не знайдено</string>
     <string name="nada_tocado_ainda">Ще нічого не відтворювалось</string>
     <string name="nao_consegui_criar">не вдалося створити</string>
@@ -588,6 +590,12 @@
         <item quantity="few">%1$s треки</item>
         <item quantity="many">%1$s треків</item>
         <item quantity="other">%1$s треку</item>
+    </plurals>
+    <plurals name="n_plays">
+        <item quantity="one">%1$s прослуховування</item>
+        <item quantity="few">%1$s прослуховування</item>
+        <item quantity="many">%1$s прослуховувань</item>
+        <item quantity="other">%1$s прослуховування</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="one">%1$s плейлист</item>

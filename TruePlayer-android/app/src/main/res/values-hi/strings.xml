@@ -325,6 +325,8 @@
     <string name="musicas_do_celular">फ़ोन में गाने</string>
     <string name="musicas_ja_estao_em_songs">गाने: %1$s (%2$s पहले से songs में)\n</string>
     <string name="n_min">%1$s मिनट</string>
+    <string name="stats_minutes">मिनट</string>
+    <string name="stats_plays">कितनी बार चला</string>
     <string name="nada_encontrado">कुछ नहीं मिला</string>
     <string name="nada_tocado_ainda">अभी तक कुछ नहीं चलाया गया</string>
     <string name="nao_consegui_criar">बनाया नहीं जा सका</string>
@@ -554,6 +556,10 @@
     <plurals name="n_musicas">
         <item quantity="one">%1$s गाना</item>
         <item quantity="other">%1$s गाने</item>
+    </plurals>
+    <plurals name="n_plays">
+        <item quantity="one">%1$s बार</item>
+        <item quantity="other">%1$s बार</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="one">%1$s प्लेलिस्ट</item>

@@ -325,6 +325,8 @@
     <string name="musicas_do_celular">Morceaux du téléphone</string>
     <string name="musicas_ja_estao_em_songs">Morceaux : %1$s (%2$s déjà dans songs)\n</string>
     <string name="n_min">%1$s min</string>
+    <string name="stats_minutes">Minutes</string>
+    <string name="stats_plays">Écoutes</string>
     <string name="nada_encontrado">Rien trouvé</string>
     <string name="nada_tocado_ainda">Rien n\'a encore été joué</string>
     <string name="nao_consegui_criar">impossible de créer</string>
@@ -571,6 +573,11 @@
         <item quantity="one">%1$s morceau</item>
         <item quantity="many">%1$s morceaux</item>
         <item quantity="other">%1$s morceaux</item>
+    </plurals>
+    <plurals name="n_plays">
+        <item quantity="one">%1$s écoute</item>
+        <item quantity="many">%1$s écoutes</item>
+        <item quantity="other">%1$s écoutes</item>
     </plurals>
     <plurals name="n_playlists">
         <item quantity="one">%1$s playlist</item>
