@@ -4,11 +4,17 @@ import android.os.SystemClock
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
@@ -123,4 +129,65 @@ internal fun WavyProgressBar(
             )
         }
     }
+}
+
+/**
+ * Barra ondulada que também mexe na música: toque para ir a um ponto, ou arraste. Durante o arrasto a barra
+ * segue o dedo (com a barrinha à mostra); o seek só é enviado ao soltar. Depois de soltar, fica no ponto
+ * escolhido até o player confirmar a nova posição.
+ */
+@Composable
+internal fun SeekableWavyBar(
+    s: PlayerSnapshot,
+    onSeek: (Float) -> Unit,
+    modifier: Modifier = Modifier,
+    amplitude: Dp = 1.8.dp,
+    wavelength: Dp = 20.dp,
+    stroke: Dp = 2.dp,
+) {
+    val smooth = rememberSmoothFraction(s)
+    var dragging by remember { mutableStateOf<Float?>(null) }
+    var justSought by remember { mutableStateOf<Float?>(null) }
+    LaunchedEffect(justSought) {
+        if (justSought != null) {
+            kotlinx.coroutines.delay(900)
+            justSought = null
+        }
+    }
+    val enabled = s.durationMs > 0L
+    WavyProgressBar(
+        progress = { dragging ?: justSought ?: smooth.value },
+        playing = s.playing && dragging == null,
+        showThumb = dragging != null,
+        amplitude = amplitude,
+        wavelength = wavelength,
+        stroke = stroke,
+        modifier = modifier
+            .pointerInput(enabled) {
+                if (!enabled) return@pointerInput
+                detectTapGestures { offset ->
+                    val f = (offset.x / size.width).coerceIn(0f, 1f)
+                    justSought = f
+                    onSeek(f)
+                }
+            }
+            .pointerInput(enabled) {
+                if (!enabled) return@pointerInput
+                detectHorizontalDragGestures(
+                    onDragStart = { offset -> dragging = (offset.x / size.width).coerceIn(0f, 1f) },
+                    onHorizontalDrag = { change, _ ->
+                        change.consume()
+                        dragging = (change.position.x / size.width).coerceIn(0f, 1f)
+                    },
+                    onDragEnd = {
+                        dragging?.let { f ->
+                            justSought = f
+                            onSeek(f)
+                        }
+                        dragging = null
+                    },
+                    onDragCancel = { dragging = null },
+                )
+            },
+    )
 }

@@ -112,7 +112,7 @@ internal object UiTokens {
     val bottomBarHeight = 64.dp
     val bottomBarIconSize = 20.dp
     val bottomBarLabelSize = 10.sp
-    val miniPlayerHeight = 94.dp
+    val miniPlayerHeight = 102.dp
     val miniPlayerArtworkSize = 56.dp
 
     // ---- Telas específicas ------------------------------------------------

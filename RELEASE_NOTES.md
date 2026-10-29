@@ -1,4 +1,4 @@
-## TruePlayer 1.8.1
+## TruePlayer 1.8.2
 
-- Novo tema claro. O app segue o tema do celular e, em Configurações > Aparência, dá para escolher Sistema, Claro ou Escuro.
-- O tema escolhido vai junto com as configurações salvas na pasta e no Git.
+- O ícone de repetir desligado ficou mais limpo: as setas têm um vão em volta do risco.
+- No mini player, dá para tocar ou arrastar a barra de progresso para mudar o ponto da música, sem abrir o player grande.

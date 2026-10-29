@@ -960,6 +960,7 @@ private fun MiniPlayer(
     onQueue: (() -> Unit)? = null,
 ) {
     val accent = MaterialTheme.colorScheme.primary
+    val context = LocalContext.current
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant,
         tonalElevation = 3.dp,
@@ -971,15 +972,12 @@ private fun MiniPlayer(
                 .height(UiTokens.miniPlayerHeight)
                 .clickable(onClick = onOpen),
         ) {
-            // Linha ondulada de progresso no topo: anda continuamente com a música e acalma ao pausar.
-            val smooth = rememberSmoothFraction(s)
-            WavyProgressBar(
-                progress = { smooth.value },
-                playing = s.playing,
-                modifier = Modifier.fillMaxWidth().height(9.dp).padding(horizontal = UiTokens.space3),
-                amplitude = 1.8.dp,
-                wavelength = 20.dp,
-                stroke = 2.dp,
+            // Linha ondulada de progresso no topo: anda com a música, acalma ao pausar e dá para tocar ou
+            // arrastar nela para mudar o ponto da música sem abrir o player grande.
+            SeekableWavyBar(
+                s = s,
+                onSeek = { f -> MusicPlaybackService.command(context, MusicPlaybackService.ACTION_SEEK, (f * s.durationMs).toLong()) },
+                modifier = Modifier.fillMaxWidth().height(17.dp).padding(horizontal = UiTokens.space3),
             )
             Row(
                 modifier = Modifier.fillMaxWidth().weight(1f).padding(start = UiTokens.compactPadding, end = UiTokens.space2),
