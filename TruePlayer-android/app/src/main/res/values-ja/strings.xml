@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">リンクの情報を読み込み中…</string>
     <string name="dl_lendo_informacoes">情報を読み込み中…</string>
     <string name="dl_libere_a_pasta_de_musicas">ダウンロードする前に、設定で音楽フォルダを解放してください。</string>
-    <string name="dl_musica_de">%2$s曲中%1$s曲目</string>
     <string name="dl_na_fila">" • キュー内 %1$s"</string>
     <string name="dl_nao_baixaram">" (%1$s件失敗)"</string>
     <string name="dl_nao_consegui_ler_a_playlist">プレイリストを読み込めませんでした</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">リンクから曲リストを取得中…</string>
     <string name="dl_playlist_baixada">プレイリストをダウンロードしました</string>
     <string name="dl_playlist_baixada_com_falhas">プレイリストをダウンロードしました(失敗あり)</string>
-    <string name="dl_playlist_de">プレイリスト %1$s • %3$s件中%2$s件</string>
     <string name="dl_preparando_arquivo">ファイルを準備中…</string>
     <string name="dl_preparando_audio">音声を準備中…</string>
     <string name="dl_preparando_download">ダウンロードを準備中</string>
@@ -489,6 +487,13 @@
     <string name="zerar">リセット</string>
     <string name="zerar_estatisticas">統計をリセットしますか?</string>
     <string name="zerar_estatisticas_2">統計をリセット</string>
+    <string name="dl_cancelar">キャンセル</string>
+    <string name="dl_cancelar_musica">曲をキャンセル</string>
+    <string name="dl_cancelar_playlist">プレイリストをキャンセル</string>
+    <string name="dl_cancelar_album">アルバムをキャンセル</string>
+    <string name="dl_position">%1$s / %2$s</string>
+    <string name="dl_canceladas">（キャンセル %1$s）</string>
+    <string name="dl_download_cancelado">ダウンロードをキャンセルしました</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s件のプレイリスト</item>
     </plurals>

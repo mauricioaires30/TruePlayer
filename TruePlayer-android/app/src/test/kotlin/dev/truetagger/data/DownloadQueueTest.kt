@@ -54,6 +54,44 @@ class DownloadQueueTest {
         assertEquals(QueueJobCounts(), s.finishJob("Treino"))
     }
 
+    @Test fun cancelingAJobRemovesWhatIsLeftExceptTheRunningItem() {
+        val s = store()
+        val items = (1..4).map { s.add("u$it", playlist = "Treino", total = 4, position = it) }
+        s.add("solta")
+        val removed = s.removeJob("Treino", exceptId = items[0].id)
+        assertEquals(listOf("u2", "u3", "u4"), removed.map { it.url })
+        assertEquals(listOf("u1", "solta"), store().load().map { it.url })
+        assertTrue(s.contains(items[0].id))
+        assertTrue(!s.contains(items[1].id))
+    }
+
+    @Test fun canceledItemsAreCountedApartFromFailures() {
+        val s = store()
+        val first = s.add("u1", playlist = "Treino", total = 3, position = 1)
+        s.add("u2", playlist = "Treino", total = 3, position = 2)
+        s.add("u3", playlist = "Treino", total = 3, position = 3)
+        s.record("Treino", true)
+        s.removeJob("Treino", exceptId = first.id)
+        s.recordCanceled("Treino")
+        assertEquals(QueueJobCounts(done = 1, failed = 0, canceled = 3), s.finishJob("Treino"))
+    }
+
+    @Test fun cancelingAJobThatIsGoneChangesNothing() {
+        val s = store()
+        s.add("a")
+        assertTrue(s.removeJob("Nada").isEmpty())
+        assertEquals(listOf("a"), store().load().map { it.url })
+    }
+
+    @Test fun kindDefaultsFollowThePlaylistAndOldFilesStillLoad() {
+        val s = store()
+        assertEquals(DownloadKind.SINGLE, s.add("a").kind)
+        assertEquals(DownloadKind.PLAYLIST, s.add("b", playlist = "P", total = 1, position = 1).kind)
+        assertEquals(DownloadKind.ALBUM, s.add("c", playlist = "A", total = 1, position = 1, kind = DownloadKind.ALBUM).kind)
+        File(tmp.root, "old.json").writeText("""{"schemaVersion":1,"nextId":3,"items":[{"id":2,"url":"x","playlist":"P","total":2,"position":1}]}""")
+        assertEquals(DownloadKind.SINGLE, store("old.json").load().single().kind)
+    }
+
     @Test fun corruptOrMissingFileMeansEmptyQueue() {
         assertTrue(store("missing.json").load().isEmpty())
         File(tmp.root, "bad.json").writeText("{ isso nao e json")

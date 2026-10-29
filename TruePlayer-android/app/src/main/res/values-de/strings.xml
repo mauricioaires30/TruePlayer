@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">Link-Infos werden gelesen…</string>
     <string name="dl_lendo_informacoes">Infos werden gelesen…</string>
     <string name="dl_libere_a_pasta_de_musicas">Gib den Musikordner in den Einstellungen frei, bevor du herunterlädst.</string>
-    <string name="dl_musica_de">Titel %1$s von %2$s</string>
     <string name="dl_na_fila">" • %1$s in der Warteschlange"</string>
     <string name="dl_nao_baixaram">" (%1$s fehlgeschlagen)"</string>
     <string name="dl_nao_consegui_ler_a_playlist">Playlist konnte nicht gelesen werden</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">Titelliste wird vom Link abgerufen…</string>
     <string name="dl_playlist_baixada">Playlist heruntergeladen</string>
     <string name="dl_playlist_baixada_com_falhas">Playlist mit Fehlern heruntergeladen</string>
-    <string name="dl_playlist_de">Playlist %1$s • %2$s von %3$s</string>
     <string name="dl_preparando_arquivo">Datei wird vorbereitet…</string>
     <string name="dl_preparando_audio">Audio wird vorbereitet…</string>
     <string name="dl_preparando_download">Download wird vorbereitet</string>
@@ -489,6 +487,13 @@
     <string name="zerar">Zurücksetzen</string>
     <string name="zerar_estatisticas">Statistik zurücksetzen?</string>
     <string name="zerar_estatisticas_2">Statistik zurücksetzen</string>
+    <string name="dl_cancelar">Abbrechen</string>
+    <string name="dl_cancelar_musica">Titel abbrechen</string>
+    <string name="dl_cancelar_playlist">Playlist abbrechen</string>
+    <string name="dl_cancelar_album">Album abbrechen</string>
+    <string name="dl_position">%1$s von %2$s</string>
+    <string name="dl_canceladas">" (%1$s abgebrochen)"</string>
+    <string name="dl_download_cancelado">Download abgebrochen</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s Playlist</item>
         <item quantity="other">+%1$s Playlists</item>

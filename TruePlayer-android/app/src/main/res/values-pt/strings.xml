@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">Lendo as informações do link…</string>
     <string name="dl_lendo_informacoes">Lendo informações…</string>
     <string name="dl_libere_a_pasta_de_musicas">Libere a pasta de músicas em Configurações antes de baixar.</string>
-    <string name="dl_musica_de">Música %1$s de %2$s</string>
     <string name="dl_na_fila">" • %1$s na fila"</string>
     <string name="dl_nao_baixaram">" (%1$s não baixaram)"</string>
     <string name="dl_nao_consegui_ler_a_playlist">Não consegui ler a playlist</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">Pegando a lista de músicas do link…</string>
     <string name="dl_playlist_baixada">Playlist baixada</string>
     <string name="dl_playlist_baixada_com_falhas">Playlist baixada com falhas</string>
-    <string name="dl_playlist_de">Playlist %1$s • %2$s de %3$s</string>
     <string name="dl_preparando_arquivo">Preparando arquivo…</string>
     <string name="dl_preparando_audio">Preparando áudio…</string>
     <string name="dl_preparando_download">Preparando download</string>
@@ -489,6 +487,13 @@
     <string name="zerar">Zerar</string>
     <string name="zerar_estatisticas">Zerar estatísticas?</string>
     <string name="zerar_estatisticas_2">Zerar estatísticas</string>
+    <string name="dl_cancelar">Cancelar</string>
+    <string name="dl_cancelar_musica">Cancelar música</string>
+    <string name="dl_cancelar_playlist">Cancelar playlist</string>
+    <string name="dl_cancelar_album">Cancelar álbum</string>
+    <string name="dl_position">%1$s de %2$s</string>
+    <string name="dl_canceladas">" (%1$s canceladas)"</string>
+    <string name="dl_download_cancelado">Download cancelado</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s playlist</item>
         <item quantity="many">+%1$s playlists</item>

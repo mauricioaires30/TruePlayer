@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">Чтение данных ссылки…</string>
     <string name="dl_lendo_informacoes">Чтение данных…</string>
     <string name="dl_libere_a_pasta_de_musicas">Освободите папку с музыкой в настройках перед загрузкой.</string>
-    <string name="dl_musica_de">Трек %1$s из %2$s</string>
     <string name="dl_na_fila">" • в очереди: %1$s"</string>
     <string name="dl_nao_baixaram">" (не загрузилось: %1$s)"</string>
     <string name="dl_nao_consegui_ler_a_playlist">Не удалось прочитать плейлист</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">Получение списка треков по ссылке…</string>
     <string name="dl_playlist_baixada">Плейлист загружен</string>
     <string name="dl_playlist_baixada_com_falhas">Плейлист загружен с ошибками</string>
-    <string name="dl_playlist_de">Плейлист %1$s • %2$s из %3$s</string>
     <string name="dl_preparando_arquivo">Подготовка файла…</string>
     <string name="dl_preparando_audio">Подготовка аудио…</string>
     <string name="dl_preparando_download">Подготовка загрузки</string>
@@ -489,6 +487,13 @@
     <string name="zerar">Сбросить</string>
     <string name="zerar_estatisticas">Сбросить статистику?</string>
     <string name="zerar_estatisticas_2">Сбросить статистику</string>
+    <string name="dl_cancelar">Отмена</string>
+    <string name="dl_cancelar_musica">Отменить трек</string>
+    <string name="dl_cancelar_playlist">Отменить плейлист</string>
+    <string name="dl_cancelar_album">Отменить альбом</string>
+    <string name="dl_position">%1$s из %2$s</string>
+    <string name="dl_canceladas">" (отменено: %1$s)"</string>
+    <string name="dl_download_cancelado">Загрузка отменена</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s плейлист</item>
         <item quantity="few">+%1$s плейлиста</item>

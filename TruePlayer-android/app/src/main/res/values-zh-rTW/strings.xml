@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">正在讀取連結資訊…</string>
     <string name="dl_lendo_informacoes">正在讀取資訊…</string>
     <string name="dl_libere_a_pasta_de_musicas">下載前請在設定中釋放音樂資料夾。</string>
-    <string name="dl_musica_de">第%1$s首，共%2$s首</string>
     <string name="dl_na_fila">" • 佇列中還有%1$s首"</string>
     <string name="dl_nao_baixaram">" （%1$s個失敗）"</string>
     <string name="dl_nao_consegui_ler_a_playlist">無法讀取播放清單</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">正在從連結取得歌曲清單…</string>
     <string name="dl_playlist_baixada">播放清單已下載</string>
     <string name="dl_playlist_baixada_com_falhas">播放清單已下載，但有失敗項目</string>
-    <string name="dl_playlist_de">播放清單 %1$s • 共%3$s首，已完成%2$s首</string>
     <string name="dl_preparando_arquivo">正在準備檔案…</string>
     <string name="dl_preparando_audio">正在準備音訊…</string>
     <string name="dl_preparando_download">正在準備下載</string>
@@ -489,6 +487,13 @@
     <string name="zerar">重設</string>
     <string name="zerar_estatisticas">要重設統計資料嗎？</string>
     <string name="zerar_estatisticas_2">重設統計資料</string>
+    <string name="dl_cancelar">取消</string>
+    <string name="dl_cancelar_musica">取消這首歌</string>
+    <string name="dl_cancelar_playlist">取消播放清單</string>
+    <string name="dl_cancelar_album">取消專輯</string>
+    <string name="dl_position">第 %1$s 首，共 %2$s 首</string>
+    <string name="dl_canceladas">（已取消 %1$s）</string>
+    <string name="dl_download_cancelado">下載已取消</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s個播放清單</item>
     </plurals>

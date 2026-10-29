@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">Link-info lezen…</string>
     <string name="dl_lendo_informacoes">Info lezen…</string>
     <string name="dl_libere_a_pasta_de_musicas">Geef de muziekmap vrij in Instellingen voordat je downloadt.</string>
-    <string name="dl_musica_de">Nummer %1$s van %2$s</string>
     <string name="dl_na_fila">" • %1$s in de wachtrij"</string>
     <string name="dl_nao_baixaram">" (%1$s mislukt)"</string>
     <string name="dl_nao_consegui_ler_a_playlist">Kan de playlist niet lezen</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">Nummerlijst ophalen van de link…</string>
     <string name="dl_playlist_baixada">Playlist gedownload</string>
     <string name="dl_playlist_baixada_com_falhas">Playlist gedownload met fouten</string>
-    <string name="dl_playlist_de">Playlist %1$s • %2$s van %3$s</string>
     <string name="dl_preparando_arquivo">Bestand voorbereiden…</string>
     <string name="dl_preparando_audio">Audio voorbereiden…</string>
     <string name="dl_preparando_download">Download voorbereiden</string>
@@ -489,6 +487,13 @@
     <string name="zerar">Resetten</string>
     <string name="zerar_estatisticas">Statistieken resetten?</string>
     <string name="zerar_estatisticas_2">Statistieken resetten</string>
+    <string name="dl_cancelar">Annuleren</string>
+    <string name="dl_cancelar_musica">Nummer annuleren</string>
+    <string name="dl_cancelar_playlist">Afspeellijst annuleren</string>
+    <string name="dl_cancelar_album">Album annuleren</string>
+    <string name="dl_position">%1$s van %2$s</string>
+    <string name="dl_canceladas">" (%1$s geannuleerd)"</string>
+    <string name="dl_download_cancelado">Download geannuleerd</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s playlist</item>
         <item quantity="other">+%1$s playlists</item>

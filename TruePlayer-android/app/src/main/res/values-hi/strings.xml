@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">लिंक की जानकारी पढ़ी जा रही है…</string>
     <string name="dl_lendo_informacoes">जानकारी पढ़ी जा रही है…</string>
     <string name="dl_libere_a_pasta_de_musicas">डाउनलोड करने से पहले सेटिंग में संगीत फ़ोल्डर को मुक्त करें।</string>
-    <string name="dl_musica_de">गाना %1$s / %2$s</string>
     <string name="dl_na_fila">" • कतार में %1$s"</string>
     <string name="dl_nao_baixaram">" (%1$s विफल)"</string>
     <string name="dl_nao_consegui_ler_a_playlist">प्लेलिस्ट नहीं पढ़ी जा सकी</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">लिंक से गानों की सूची ली जा रही है…</string>
     <string name="dl_playlist_baixada">प्लेलिस्ट डाउनलोड हो गई</string>
     <string name="dl_playlist_baixada_com_falhas">प्लेलिस्ट डाउनलोड हुई, कुछ विफल रहे</string>
-    <string name="dl_playlist_de">प्लेलिस्ट %1$s • %3$s में से %2$s</string>
     <string name="dl_preparando_arquivo">फ़ाइल तैयार की जा रही है…</string>
     <string name="dl_preparando_audio">ऑडियो तैयार किया जा रहा है…</string>
     <string name="dl_preparando_download">डाउनलोड तैयार हो रहा है</string>
@@ -489,6 +487,13 @@
     <string name="zerar">रीसेट करें</string>
     <string name="zerar_estatisticas">आँकड़े रीसेट करें?</string>
     <string name="zerar_estatisticas_2">आँकड़े रीसेट करें</string>
+    <string name="dl_cancelar">रद्द करें</string>
+    <string name="dl_cancelar_musica">गाना रद्द करें</string>
+    <string name="dl_cancelar_playlist">प्लेलिस्ट रद्द करें</string>
+    <string name="dl_cancelar_album">एल्बम रद्द करें</string>
+    <string name="dl_position">%2$s में से %1$s</string>
+    <string name="dl_canceladas">" (%1$s रद्द)"</string>
+    <string name="dl_download_cancelado">डाउनलोड रद्द किया गया</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s प्लेलिस्ट</item>
         <item quantity="other">+%1$s प्लेलिस्ट</item>

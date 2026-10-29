@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">Đang đọc thông tin liên kết…</string>
     <string name="dl_lendo_informacoes">Đang đọc thông tin…</string>
     <string name="dl_libere_a_pasta_de_musicas">Hãy giải phóng thư mục nhạc trong Cài đặt trước khi tải xuống.</string>
-    <string name="dl_musica_de">Bài hát %1$s/%2$s</string>
     <string name="dl_na_fila">" • %1$s trong hàng đợi"</string>
     <string name="dl_nao_baixaram">" (%1$s thất bại)"</string>
     <string name="dl_nao_consegui_ler_a_playlist">Không đọc được danh sách phát</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">Đang lấy danh sách bài hát từ liên kết…</string>
     <string name="dl_playlist_baixada">Đã tải xuống danh sách phát</string>
     <string name="dl_playlist_baixada_com_falhas">Đã tải xuống danh sách phát nhưng có lỗi</string>
-    <string name="dl_playlist_de">Danh sách phát %1$s • %2$s/%3$s</string>
     <string name="dl_preparando_arquivo">Đang chuẩn bị tệp…</string>
     <string name="dl_preparando_audio">Đang chuẩn bị âm thanh…</string>
     <string name="dl_preparando_download">Đang chuẩn bị tải xuống</string>
@@ -489,6 +487,13 @@
     <string name="zerar">Đặt lại</string>
     <string name="zerar_estatisticas">Đặt lại thống kê?</string>
     <string name="zerar_estatisticas_2">Đặt lại thống kê</string>
+    <string name="dl_cancelar">Hủy</string>
+    <string name="dl_cancelar_musica">Hủy bài hát</string>
+    <string name="dl_cancelar_playlist">Hủy danh sách phát</string>
+    <string name="dl_cancelar_album">Hủy album</string>
+    <string name="dl_position">%1$s trên %2$s</string>
+    <string name="dl_canceladas">" (đã hủy %1$s)"</string>
+    <string name="dl_download_cancelado">Đã hủy tải xuống</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s danh sách phát</item>
     </plurals>

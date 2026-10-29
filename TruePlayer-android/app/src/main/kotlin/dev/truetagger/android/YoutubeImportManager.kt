@@ -17,6 +17,8 @@ import dev.truetagger.data.YtDlpJson
 import dev.truetagger.model.EditableTags
 import dev.truetagger.model.ImportStatus
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
@@ -37,7 +39,7 @@ class YoutubeImportManager(private val context: Context) {
     }
 
     /** Lista o conteúdo de uma playlist (YouTube ou SoundCloud). Devolve null se o link não é uma playlist ou falhou. */
-    suspend fun listPlaylist(url: String, onStatus: (ImportStatus) -> Unit): FlatPlaylist? = withContext(Dispatchers.IO) {
+    suspend fun listPlaylist(url: String, processId: String, onStatus: (ImportStatus) -> Unit): FlatPlaylist? = withContext(Dispatchers.IO) {
         initEngines()
         updateEngineIfNeeded(url, onStatus)
         onStatus(ImportStatus(url, t(R.string.dl_lendo_a_playlist_2), 0))
@@ -47,29 +49,36 @@ class YoutubeImportManager(private val context: Context) {
                 addOption("--flat-playlist")
                 addOption("--no-warnings")
             }
-            YtDlpJson.parseListing(YoutubeDL.getInstance().execute(request).out)
+            YtDlpJson.parseListing(YoutubeDL.getInstance().execute(request, processId).out)
         }.getOrNull()
     }
 
+    /**
+     * [processId] identifica o yt-dlp em execução: quem cancela chama `YoutubeDL.destroyProcessById(processId)` e
+     * cancela a corrotina; os pontos de checagem abaixo fazem a corrotina parar sem tentar de novo.
+     */
     suspend fun downloadAudio(
         url: String,
         destinationTree: Uri,
+        processId: String,
         onStatus: (ImportStatus) -> Unit,
     ): ImportResult = withContext(Dispatchers.IO) {
         onStatus(ImportStatus(url, t(R.string.dl_preparando_download_2), 0))
         initEngines()
 
         updateEngineIfNeeded(url, onStatus)
-        var info = fetchSourceInfo(url, onStatus)
+        var info = fetchSourceInfo(url, processId, onStatus)
         val initialTitle = cleanFeaturingText(info?.title.orEmpty())
         if (initialTitle.isNotBlank()) {
             onStatus(ImportStatus(url, t(R.string.dl_preparando_audio), 0, mediaTitle = initialTitle))
         }
 
         val firstAttempt = runCatching {
-            executeDownload(url, destinationTree, onStatus, retry = false, info = info)
+            executeDownload(url, destinationTree, processId, onStatus, retry = false, info = info)
         }
         if (firstAttempt.isSuccess) return@withContext firstAttempt.getOrThrow()
+        // Cancelado pelo usuário: não atualiza o baixador nem tenta de novo.
+        currentCoroutineContext().ensureActive()
 
         onStatus(
             ImportStatus(
@@ -83,11 +92,11 @@ class YoutubeImportManager(private val context: Context) {
             YoutubeDL.getInstance().updateYoutubeDL(context, YoutubeDL.UpdateChannel._NIGHTLY)
             rememberEngineUpdate()
         }
-        info = fetchSourceInfo(url, onStatus) ?: info
-        executeDownload(url, destinationTree, onStatus, retry = true, info = info)
+        info = fetchSourceInfo(url, processId, onStatus) ?: info
+        executeDownload(url, destinationTree, processId, onStatus, retry = true, info = info)
     }
 
-    private fun fetchSourceInfo(url: String, onStatus: (ImportStatus) -> Unit): SourceInfo? {
+    private fun fetchSourceInfo(url: String, processId: String, onStatus: (ImportStatus) -> Unit): SourceInfo? {
         onStatus(ImportStatus(url, t(R.string.dl_lendo_informacoes), 0))
         val raw = runCatching {
             val request = YoutubeDLRequest(url).apply {
@@ -95,7 +104,7 @@ class YoutubeImportManager(private val context: Context) {
                 addOption("--no-playlist")
                 addOption("--no-warnings")
             }
-            YtDlpJson.parseInfo(YoutubeDL.getInstance().execute(request).out)
+            YtDlpJson.parseInfo(YoutubeDL.getInstance().execute(request, processId).out)
         }.getOrNull()
         val info = raw ?: runCatching { YoutubeDL.getInstance().getInfo(url) }.getOrNull()?.let {
             SourceInfo(
@@ -115,6 +124,7 @@ class YoutubeImportManager(private val context: Context) {
     private suspend fun executeDownload(
         url: String,
         destinationTree: Uri,
+        processId: String,
         onStatus: (ImportStatus) -> Unit,
         retry: Boolean,
         info: SourceInfo?,
@@ -139,7 +149,6 @@ class YoutubeImportManager(private val context: Context) {
             addOption("-o", File(workDir, "%(autonumber)s.%(ext)s").absolutePath)
         }
 
-        val processId = "TrueTaggerImport-${System.currentTimeMillis()}"
         YoutubeDL.getInstance().execute(request, processId) { progress, eta, line ->
             val percent = progress.toInt().coerceIn(0, 100)
             onStatus(
@@ -152,6 +161,7 @@ class YoutubeImportManager(private val context: Context) {
             )
         }
 
+        currentCoroutineContext().ensureActive()
         val output = workDir.listFiles()
             ?.filter { it.isFile && it.extension.equals("mp3", ignoreCase = true) }
             ?.maxByOrNull { it.lastModified() }

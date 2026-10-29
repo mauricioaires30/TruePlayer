@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">Lecture des infos du lien…</string>
     <string name="dl_lendo_informacoes">Lecture des infos…</string>
     <string name="dl_libere_a_pasta_de_musicas">Libérez le dossier de musique dans les Réglages avant de télécharger.</string>
-    <string name="dl_musica_de">Morceau %1$s sur %2$s</string>
     <string name="dl_na_fila">" • %1$s en file"</string>
     <string name="dl_nao_baixaram">" (%1$s en échec)"</string>
     <string name="dl_nao_consegui_ler_a_playlist">Impossible de lire la playlist</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">Récupération de la liste des morceaux du lien…</string>
     <string name="dl_playlist_baixada">Playlist téléchargée</string>
     <string name="dl_playlist_baixada_com_falhas">Playlist téléchargée avec des échecs</string>
-    <string name="dl_playlist_de">Playlist %1$s • %2$s sur %3$s</string>
     <string name="dl_preparando_arquivo">Préparation du fichier…</string>
     <string name="dl_preparando_audio">Préparation de l\'audio…</string>
     <string name="dl_preparando_download">Préparation du téléchargement</string>
@@ -489,6 +487,13 @@
     <string name="zerar">Réinitialiser</string>
     <string name="zerar_estatisticas">Réinitialiser les statistiques ?</string>
     <string name="zerar_estatisticas_2">Réinitialiser les statistiques</string>
+    <string name="dl_cancelar">Annuler</string>
+    <string name="dl_cancelar_musica">Annuler le morceau</string>
+    <string name="dl_cancelar_playlist">Annuler la playlist</string>
+    <string name="dl_cancelar_album">Annuler l\'album</string>
+    <string name="dl_position">%1$s sur %2$s</string>
+    <string name="dl_canceladas">" (%1$s annulés)"</string>
+    <string name="dl_download_cancelado">Téléchargement annulé</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s playlist</item>
         <item quantity="many">+%1$s playlists</item>

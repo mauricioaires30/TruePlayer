@@ -10,6 +10,8 @@ import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import com.yausername.youtubedl_android.YoutubeDL
+import dev.truetagger.data.DownloadKind
 import dev.truetagger.data.DownloadQueueStore
 import dev.truetagger.data.PlaylistEntry
 import dev.truetagger.data.QueuedDownload
@@ -20,7 +22,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.isActive
 import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.launch
 import java.io.File
@@ -44,6 +49,15 @@ class YoutubeDownloadService : Service() {
     private val batchTotal = AtomicInteger(0)
     private val batchDone = AtomicInteger(0)
 
+    /** Item baixando agora e a tarefa dele (para cancelar). Mexer só sob [batchLock]. */
+    private var currentItem: QueuedDownload? = null
+    private var currentJob: Job? = null
+
+    /** Itens que o usuário cancelou enquanto baixavam: a falha deles não é erro. */
+    private val canceledIds = java.util.concurrent.ConcurrentHashMap.newKeySet<Long>()
+
+    private fun processIdOf(id: Long) = "TrueTaggerDownload-$id"
+
     override fun onCreate() {
         super.onCreate()
         importer = YoutubeImportManager(this)
@@ -52,12 +66,22 @@ class YoutubeDownloadService : Service() {
         serviceScope.launch {
             for (item in downloadChannel) {
                 queuedDownloads.decrementAndGet()
-                if (item.expand) expandPlaylist(item) else processDownload(item)
+                // Já saiu da fila: o usuário cancelou a playlist ou o álbum enquanto este item esperava.
+                val skipped = !queue.contains(item.id)
+                if (!skipped) {
+                    val job = serviceScope.launch { if (item.expand) expandPlaylist(item) else processDownload(item) }
+                    synchronized(batchLock) { currentItem = item; currentJob = job }
+                    job.join()
+                    synchronized(batchLock) { currentItem = null; currentJob = null }
+                    canceledIds.remove(item.id)
+                }
                 // Se o serviço foi encerrado no meio, o item continua na fila para a próxima vez.
                 currentCoroutineContext().ensureActive()
                 queue.remove(item.id)
                 synchronized(batchLock) {
-                    if (!item.expand) batchDone.incrementAndGet()
+                    if (!item.expand) {
+                        if (skipped) batchTotal.decrementAndGet() else batchDone.incrementAndGet()
+                    }
                     unfinished.decrementAndGet()
                 }
                 finishBatchIfIdle()
@@ -81,6 +105,16 @@ class YoutubeDownloadService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ShareContract.ACTION_CANCEL_ITEM -> {
+                cancelItem(intent.getLongExtra(ShareContract.EXTRA_ITEM_ID, -1L))
+                return START_STICKY
+            }
+            ShareContract.ACTION_CANCEL_JOB -> {
+                cancelJob(intent.getStringExtra(ShareContract.EXTRA_JOB).orEmpty())
+                return START_STICKY
+            }
+        }
         val url = intent?.getStringExtra(ShareContract.EXTRA_SHARED_URL).orEmpty().trim()
         if (url.isBlank() || !UrlSupport.isSupported(url)) {
             // Reinício do sistema ou pedido para retomar: só segue se sobrou algo na fila.
@@ -97,6 +131,40 @@ class YoutubeDownloadService : Service() {
             enqueue(queue.add(url, expand = UrlSupport.needsListing(url)))
         }
         return START_STICKY
+    }
+
+    /** Para só a música que está baixando; se ela é de uma playlist ou álbum, as outras continuam. */
+    private fun cancelItem(id: Long) {
+        serviceScope.launch {
+            val job = synchronized(batchLock) {
+                val item = currentItem?.takeIf { it.id == id } ?: return@launch
+                canceledIds.add(item.id)
+                currentJob
+            }
+            runCatching { YoutubeDL.getInstance().destroyProcessById(processIdOf(id)) }
+            job?.cancel()
+        }
+    }
+
+    /** Cancela a playlist ou o álbum inteiro: o que falta sai da fila e a música que baixa agora para. */
+    private fun cancelJob(name: String) {
+        if (name.isBlank()) return
+        serviceScope.launch {
+            val (removed, running) = synchronized(batchLock) {
+                val running = currentItem?.takeIf { it.playlist == name }
+                val removed = queue.removeJob(name, exceptId = running?.id)
+                if (running != null) canceledIds.add(running.id)
+                removed to (running to currentJob)
+            }
+            val (runningItem, runningJob) = running
+            if (runningItem != null) {
+                runCatching { YoutubeDL.getInstance().destroyProcessById(processIdOf(runningItem.id)) }
+                runningJob?.cancel()
+            } else if (removed.isNotEmpty()) {
+                // Nada deste lote estava baixando: fecha o resumo aqui.
+                finishPlaylist(name, removed.first().total)
+            }
+        }
     }
 
     private fun finishBatchIfIdle() {
@@ -116,7 +184,12 @@ class YoutubeDownloadService : Service() {
         runCatching {
             startForeground(
                 ShareContract.NOTIFICATION_ID,
-                buildNotification(title = t(R.string.dl_lendo_a_playlist), text = t(R.string.dl_pegando_a_lista_de_musicas), indeterminate = true),
+                buildNotification(
+                    title = t(R.string.dl_lendo_a_playlist),
+                    text = t(R.string.dl_pegando_a_lista_de_musicas),
+                    indeterminate = true,
+                    actions = listOf(cancelItemAction(task, t(R.string.dl_cancelar))),
+                ),
             )
             MusicFolder.treeUri(this) ?: error(t(R.string.dl_libere_a_pasta_de_musicas))
         }.onFailure { error ->
@@ -125,7 +198,9 @@ class YoutubeDownloadService : Service() {
             return
         }
 
-        val playlist = importer.listPlaylist(task.url) { }
+        val playlist = importer.listPlaylist(task.url, processIdOf(task.id)) { }
+        // Cancelado enquanto lia: sai sem avisar de erro.
+        if (task.id in canceledIds) return
         if (playlist == null) {
             if (UrlSupport.isPlaylist(task.url)) {
                 finishWithNotification(
@@ -152,11 +227,13 @@ class YoutubeDownloadService : Service() {
         val url = task.url
         val job = task.playlist
         var videoTitle = ""
+        // A notificação é da música. Só a linha pequena diz em que ponto do lote ela está ("3 de 10").
         val position = when {
-            job != null -> t(R.string.dl_playlist_de, job, task.position, task.total)
-            batchTotal.get() > 1 -> t(R.string.dl_musica_de, batchDone.get() + 1, batchTotal.get())
+            job != null -> t(R.string.dl_position, task.position, task.total)
+            batchTotal.get() > 1 -> t(R.string.dl_position, batchDone.get() + 1, batchTotal.get())
             else -> null
         }
+        val actions = downloadActions(task)
 
         runCatching {
             startForeground(
@@ -166,13 +243,14 @@ class YoutubeDownloadService : Service() {
                     text = t(R.string.dl_lendo_as_informacoes_do_link),
                     subText = position,
                     indeterminate = true,
+                    actions = actions,
                 ),
             )
 
             val tree = MusicFolder.treeUri(this)
                 ?: error(t(R.string.dl_libere_a_pasta_de_musicas))
 
-            importer.downloadAudio(url, tree) { status ->
+            importer.downloadAudio(url, tree, processIdOf(task.id)) { status ->
                 if (status.mediaTitle.isNotBlank()) videoTitle = status.mediaTitle
                 val progress = status.progress?.coerceIn(0, 100)
                 val waiting = queuedDownloads.get()
@@ -189,6 +267,7 @@ class YoutubeDownloadService : Service() {
                         subText = position,
                         progress = progress,
                         indeterminate = progress == null || progress == 0,
+                        actions = actions,
                     ),
                 )
             }
@@ -206,6 +285,15 @@ class YoutubeDownloadService : Service() {
                 if (queue.pendingFor(job, task.id) == 0) finishPlaylist(job, task.total)
             }
         }.onFailure { error ->
+            if (task.id in canceledIds) {
+                // Cancelado pelo usuário: não é erro. Avulso some sem aviso; de playlist/álbum conta como cancelado.
+                if (job != null) {
+                    queue.recordCanceled(job)
+                    if (queue.pendingFor(job, task.id) == 0) finishPlaylist(job, task.total)
+                }
+                return
+            }
+            if (error is CancellationException) throw error
             saveLastError(error)
             if (job == null) {
                 finishWithNotification(
@@ -222,12 +310,17 @@ class YoutubeDownloadService : Service() {
 
     private fun finishPlaylist(name: String, total: Int) {
         val counts = queue.finishJob(name)
-        val missing = if (counts.failed > 0) t(R.string.dl_nao_baixaram, counts.failed) else ""
+        val missing = (if (counts.failed > 0) t(R.string.dl_nao_baixaram, counts.failed) else "") +
+            (if (counts.canceled > 0) t(R.string.dl_canceladas, counts.canceled) else "")
         finishWithNotification(
-            title = if (counts.done == total) t(R.string.dl_playlist_baixada) else t(R.string.dl_playlist_baixada_com_falhas),
+            title = when {
+                counts.done == total -> t(R.string.dl_playlist_baixada)
+                counts.canceled > 0 && counts.failed == 0 -> t(R.string.dl_download_cancelado)
+                else -> t(R.string.dl_playlist_baixada_com_falhas)
+            },
             text = t(R.string.dl_de_musicas, name, counts.done, total, missing),
             completed = counts.done > 0,
-            failed = counts.done == 0,
+            failed = counts.done == 0 && counts.canceled == 0,
         )
     }
 
@@ -269,6 +362,7 @@ class YoutubeDownloadService : Service() {
         ongoing: Boolean = true,
         completed: Boolean = false,
         failed: Boolean = false,
+        actions: List<NotificationCompat.Action> = emptyList(),
     ): Notification {
         val contentIntent = PendingIntent.getActivity(
             this,
@@ -277,7 +371,7 @@ class YoutubeDownloadService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        return NotificationCompat.Builder(this, ShareContract.NOTIFICATION_CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, ShareContract.NOTIFICATION_CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(text)
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
@@ -296,7 +390,28 @@ class YoutubeDownloadService : Service() {
             .setAutoCancel(completed || failed)
             .setContentIntent(contentIntent)
             .setProgress(100, progress ?: 0, indeterminate)
-            .build()
+        actions.forEach { builder.addAction(it) }
+        return builder.build()
+    }
+
+    private fun serviceAction(title: String, action: String, requestCode: Int, fill: Intent.() -> Unit): NotificationCompat.Action {
+        val intent = Intent(this, YoutubeDownloadService::class.java).setAction(action).apply(fill)
+        val pending = PendingIntent.getService(this, requestCode, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+        return NotificationCompat.Action.Builder(0, title, pending).build()
+    }
+
+    private fun cancelItemAction(task: QueuedDownload, title: String) =
+        serviceAction(title, ShareContract.ACTION_CANCEL_ITEM, 1) { putExtra(ShareContract.EXTRA_ITEM_ID, task.id) }
+
+    /** "Cancelar música" sempre; "Cancelar playlist/álbum" só quando a música faz parte de um lote. */
+    private fun downloadActions(task: QueuedDownload): List<NotificationCompat.Action> {
+        val actions = mutableListOf(cancelItemAction(task, t(R.string.dl_cancelar_musica)))
+        val job = task.playlist
+        if (job != null) {
+            val title = if (task.kind == DownloadKind.ALBUM) t(R.string.dl_cancelar_album) else t(R.string.dl_cancelar_playlist)
+            actions += serviceAction(title, ShareContract.ACTION_CANCEL_JOB, 2) { putExtra(ShareContract.EXTRA_JOB, job) }
+        }
+        return actions
     }
 
     private fun ensureNotificationChannel() {

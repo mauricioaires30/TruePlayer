@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">正在读取链接信息…</string>
     <string name="dl_lendo_informacoes">正在读取信息…</string>
     <string name="dl_libere_a_pasta_de_musicas">下载前请在设置中释放音乐文件夹。</string>
-    <string name="dl_musica_de">第%1$s首，共%2$s首</string>
     <string name="dl_na_fila">" • 队列中还有%1$s首"</string>
     <string name="dl_nao_baixaram">" （%1$s个失败）"</string>
     <string name="dl_nao_consegui_ler_a_playlist">无法读取播放列表</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">正在从链接获取歌曲列表…</string>
     <string name="dl_playlist_baixada">播放列表已下载</string>
     <string name="dl_playlist_baixada_com_falhas">播放列表已下载，但有失败项</string>
-    <string name="dl_playlist_de">播放列表 %1$s • 共%3$s首，已完成%2$s首</string>
     <string name="dl_preparando_arquivo">正在准备文件…</string>
     <string name="dl_preparando_audio">正在准备音频…</string>
     <string name="dl_preparando_download">正在准备下载</string>
@@ -489,6 +487,13 @@
     <string name="zerar">重置</string>
     <string name="zerar_estatisticas">重置统计？</string>
     <string name="zerar_estatisticas_2">重置统计</string>
+    <string name="dl_cancelar">取消</string>
+    <string name="dl_cancelar_musica">取消这首歌</string>
+    <string name="dl_cancelar_playlist">取消播放列表</string>
+    <string name="dl_cancelar_album">取消专辑</string>
+    <string name="dl_position">第 %1$s 首，共 %2$s 首</string>
+    <string name="dl_canceladas">（已取消 %1$s）</string>
+    <string name="dl_download_cancelado">下载已取消</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s个播放列表</item>
     </plurals>

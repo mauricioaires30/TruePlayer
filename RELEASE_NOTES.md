@@ -1,106 +1,85 @@
-## TruePlayer 1.11.0
+## TruePlayer 1.12.0
 
 ### English [en]
-- The queue's mini player now reaches the bottom edge, like the tab bar.
-- Softer purple in the light theme.
-- The app icon adapts to the phone's themed icons, and the loading screen no longer shows a black square.
+- The download notification now shows only the current song, with its own progress and a small "3 of 10" for playlists and albums.
+- New Cancel song and Cancel playlist/album buttons in the download notification.
 
 ### Português [pt]
-- O mini player da fila agora vai até a borda de baixo, como a barra de abas.
-- Roxo mais suave no tema claro.
-- O ícone do app se adapta aos ícones temáticos do celular, e a tela de carregamento não mostra mais o quadrado preto.
+- A notificação de download agora mostra só a música atual, com o progresso dela e um "3 de 10" pequeno em playlists e álbuns.
+- Novos botões Cancelar música e Cancelar playlist/álbum na notificação de download.
 
 ### Español [es]
-- El minirreproductor de la cola ahora llega hasta el borde inferior, como la barra de pestañas.
-- Morado más suave en el tema claro.
-- El icono de la app se adapta a los iconos temáticos del teléfono y la pantalla de carga ya no muestra un cuadrado negro.
+- La notificación de descarga ahora muestra solo la canción actual, con su progreso y un pequeño "3 de 10" en listas y álbumes.
+- Nuevos botones Cancelar canción y Cancelar lista/álbum en la notificación de descarga.
 
 ### Français [fr]
-- Le mini lecteur de la file va maintenant jusqu'au bord inférieur, comme la barre d'onglets.
-- Violet plus doux dans le thème clair.
-- L'icône de l'app s'adapte aux icônes thématiques du téléphone, et l'écran de chargement n'affiche plus de carré noir.
+- La notification de téléchargement n'affiche plus que le morceau en cours, avec sa progression et un petit « 3 sur 10 » pour les playlists et albums.
+- Nouveaux boutons Annuler le morceau et Annuler la playlist/l'album dans la notification de téléchargement.
 
 ### Deutsch [de]
-- Der Mini-Player der Warteschlange reicht jetzt bis zum unteren Rand, wie die Tab-Leiste.
-- Sanfteres Lila im hellen Design.
-- Das App-Symbol passt sich den Themensymbolen des Telefons an, und der Ladebildschirm zeigt kein schwarzes Quadrat mehr.
+- Die Download-Benachrichtigung zeigt jetzt nur den aktuellen Titel mit seinem Fortschritt und bei Playlists und Alben ein kleines „3 von 10“.
+- Neue Schaltflächen „Titel abbrechen“ und „Playlist/Album abbrechen“ in der Download-Benachrichtigung.
 
 ### Italiano [it]
-- Il mini lettore della coda ora arriva fino al bordo inferiore, come la barra delle schede.
-- Viola più morbido nel tema chiaro.
-- L'icona dell'app si adatta alle icone a tema del telefono e la schermata di caricamento non mostra più il quadrato nero.
+- La notifica di download ora mostra solo il brano corrente, con il suo avanzamento e un piccolo «3 di 10» per playlist e album.
+- Nuovi pulsanti Annulla brano e Annulla playlist/album nella notifica di download.
 
 ### Nederlands [nl]
-- De minispeler van de wachtrij loopt nu door tot de onderrand, zoals de tabbalk.
-- Zachter paars in het lichte thema.
-- Het app-pictogram past zich aan de themapictogrammen van de telefoon aan en het laadscherm toont geen zwart vierkant meer.
+- De downloadmelding toont nu alleen het huidige nummer, met de voortgang en een klein "3 van 10" bij afspeellijsten en albums.
+- Nieuwe knoppen Nummer annuleren en Afspeellijst/album annuleren in de downloadmelding.
 
 ### Svenska [sv]
-- Köns minispelare går nu ända ner till nedre kanten, som flikraden.
-- Mjukare lila i det ljusa temat.
-- Appikonen anpassar sig efter telefonens temaikoner och laddningsskärmen visar inte längre en svart ruta.
+- Nedladdningsaviseringen visar nu bara den aktuella låten, med dess förlopp och ett litet "3 av 10" för spellistor och album.
+- Nya knappar Avbryt låt och Avbryt spellista/album i nedladdningsaviseringen.
 
 ### Polski [pl]
-- Mini odtwarzacz w kolejce sięga teraz do dolnej krawędzi, tak jak pasek kart.
-- Łagodniejszy fiolet w jasnym motywie.
-- Ikona aplikacji dopasowuje się do ikon tematycznych telefonu, a ekran ładowania nie pokazuje już czarnego kwadratu.
+- Powiadomienie o pobieraniu pokazuje teraz tylko bieżący utwór z jego postępem i małe „3 z 10” przy playlistach i albumach.
+- Nowe przyciski Anuluj utwór i Anuluj playlistę/album w powiadomieniu o pobieraniu.
 
 ### Türkçe [tr]
-- Sıradaki mini oynatıcı artık alt kenara kadar uzanıyor, sekme çubuğu gibi.
-- Açık temada daha yumuşak mor.
-- Uygulama simgesi telefonun tema simgelerine uyum sağlar ve yükleme ekranı artık siyah kare göstermez.
+- İndirme bildirimi artık yalnızca geçerli şarkıyı, kendi ilerlemesiyle ve listelerde ve albümlerde küçük bir "3 / 10" ile gösterir.
+- İndirme bildiriminde yeni Şarkıyı iptal et ve Listeyi/albümü iptal et düğmeleri.
 
 ### Русский [ru]
-- Мини-плеер в очереди теперь доходит до нижнего края, как панель вкладок.
-- Более мягкий фиолетовый в светлой теме.
-- Значок приложения подстраивается под тематические значки телефона, а экран загрузки больше не показывает чёрный квадрат.
+- Уведомление о загрузке теперь показывает только текущий трек с его прогрессом и маленькое «3 из 10» для плейлистов и альбомов.
+- В уведомлении о загрузке появились кнопки «Отменить трек» и «Отменить плейлист/альбом».
 
 ### Українська [uk]
-- Міні-програвач у черзі тепер сягає нижнього краю, як панель вкладок.
-- М'якший фіолетовий у світлій темі.
-- Значок застосунку підлаштовується під тематичні значки телефона, а екран завантаження більше не показує чорний квадрат.
+- Сповіщення про завантаження тепер показує лише поточний трек із його прогресом і маленьке «3 з 10» для плейлистів і альбомів.
+- У сповіщенні про завантаження з'явилися кнопки «Скасувати трек» і «Скасувати плейлист/альбом».
 
 ### العربية [ar]
-- أصبح المشغّل المصغّر في قائمة الانتظار يمتد حتى الحافة السفلية، مثل شريط التبويبات.
-- بنفسجي أهدأ في السمة الفاتحة.
-- تتكيّف أيقونة التطبيق مع أيقونات السمة في الهاتف، ولم تعد شاشة التحميل تعرض مربعًا أسود.
+- يعرض إشعار التنزيل الآن المقطع الحالي فقط مع تقدّمه، و«3 من 10» صغيرة للقوائم والألبومات.
+- أزرار جديدة في إشعار التنزيل: إلغاء المقطع وإلغاء القائمة/الألبوم.
 
 ### हिन्दी [hi]
-- कतार का मिनी प्लेयर अब नीचे के किनारे तक जाता है, टैब बार की तरह।
-- हल्की थीम में बैंगनी रंग अब ज़्यादा हल्का है।
-- ऐप का आइकन फ़ोन के थीम वाले आइकनों के हिसाब से बदलता है, और लोडिंग स्क्रीन पर अब काला चौकोर नहीं दिखता।
+- डाउनलोड नोटिफ़िकेशन अब सिर्फ़ मौजूदा गाना दिखाता है, उसकी प्रगति के साथ, और प्लेलिस्ट व एल्बम के लिए छोटा "10 में से 3"।
+- डाउनलोड नोटिफ़िकेशन में नए बटन: गाना रद्द करें और प्लेलिस्ट/एल्बम रद्द करें।
 
 ### Bahasa Indonesia [id]
-- Pemutar mini di antrean kini sampai ke tepi bawah, seperti bilah tab.
-- Ungu lebih lembut di tema terang.
-- Ikon aplikasi menyesuaikan ikon bertema di ponsel, dan layar pemuatan tidak lagi menampilkan kotak hitam.
+- Notifikasi unduhan kini hanya menampilkan lagu saat ini, dengan progresnya dan "3 dari 10" kecil untuk playlist dan album.
+- Tombol baru Batalkan lagu dan Batalkan playlist/album di notifikasi unduhan.
 
 ### Tiếng Việt [vi]
-- Trình phát mini ở hàng đợi giờ kéo dài đến mép dưới, giống thanh tab.
-- Màu tím dịu hơn ở giao diện sáng.
-- Biểu tượng ứng dụng thích ứng với biểu tượng theo chủ đề của điện thoại, và màn hình tải không còn hiện ô vuông đen.
+- Thông báo tải xuống giờ chỉ hiển thị bài hát hiện tại, kèm tiến độ của nó và dòng nhỏ "3 trên 10" cho danh sách phát và album.
+- Thêm nút Hủy bài hát và Hủy danh sách phát/album trong thông báo tải xuống.
 
 ### ไทย [th]
-- เครื่องเล่นขนาดเล็กในคิวขยายไปถึงขอบล่างแล้ว เหมือนแถบแท็บ
-- สีม่วงในธีมสว่างนุ่มขึ้น
-- ไอคอนแอปปรับตามไอคอนธีมของโทรศัพท์ และหน้าจอโหลดไม่แสดงสี่เหลี่ยมสีดำอีก
+- การแจ้งเตือนดาวน์โหลดแสดงเฉพาะเพลงปัจจุบัน พร้อมความคืบหน้า และ "3 จาก 10" ตัวเล็กสำหรับเพลย์ลิสต์และอัลบั้ม
+- เพิ่มปุ่มยกเลิกเพลงและยกเลิกเพลย์ลิสต์/อัลบั้มในการแจ้งเตือนดาวน์โหลด
 
 ### 日本語 [ja]
-- キューのミニプレーヤーが、タブバーと同じく下端まで届くようになりました。
-- ライトテーマの紫を落ち着いた色にしました。
-- アプリのアイコンが端末のテーマアイコンに対応し、読み込み画面に黒い四角が出なくなりました。
+- ダウンロード通知には現在の曲だけが表示され、進行状況と、プレイリストやアルバムでは小さく「3 / 10」と出ます。
+- ダウンロード通知に「曲をキャンセル」と「プレイリスト/アルバムをキャンセル」ボタンを追加しました。
 
 ### 한국어 [ko]
-- 대기열의 미니 플레이어가 탭 바처럼 아래쪽 끝까지 이어집니다.
-- 밝은 테마의 보라색을 더 부드럽게 했습니다.
-- 앱 아이콘이 휴대폰의 테마 아이콘에 맞춰지고, 로딩 화면에 검은 사각형이 더 이상 나오지 않습니다.
+- 다운로드 알림에 현재 곡만 표시되고, 진행률과 재생목록·앨범에서는 작게 "3 / 10"이 나옵니다.
+- 다운로드 알림에 곡 취소, 재생목록/앨범 취소 버튼이 생겼습니다.
 
 ### 简体中文 [zh-CN]
-- 队列中的迷你播放器现在和标签栏一样延伸到底部边缘。
-- 浅色主题的紫色更柔和。
-- 应用图标可适配手机的主题图标，加载界面不再出现黑色方块。
+- 下载通知现在只显示当前歌曲及其进度，播放列表和专辑会在角落显示“第 3 首，共 10 首”。
+- 下载通知新增“取消这首歌”和“取消播放列表/专辑”按钮。
 
 ### 繁體中文 [zh-TW]
-- 佇列中的迷你播放器現在和分頁列一樣延伸到底部邊緣。
-- 淺色主題的紫色更柔和。
-- 應用程式圖示可配合手機的主題圖示，載入畫面不再出現黑色方塊。
+- 下載通知現在只顯示目前歌曲及其進度，播放清單和專輯會在角落顯示「第 3 首，共 10 首」。
+- 下載通知新增「取消這首歌」和「取消播放清單/專輯」按鈕。

@@ -5,6 +5,10 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 
+/** De onde vem o item: música solta, faixa de playlist ou faixa de álbum (muda só o texto do botão de cancelar). */
+@Serializable
+enum class DownloadKind { SINGLE, PLAYLIST, ALBUM }
+
 /**
  * Um item da fila de downloads. [expand] é um link de playlist ainda não lido; os demais são músicas
  * soltas ou faixas de uma playlist ([playlist] guarda o nome da playlist do app e [position] a ordem original).
@@ -17,11 +21,12 @@ data class QueuedDownload(
     val playlist: String? = null,
     val total: Int = 0,
     val position: Int = 0,
+    val kind: DownloadKind = DownloadKind.SINGLE,
 )
 
-/** Quantas músicas de uma playlist já baixaram e quantas falharam. */
+/** Quantas músicas de uma playlist já baixaram, quantas falharam e quantas foram canceladas. */
 @Serializable
-data class QueueJobCounts(val done: Int = 0, val failed: Int = 0)
+data class QueueJobCounts(val done: Int = 0, val failed: Int = 0, val canceled: Int = 0)
 
 /**
  * Fila de downloads guardada em arquivo, para continuar de onde parou se o processo for encerrado.
@@ -40,9 +45,16 @@ class DownloadQueueStore(private val file: File) {
     fun load(): List<QueuedDownload> = read().items
 
     @Synchronized
-    fun add(url: String, expand: Boolean = false, playlist: String? = null, total: Int = 0, position: Int = 0): QueuedDownload {
+    fun add(
+        url: String,
+        expand: Boolean = false,
+        playlist: String? = null,
+        total: Int = 0,
+        position: Int = 0,
+        kind: DownloadKind = if (playlist != null) DownloadKind.PLAYLIST else DownloadKind.SINGLE,
+    ): QueuedDownload {
         val dto = read()
-        val item = QueuedDownload(dto.nextId, url, expand, playlist, total, position)
+        val item = QueuedDownload(dto.nextId, url, expand, playlist, total, position, kind)
         write(dto.copy(nextId = dto.nextId + 1, items = dto.items + item))
         return item
     }
@@ -52,6 +64,30 @@ class DownloadQueueStore(private val file: File) {
         val dto = read()
         if (dto.items.none { it.id == id }) return
         write(dto.copy(items = dto.items.filterNot { it.id == id }))
+    }
+
+    @Synchronized
+    fun contains(id: Long): Boolean = read().items.any { it.id == id }
+
+    /**
+     * Cancela o que falta de uma playlist ou álbum: tira os itens da fila (menos o [exceptId], que está baixando e
+     * se cancela sozinho) e soma ao contador de cancelados. Devolve os itens tirados.
+     */
+    @Synchronized
+    fun removeJob(playlist: String, exceptId: Long? = null): List<QueuedDownload> {
+        val dto = read()
+        val removed = dto.items.filter { it.playlist == playlist && it.id != exceptId }
+        if (removed.isEmpty()) return emptyList()
+        val now = dto.jobs[playlist] ?: QueueJobCounts()
+        write(dto.copy(items = dto.items - removed.toSet(), jobs = dto.jobs + (playlist to now.copy(canceled = now.canceled + removed.size))))
+        return removed
+    }
+
+    @Synchronized
+    fun recordCanceled(playlist: String) {
+        val dto = read()
+        val now = dto.jobs[playlist] ?: QueueJobCounts()
+        write(dto.copy(jobs = dto.jobs + (playlist to now.copy(canceled = now.canceled + 1))))
     }
 
     /** Itens da playlist que ainda faltam, sem contar o [exceptId]. */

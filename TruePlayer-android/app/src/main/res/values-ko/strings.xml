@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">링크 정보 읽는 중…</string>
     <string name="dl_lendo_informacoes">정보 읽는 중…</string>
     <string name="dl_libere_a_pasta_de_musicas">다운로드하기 전에 설정에서 음악 폴더를 해제하세요.</string>
-    <string name="dl_musica_de">%2$s곡 중 %1$s번째 곡</string>
     <string name="dl_na_fila">" • 대기열 %1$s"</string>
     <string name="dl_nao_baixaram">" (%1$s개 실패)"</string>
     <string name="dl_nao_consegui_ler_a_playlist">재생목록을 읽지 못했습니다</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">링크에서 곡 목록을 가져오는 중…</string>
     <string name="dl_playlist_baixada">재생목록을 다운로드했습니다</string>
     <string name="dl_playlist_baixada_com_falhas">재생목록을 다운로드했지만 일부 실패했습니다</string>
-    <string name="dl_playlist_de">재생목록 %1$s • %3$s개 중 %2$s번째</string>
     <string name="dl_preparando_arquivo">파일 준비 중…</string>
     <string name="dl_preparando_audio">오디오 준비 중…</string>
     <string name="dl_preparando_download">다운로드 준비 중</string>
@@ -489,6 +487,13 @@
     <string name="zerar">초기화</string>
     <string name="zerar_estatisticas">통계를 초기화할까요?</string>
     <string name="zerar_estatisticas_2">통계 초기화</string>
+    <string name="dl_cancelar">취소</string>
+    <string name="dl_cancelar_musica">곡 취소</string>
+    <string name="dl_cancelar_playlist">재생목록 취소</string>
+    <string name="dl_cancelar_album">앨범 취소</string>
+    <string name="dl_position">%1$s / %2$s</string>
+    <string name="dl_canceladas">" (취소 %1$s)"</string>
+    <string name="dl_download_cancelado">다운로드가 취소되었습니다</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+재생목록 %1$s개</item>
     </plurals>

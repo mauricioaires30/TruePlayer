@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">กำลังอ่านข้อมูลของลิงก์…</string>
     <string name="dl_lendo_informacoes">กำลังอ่านข้อมูล…</string>
     <string name="dl_libere_a_pasta_de_musicas">ปล่อยโฟลเดอร์เพลงในการตั้งค่าก่อนดาวน์โหลด</string>
-    <string name="dl_musica_de">เพลงที่ %1$s จาก %2$s</string>
     <string name="dl_na_fila">" • ในคิว %1$s"</string>
     <string name="dl_nao_baixaram">" (ไม่สำเร็จ %1$s)"</string>
     <string name="dl_nao_consegui_ler_a_playlist">อ่านเพลย์ลิสต์ไม่ได้</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">กำลังดึงรายการเพลงจากลิงก์…</string>
     <string name="dl_playlist_baixada">ดาวน์โหลดเพลย์ลิสต์แล้ว</string>
     <string name="dl_playlist_baixada_com_falhas">ดาวน์โหลดเพลย์ลิสต์แล้วแต่มีที่ไม่สำเร็จ</string>
-    <string name="dl_playlist_de">เพลย์ลิสต์ %1$s • %2$s จาก %3$s</string>
     <string name="dl_preparando_arquivo">กำลังเตรียมไฟล์…</string>
     <string name="dl_preparando_audio">กำลังเตรียมเสียง…</string>
     <string name="dl_preparando_download">กำลังเตรียมดาวน์โหลด</string>
@@ -489,6 +487,13 @@
     <string name="zerar">รีเซ็ต</string>
     <string name="zerar_estatisticas">รีเซ็ตสถิติหรือไม่</string>
     <string name="zerar_estatisticas_2">รีเซ็ตสถิติ</string>
+    <string name="dl_cancelar">ยกเลิก</string>
+    <string name="dl_cancelar_musica">ยกเลิกเพลง</string>
+    <string name="dl_cancelar_playlist">ยกเลิกเพลย์ลิสต์</string>
+    <string name="dl_cancelar_album">ยกเลิกอัลบั้ม</string>
+    <string name="dl_position">%1$s จาก %2$s</string>
+    <string name="dl_canceladas">" (ยกเลิก %1$s)"</string>
+    <string name="dl_download_cancelado">ยกเลิกการดาวน์โหลดแล้ว</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s เพลย์ลิสต์</item>
     </plurals>

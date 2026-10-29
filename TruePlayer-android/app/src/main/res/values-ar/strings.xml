@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">جارٍ قراءة معلومات الرابط…</string>
     <string name="dl_lendo_informacoes">جارٍ قراءة المعلومات…</string>
     <string name="dl_libere_a_pasta_de_musicas">حرّر مجلد الموسيقى في الإعدادات قبل التنزيل.</string>
-    <string name="dl_musica_de">المقطع %1$s من %2$s</string>
     <string name="dl_na_fila">" • %1$s في قائمة الانتظار"</string>
     <string name="dl_nao_baixaram">" (فشل %1$s)"</string>
     <string name="dl_nao_consegui_ler_a_playlist">تعذّرت قراءة قائمة التشغيل</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">جارٍ جلب قائمة المقاطع من الرابط…</string>
     <string name="dl_playlist_baixada">تم تنزيل قائمة التشغيل</string>
     <string name="dl_playlist_baixada_com_falhas">تم تنزيل قائمة التشغيل مع وجود إخفاقات</string>
-    <string name="dl_playlist_de">قائمة التشغيل %1$s • %2$s من %3$s</string>
     <string name="dl_preparando_arquivo">جارٍ تجهيز الملف…</string>
     <string name="dl_preparando_audio">جارٍ تجهيز الصوت…</string>
     <string name="dl_preparando_download">جارٍ تجهيز التنزيل</string>
@@ -489,6 +487,13 @@
     <string name="zerar">إعادة ضبط</string>
     <string name="zerar_estatisticas">هل تريد إعادة ضبط الإحصاءات؟</string>
     <string name="zerar_estatisticas_2">إعادة ضبط الإحصاءات</string>
+    <string name="dl_cancelar">إلغاء</string>
+    <string name="dl_cancelar_musica">إلغاء المقطع</string>
+    <string name="dl_cancelar_playlist">إلغاء القائمة</string>
+    <string name="dl_cancelar_album">إلغاء الألبوم</string>
+    <string name="dl_position">%1$s من %2$s</string>
+    <string name="dl_canceladas">" (أُلغي منها %1$s)"</string>
+    <string name="dl_download_cancelado">تم إلغاء التنزيل</string>
     <plurals name="commit_playlists_added">
         <item quantity="zero">لا قوائم تشغيل جديدة</item>
         <item quantity="one">+قائمة تشغيل واحدة</item>

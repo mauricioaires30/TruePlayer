@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">Läser länkens info…</string>
     <string name="dl_lendo_informacoes">Läser info…</string>
     <string name="dl_libere_a_pasta_de_musicas">Frigör musikmappen i Inställningar innan du laddar ned.</string>
-    <string name="dl_musica_de">Låt %1$s av %2$s</string>
     <string name="dl_na_fila">" • %1$s i kön"</string>
     <string name="dl_nao_baixaram">" (%1$s misslyckades)"</string>
     <string name="dl_nao_consegui_ler_a_playlist">Kunde inte läsa spellistan</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">Hämtar låtlistan från länken…</string>
     <string name="dl_playlist_baixada">Spellistan har laddats ned</string>
     <string name="dl_playlist_baixada_com_falhas">Spellistan har laddats ned med fel</string>
-    <string name="dl_playlist_de">Spellista %1$s • %2$s av %3$s</string>
     <string name="dl_preparando_arquivo">Förbereder filen…</string>
     <string name="dl_preparando_audio">Förbereder ljudet…</string>
     <string name="dl_preparando_download">Förbereder nedladdning</string>
@@ -489,6 +487,13 @@
     <string name="zerar">Nollställ</string>
     <string name="zerar_estatisticas">Nollställa statistiken?</string>
     <string name="zerar_estatisticas_2">Nollställ statistiken</string>
+    <string name="dl_cancelar">Avbryt</string>
+    <string name="dl_cancelar_musica">Avbryt låt</string>
+    <string name="dl_cancelar_playlist">Avbryt spellista</string>
+    <string name="dl_cancelar_album">Avbryt album</string>
+    <string name="dl_position">%1$s av %2$s</string>
+    <string name="dl_canceladas">" (%1$s avbrutna)"</string>
+    <string name="dl_download_cancelado">Nedladdningen avbröts</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s spellista</item>
         <item quantity="other">+%1$s spellistor</item>

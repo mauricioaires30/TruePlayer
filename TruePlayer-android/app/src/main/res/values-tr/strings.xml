@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">Bağlantı bilgileri okunuyor…</string>
     <string name="dl_lendo_informacoes">Bilgiler okunuyor…</string>
     <string name="dl_libere_a_pasta_de_musicas">İndirmeden önce Ayarlar\'da müzik klasörünü serbest bırakın.</string>
-    <string name="dl_musica_de">Şarkı %1$s / %2$s</string>
     <string name="dl_na_fila">" • sırada %1$s"</string>
     <string name="dl_nao_baixaram">" (%1$s başarısız)"</string>
     <string name="dl_nao_consegui_ler_a_playlist">Çalma listesi okunamadı</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">Şarkı listesi bağlantıdan alınıyor…</string>
     <string name="dl_playlist_baixada">Çalma listesi indirildi</string>
     <string name="dl_playlist_baixada_com_falhas">Çalma listesi hatalarla indirildi</string>
-    <string name="dl_playlist_de">Çalma listesi %1$s • %2$s / %3$s</string>
     <string name="dl_preparando_arquivo">Dosya hazırlanıyor…</string>
     <string name="dl_preparando_audio">Ses hazırlanıyor…</string>
     <string name="dl_preparando_download">İndirme hazırlanıyor</string>
@@ -489,6 +487,13 @@
     <string name="zerar">Sıfırla</string>
     <string name="zerar_estatisticas">İstatistikler sıfırlansın mı?</string>
     <string name="zerar_estatisticas_2">İstatistikleri sıfırla</string>
+    <string name="dl_cancelar">İptal</string>
+    <string name="dl_cancelar_musica">Şarkıyı iptal et</string>
+    <string name="dl_cancelar_playlist">Listeyi iptal et</string>
+    <string name="dl_cancelar_album">Albümü iptal et</string>
+    <string name="dl_position">%1$s / %2$s</string>
+    <string name="dl_canceladas">" (%1$s iptal)"</string>
+    <string name="dl_download_cancelado">İndirme iptal edildi</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s çalma listesi</item>
         <item quantity="other">+%1$s çalma listesi</item>

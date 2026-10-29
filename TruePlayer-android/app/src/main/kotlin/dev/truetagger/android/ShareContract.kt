@@ -15,6 +15,10 @@ object ShareContract {
     const val ACTION_CONFIGURE_SHARE = "dev.truetagger.action.CONFIGURE_SHARE"
     const val ACTION_START_DOWNLOAD = "dev.truetagger.action.START_DOWNLOAD"
     const val ACTION_OPEN_APP = "dev.truetagger.action.OPEN_APP"
+    const val ACTION_CANCEL_ITEM = "dev.truetagger.action.CANCEL_DOWNLOAD_ITEM"
+    const val ACTION_CANCEL_JOB = "dev.truetagger.action.CANCEL_DOWNLOAD_JOB"
+    const val EXTRA_ITEM_ID = "download_item_id"
+    const val EXTRA_JOB = "download_job"
 
     const val NOTIFICATION_CHANNEL_ID = "truetagger_downloads"
     const val NOTIFICATION_ID = 201

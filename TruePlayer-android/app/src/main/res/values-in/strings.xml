@@ -86,7 +86,6 @@
     <string name="dl_lendo_as_informacoes_do_link">Membaca info tautan…</string>
     <string name="dl_lendo_informacoes">Membaca info…</string>
     <string name="dl_libere_a_pasta_de_musicas">Lepaskan folder musik di Pengaturan sebelum mengunduh.</string>
-    <string name="dl_musica_de">Lagu %1$s dari %2$s</string>
     <string name="dl_na_fila">" • %1$s dalam antrean"</string>
     <string name="dl_nao_baixaram">" (%1$s gagal)"</string>
     <string name="dl_nao_consegui_ler_a_playlist">Tidak bisa membaca playlist</string>
@@ -98,7 +97,6 @@
     <string name="dl_pegando_a_lista_de_musicas">Mengambil daftar lagu dari tautan…</string>
     <string name="dl_playlist_baixada">Playlist diunduh</string>
     <string name="dl_playlist_baixada_com_falhas">Playlist diunduh dengan kegagalan</string>
-    <string name="dl_playlist_de">Playlist %1$s • %2$s dari %3$s</string>
     <string name="dl_preparando_arquivo">Menyiapkan file…</string>
     <string name="dl_preparando_audio">Menyiapkan audio…</string>
     <string name="dl_preparando_download">Menyiapkan unduhan</string>
@@ -489,6 +487,13 @@
     <string name="zerar">Setel ulang</string>
     <string name="zerar_estatisticas">Setel ulang statistik?</string>
     <string name="zerar_estatisticas_2">Setel ulang statistik</string>
+    <string name="dl_cancelar">Batal</string>
+    <string name="dl_cancelar_musica">Batalkan lagu</string>
+    <string name="dl_cancelar_playlist">Batalkan playlist</string>
+    <string name="dl_cancelar_album">Batalkan album</string>
+    <string name="dl_position">%1$s dari %2$s</string>
+    <string name="dl_canceladas">" (%1$s dibatalkan)"</string>
+    <string name="dl_download_cancelado">Unduhan dibatalkan</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s playlist</item>
     </plurals>
