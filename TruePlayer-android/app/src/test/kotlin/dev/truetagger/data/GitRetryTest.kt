@@ -87,8 +87,8 @@ class GitRetryTest {
     }
 
     @Test fun briefNamesTheProblem() {
-        assertEquals("erro 500", GitRetry.brief(IOException("500 Internal Server Error")))
-        assertEquals("tempo esgotado", GitRetry.brief(IOException("Read timed out")))
-        assertEquals("falha de conexão", GitRetry.brief(IOException("Connection reset")))
+        assertEquals(GitRetry.Reason.HTTP_500, GitRetry.reason(IOException("500 Internal Server Error")))
+        assertEquals(GitRetry.Reason.TIMEOUT, GitRetry.reason(IOException("Read timed out")))
+        assertEquals(GitRetry.Reason.CONNECTION, GitRetry.reason(IOException("Connection reset")))
     }
 }

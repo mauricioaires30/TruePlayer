@@ -121,12 +121,12 @@ class YoutubeDownloadService : Service() {
         runCatching {
             startForeground(
                 ShareContract.NOTIFICATION_ID,
-                buildNotification(title = "Lendo a playlist", text = "Pegando a lista de músicas do link…", indeterminate = true),
+                buildNotification(title = t(R.string.dl_lendo_a_playlist), text = t(R.string.dl_pegando_a_lista_de_musicas), indeterminate = true),
             )
-            MusicFolder.treeUri(this) ?: error("Libere a pasta de músicas em Configurações antes de baixar.")
+            MusicFolder.treeUri(this) ?: error(t(R.string.dl_libere_a_pasta_de_musicas))
         }.onFailure { error ->
             saveLastError(error)
-            finishWithNotification("Falha no download", error.message ?: "Não foi possível ler a playlist.", failed = true)
+            finishWithNotification(t(R.string.dl_falha_no_download), error.message ?: t(R.string.dl_nao_foi_possivel_ler_a), failed = true)
             return
         }
 
@@ -134,8 +134,8 @@ class YoutubeDownloadService : Service() {
         if (playlist == null) {
             if (UrlSupport.isPlaylist(task.url)) {
                 finishWithNotification(
-                    "Não consegui ler a playlist",
-                    "Confira se o link está certo e se a playlist é pública.",
+                    t(R.string.dl_nao_consegui_ler_a_playlist),
+                    t(R.string.dl_confira_se_o_link_esta),
                     failed = true,
                 )
             } else {
@@ -158,8 +158,8 @@ class YoutubeDownloadService : Service() {
         val job = task.playlist
         var videoTitle = ""
         val position = when {
-            job != null -> "Playlist $job • ${task.position} de ${task.total}"
-            batchTotal.get() > 1 -> "Música ${batchDone.get() + 1} de ${batchTotal.get()}"
+            job != null -> t(R.string.dl_playlist_de, job, task.position, task.total)
+            batchTotal.get() > 1 -> t(R.string.dl_musica_de, batchDone.get() + 1, batchTotal.get())
             else -> null
         }
 
@@ -167,29 +167,29 @@ class YoutubeDownloadService : Service() {
             startForeground(
                 ShareContract.NOTIFICATION_ID,
                 buildNotification(
-                    title = "Preparando download",
-                    text = "Lendo as informações do link…",
+                    title = t(R.string.dl_preparando_download),
+                    text = t(R.string.dl_lendo_as_informacoes_do_link),
                     subText = position,
                     indeterminate = true,
                 ),
             )
 
             val tree = MusicFolder.treeUri(this)
-                ?: error("Libere a pasta de músicas em Configurações antes de baixar.")
+                ?: error(t(R.string.dl_libere_a_pasta_de_musicas))
 
             importer.downloadAudio(url, tree) { status ->
                 if (status.mediaTitle.isNotBlank()) videoTitle = status.mediaTitle
                 val progress = status.progress?.coerceIn(0, 100)
                 val waiting = queuedDownloads.get()
-                val step = status.message.ifBlank { "Processando…" }.trimEnd('.', '…')
+                val step = status.message.ifBlank { t(R.string.dl_processando) }.trimEnd('.', '…')
                 startForeground(
                     ShareContract.NOTIFICATION_ID,
                     buildNotification(
-                        title = videoTitle.ifBlank { "Baixando música" },
+                        title = videoTitle.ifBlank { t(R.string.dl_baixando_musica) },
                         text = buildString {
                             append(step)
                             if (progress != null && progress > 0) append(" • $progress%")
-                            if (waiting > 0) append(" • $waiting na fila")
+                            if (waiting > 0) append(t(R.string.dl_na_fila, waiting))
                         },
                         subText = position,
                         progress = progress,
@@ -201,7 +201,7 @@ class YoutubeDownloadService : Service() {
             clearLastError()
             if (job == null) {
                 finishWithNotification(
-                    title = "Download concluído",
+                    title = t(R.string.dl_download_concluido),
                     text = result.label,
                     completed = true,
                 )
@@ -214,8 +214,8 @@ class YoutubeDownloadService : Service() {
             saveLastError(error)
             if (job == null) {
                 finishWithNotification(
-                    title = "Falha no download",
-                    text = if (videoTitle.isBlank()) "Não foi possível baixar este link." else "Não foi possível baixar: $videoTitle",
+                    title = t(R.string.dl_falha_no_download),
+                    text = if (videoTitle.isBlank()) t(R.string.dl_nao_foi_possivel_baixar_este) else t(R.string.dl_nao_foi_possivel_baixar, videoTitle),
                     failed = true,
                 )
             } else {
@@ -227,10 +227,10 @@ class YoutubeDownloadService : Service() {
 
     private fun finishPlaylist(name: String, total: Int) {
         val counts = queue.finishJob(name)
-        val missing = if (counts.failed > 0) " (${counts.failed} não baixaram)" else ""
+        val missing = if (counts.failed > 0) t(R.string.dl_nao_baixaram, counts.failed) else ""
         finishWithNotification(
-            title = if (counts.done == total) "Playlist baixada" else "Playlist baixada com falhas",
-            text = "$name: ${counts.done} de $total músicas$missing",
+            title = if (counts.done == total) t(R.string.dl_playlist_baixada) else t(R.string.dl_playlist_baixada_com_falhas),
+            text = t(R.string.dl_de_musicas, name, counts.done, total, missing),
             completed = counts.done > 0,
             failed = counts.done == 0,
         )
@@ -313,10 +313,10 @@ class YoutubeDownloadService : Service() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val channel = NotificationChannel(
             ShareContract.NOTIFICATION_CHANNEL_ID,
-            "Downloads do TruePlayer",
+            t(R.string.dl_downloads_do_trueplayer),
             NotificationManager.IMPORTANCE_LOW,
         ).apply {
-            description = "Progresso dos downloads de músicas"
+            description = t(R.string.dl_progresso_dos_downloads_de_musicas)
         }
         notificationManager().createNotificationChannel(channel)
     }
@@ -327,7 +327,7 @@ class YoutubeDownloadService : Service() {
         runCatching {
             File(filesDir, "last-download-error.txt").writeText(
                 buildString {
-                    appendLine(error::class.qualifiedName ?: error::class.simpleName ?: "Erro")
+                    appendLine(error::class.qualifiedName ?: error::class.simpleName ?: t(R.string.dl_erro))
                     appendLine(error.message.orEmpty())
                     appendLine()
                     append(error.stackTraceToString())

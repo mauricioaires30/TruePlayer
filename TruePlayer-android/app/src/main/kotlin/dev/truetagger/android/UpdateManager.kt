@@ -110,7 +110,7 @@ object UpdateManager {
                     else -> if (_ui.value is UpdateUi.Checking) _ui.value = UpdateUi.Idle
                 }
             }.onFailure {
-                _ui.value = if (manual) UpdateUi.Failed("Não consegui consultar o GitHub. Confira a internet e tente de novo.") else UpdateUi.Idle
+                _ui.value = if (manual) UpdateUi.Failed(t(R.string.upd_nao_consegui_consultar_o_github)) else UpdateUi.Idle
             }
         }
     }
@@ -147,7 +147,7 @@ object UpdateManager {
                 when (connection.responseCode) {
                     200 -> ReleaseParser.parse(connection.inputStream.bufferedReader().use { it.readText() })
                     404 -> null // ainda não há nenhuma release publicada
-                    else -> error("GitHub respondeu ${connection.responseCode}")
+                    else -> error(t(R.string.upd_github_respondeu, connection.responseCode))
                 }
             } finally {
                 connection.disconnect()
@@ -187,7 +187,7 @@ object UpdateManager {
                 }
                 install(app, file)
             }.onFailure {
-                _ui.value = UpdateUi.Failed("Não deu pra atualizar: ${it.message ?: "erro desconhecido"}. Seus dados não foram alterados.")
+                _ui.value = UpdateUi.Failed(t(R.string.upd_nao_deu_pra_atualizar_seus, it.message ?: t(R.string.upd_erro_desconhecido)))
             }
         }
     }
@@ -202,7 +202,7 @@ object UpdateManager {
             setRequestProperty("User-Agent", "TruePlayer")
         }
         try {
-            check(connection.responseCode == 200) { "o download respondeu ${connection.responseCode}" }
+            check(connection.responseCode == 200) { t(R.string.upd_o_download_respondeu, connection.responseCode) }
             val total = connection.contentLengthLong.takeIf { it > 0 } ?: release.apkSizeBytes
             val digest = MessageDigest.getInstance("SHA-256")
             var done = 0L
@@ -223,11 +223,11 @@ object UpdateManager {
                     }
                 }
             }
-            check(target.length() > 0) { "o arquivo baixado veio vazio" }
-            if (release.apkSizeBytes > 0) check(target.length() == release.apkSizeBytes) { "o arquivo baixado está incompleto" }
+            check(target.length() > 0) { t(R.string.upd_o_arquivo_baixado_veio_vazio) }
+            if (release.apkSizeBytes > 0) check(target.length() == release.apkSizeBytes) { t(R.string.upd_o_arquivo_baixado_esta_incompleto) }
             release.sha256?.let { expected ->
                 val actual = digest.digest().joinToString("") { "%02x".format(it) }
-                check(actual == expected) { "o arquivo baixado não confere com o publicado" }
+                check(actual == expected) { t(R.string.upd_o_arquivo_baixado_nao_confere) }
             }
             return target
         } finally {
@@ -275,8 +275,8 @@ object UpdateManager {
                 val reason = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE).orEmpty()
                 val conflict = status == PackageInstaller.STATUS_FAILURE_CONFLICT || status == PackageInstaller.STATUS_FAILURE_INCOMPATIBLE
                 _ui.value = UpdateUi.Failed(
-                    if (conflict) "O Android recusou: este app foi instalado com outra assinatura. Seus dados não foram alterados."
-                    else "A instalação não terminou. $reason".trim(),
+                    if (conflict) t(R.string.upd_o_android_recusou_este_app)
+                    else t(R.string.upd_a_instalacao_nao_terminou, reason).trim(),
                 )
             }
         }
@@ -292,7 +292,7 @@ object UpdateManager {
         if (saved != installed) return null
         val notes = prefs(app).getString(KEY_NOTES_TEXT, "").orEmpty()
         prefs(app).edit().remove(KEY_NOTES_VERSION).remove(KEY_NOTES_TEXT).apply()
-        return installed to notes.ifBlank { "Sem notas para esta versão." }
+        return installed to dev.truetagger.data.ReleaseNotesLocalizer.pick(notes, currentLanguageTag()).ifBlank { t(R.string.upd_sem_notas_para_esta_versao) }
     }
 
     // ---- notificação
@@ -303,13 +303,13 @@ object UpdateManager {
             .filter { it.kind != dev.truetagger.data.MdKind.BLANK }
             .take(4)
             .map { line -> (if (line.kind == dev.truetagger.data.MdKind.BULLET) "• " else "") + line.spans.joinToString("") { it.text } }
-        return if (lines.isEmpty()) "Toque para ver as novidades e atualizar" else lines.joinToString("\n")
+        return if (lines.isEmpty()) t(R.string.upd_toque_para_ver_as_novidades) else lines.joinToString("\n")
     }
 
     private fun notifyAvailable(context: Context, release: ReleaseInfo) {
         val manager = context.getSystemService(NotificationManager::class.java) ?: return
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            manager.createNotificationChannel(NotificationChannel(CHANNEL, "Atualizações do TruePlayer", NotificationManager.IMPORTANCE_DEFAULT))
+            manager.createNotificationChannel(NotificationChannel(CHANNEL, t(R.string.upd_atualizacoes_do_trueplayer), NotificationManager.IMPORTANCE_DEFAULT))
         }
         val open = PendingIntent.getActivity(
             context, 0, Intent(context, MainActivity::class.java).apply { action = ShareContract.ACTION_OPEN_APP },
@@ -317,9 +317,9 @@ object UpdateManager {
         )
         val notification = Notification.Builder(context, CHANNEL)
             .setSmallIcon(android.R.drawable.stat_sys_download_done)
-            .setContentTitle("TruePlayer ${release.version} disponível")
-            .setContentText("Toque para ver as novidades e atualizar")
-            .setStyle(Notification.BigTextStyle().bigText(notesPreview(release.notes)))
+            .setContentTitle(t(R.string.upd_trueplayer_disponivel, release.version))
+            .setContentText(t(R.string.upd_toque_para_ver_as_novidades))
+            .setStyle(Notification.BigTextStyle().bigText(notesPreview(dev.truetagger.data.ReleaseNotesLocalizer.pick(release.notes, currentLanguageTag()))))
             .setContentIntent(open)
             .setAutoCancel(true)
             .build()

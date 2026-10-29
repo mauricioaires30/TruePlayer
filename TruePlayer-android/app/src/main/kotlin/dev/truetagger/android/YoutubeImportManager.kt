@@ -40,7 +40,7 @@ class YoutubeImportManager(private val context: Context) {
     suspend fun listPlaylist(url: String, onStatus: (ImportStatus) -> Unit): FlatPlaylist? = withContext(Dispatchers.IO) {
         initEngines()
         updateEngineIfNeeded(url, onStatus)
-        onStatus(ImportStatus(url, "Lendo a playlist…", 0))
+        onStatus(ImportStatus(url, t(R.string.dl_lendo_a_playlist_2), 0))
         runCatching {
             val request = YoutubeDLRequest(url).apply {
                 addOption("-J")
@@ -56,14 +56,14 @@ class YoutubeImportManager(private val context: Context) {
         destinationTree: Uri,
         onStatus: (ImportStatus) -> Unit,
     ): ImportResult = withContext(Dispatchers.IO) {
-        onStatus(ImportStatus(url, "Preparando download…", 0))
+        onStatus(ImportStatus(url, t(R.string.dl_preparando_download_2), 0))
         initEngines()
 
         updateEngineIfNeeded(url, onStatus)
         var info = fetchSourceInfo(url, onStatus)
         val initialTitle = cleanFeaturingText(info?.title.orEmpty())
         if (initialTitle.isNotBlank()) {
-            onStatus(ImportStatus(url, "Preparando áudio…", 0, mediaTitle = initialTitle))
+            onStatus(ImportStatus(url, t(R.string.dl_preparando_audio), 0, mediaTitle = initialTitle))
         }
 
         val firstAttempt = runCatching {
@@ -74,7 +74,7 @@ class YoutubeImportManager(private val context: Context) {
         onStatus(
             ImportStatus(
                 url,
-                "Atualizando o baixador…",
+                t(R.string.dl_atualizando_o_baixador),
                 0,
                 mediaTitle = cleanFeaturingText(info?.title.orEmpty()),
             )
@@ -88,7 +88,7 @@ class YoutubeImportManager(private val context: Context) {
     }
 
     private fun fetchSourceInfo(url: String, onStatus: (ImportStatus) -> Unit): SourceInfo? {
-        onStatus(ImportStatus(url, "Lendo informações…", 0))
+        onStatus(ImportStatus(url, t(R.string.dl_lendo_informacoes), 0))
         val raw = runCatching {
             val request = YoutubeDLRequest(url).apply {
                 addOption("--dump-single-json")
@@ -107,7 +107,7 @@ class YoutubeImportManager(private val context: Context) {
             )
         }
         if (info?.title?.isNotBlank() == true) {
-            onStatus(ImportStatus(url, "Informações encontradas.", 0, mediaTitle = cleanFeaturingText(info.title)))
+            onStatus(ImportStatus(url, t(R.string.dl_informacoes_encontradas), 0, mediaTitle = cleanFeaturingText(info.title)))
         }
         return info
     }
@@ -155,7 +155,7 @@ class YoutubeImportManager(private val context: Context) {
         val output = workDir.listFiles()
             ?.filter { it.isFile && it.extension.equals("mp3", ignoreCase = true) }
             ?.maxByOrNull { it.lastModified() }
-            ?: error("O MP3 final não foi encontrado.")
+            ?: error(t(R.string.dl_o_mp3_final_nao_foi))
 
         var label = mediaTitle
         var baseName = mediaTitle.ifBlank { output.nameWithoutExtension }
@@ -163,7 +163,7 @@ class YoutubeImportManager(private val context: Context) {
         val embedThumbnail = prefs.getBoolean(ShareContract.PREF_EMBED_YOUTUBE_THUMBNAIL, true)
 
         if (autoTag) {
-            onStatus(ImportStatus(url, "Procurando as tags…", 100, mediaTitle = mediaTitle))
+            onStatus(ImportStatus(url, t(R.string.dl_procurando_as_tags), 100, mediaTitle = mediaTitle))
             val outcome = AutoTagger().resolve(
                 info = info,
                 fallbackTitle = mediaTitle.ifBlank { output.nameWithoutExtension },
@@ -179,12 +179,12 @@ class YoutubeImportManager(private val context: Context) {
                 if (tags.artist.isNotBlank() && tags.title.isNotBlank()) baseName = label
             }
         } else if (info != null) {
-            onStatus(ImportStatus(url, "Aplicando informações do vídeo…", 100, mediaTitle = mediaTitle))
+            onStatus(ImportStatus(url, t(R.string.dl_aplicando_informacoes_do_video), 100, mediaTitle = mediaTitle))
             runCatching { applyBasicInfo(output, info, embedThumbnail) }
         }
 
         val cleanOutput = renamedOutputFile(output, baseName)
-        onStatus(ImportStatus(url, "Salvando arquivo…", 100, mediaTitle = mediaTitle))
+        onStatus(ImportStatus(url, t(R.string.dl_salvando_arquivo), 100, mediaTitle = mediaTitle))
         val savedName = copyIntoTree(cleanOutput, destinationTree)
         val relPath = "${MigrationPlanner.SONGS_DIR}/$savedName"
         scanPrimaryTreeFile(destinationTree, relPath)
@@ -254,7 +254,7 @@ class YoutubeImportManager(private val context: Context) {
         val now = System.currentTimeMillis()
         if (now - last < ENGINE_UPDATE_INTERVAL_MS) return
 
-        onStatus(ImportStatus(url, "Atualizando o baixador…", 0))
+        onStatus(ImportStatus(url, t(R.string.dl_atualizando_o_baixador), 0))
         runCatching {
             YoutubeDL.getInstance().updateYoutubeDL(context, YoutubeDL.UpdateChannel._STABLE)
             rememberEngineUpdate()
@@ -270,18 +270,18 @@ class YoutubeImportManager(private val context: Context) {
 
     private fun normalizeProgressLine(raw: String, eta: Long): String {
         val line = raw.trim()
-        val etaText = if (eta > 0) " • ${eta}s restantes" else ""
-        if (line.isBlank()) return "Baixando áudio$etaText"
-        if (line.contains("Sleeping for", ignoreCase = true)) return "Conectando…"
-        if (line.contains("Downloading webpage", ignoreCase = true)) return "Lendo informações…"
-        if (line.contains("player API", ignoreCase = true)) return "Preparando áudio…"
-        if (line.contains("ExtractAudio", ignoreCase = true)) return "Convertendo para MP3..."
-        if (line.contains("Destination", ignoreCase = true)) return "Preparando arquivo…"
-        if (line.contains("Deleting original file", ignoreCase = true)) return "Finalizando…"
-        if (line.startsWith("[download]", ignoreCase = true)) return "Baixando áudio$etaText"
-        if (line.startsWith("[info]", ignoreCase = true)) return "Preparando áudio…"
-        if (line.startsWith("WARNING:", ignoreCase = true)) return "Preparando áudio…"
-        return "Processando vídeo…"
+        val etaText = if (eta > 0) t(R.string.dl_s_restantes, eta) else ""
+        if (line.isBlank()) return t(R.string.dl_baixando_audio, etaText)
+        if (line.contains("Sleeping for", ignoreCase = true)) return t(R.string.dl_conectando)
+        if (line.contains("Downloading webpage", ignoreCase = true)) return t(R.string.dl_lendo_informacoes)
+        if (line.contains("player API", ignoreCase = true)) return t(R.string.dl_preparando_audio)
+        if (line.contains("ExtractAudio", ignoreCase = true)) return t(R.string.dl_convertendo_para_mp3)
+        if (line.contains("Destination", ignoreCase = true)) return t(R.string.dl_preparando_arquivo)
+        if (line.contains("Deleting original file", ignoreCase = true)) return t(R.string.dl_finalizando)
+        if (line.startsWith("[download]", ignoreCase = true)) return t(R.string.dl_baixando_audio, etaText)
+        if (line.startsWith("[info]", ignoreCase = true)) return t(R.string.dl_preparando_audio)
+        if (line.startsWith("WARNING:", ignoreCase = true)) return t(R.string.dl_preparando_audio)
+        return t(R.string.dl_processando_video)
     }
 
     /** Salva em `songs/` (criada se faltar). Devolve o nome final, já que o SAF renomeia duplicatas. */
@@ -290,7 +290,7 @@ class YoutubeImportManager(private val context: Context) {
         val tree = SafTree(context, treeUri)
         val parentDocId = tree.ensureDir(tree.rootDocId, MigrationPlanner.SONGS_DIR) ?: tree.rootDocId
         val destinationId = tree.create(parentDocId, "audio/mpeg", source.name)
-            ?: error("Não consegui salvar o arquivo na pasta de músicas.")
+            ?: error(t(R.string.dl_nao_consegui_salvar_o_arquivo))
         resolver.openOutputStream(tree.docUri(destinationId), "w")!!.use { output ->
             source.inputStream().use { input -> input.copyTo(output) }
         }

@@ -11,12 +11,12 @@ data class StatValue(val ms: Long = 0L, val plays: Long = 0L) {
     operator fun plus(other: StatValue) = StatValue(ms + other.ms, plays + other.plays)
 }
 
-enum class StatsRange(val label: String, val days: Int?) {
-    ALL("Sempre", null),
-    WEEK("Semana", 7),
-    MONTH("Mês", 30),
-    SIX_MONTHS("6 meses", 183),
-    YEAR("Ano", 365),
+enum class StatsRange(val days: Int?) {
+    ALL(null),
+    WEEK(7),
+    MONTH(30),
+    SIX_MONTHS(183),
+    YEAR(365),
 }
 
 @Serializable

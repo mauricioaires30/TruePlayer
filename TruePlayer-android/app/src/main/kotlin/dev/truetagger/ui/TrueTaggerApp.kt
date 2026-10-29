@@ -85,6 +85,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URL
+import dev.truetagger.android.t
+import dev.truetagger.android.R
 
 val TruePlayerLightScheme = lightColorScheme(
     primary = Color(0xFF7B2CBF),
@@ -143,7 +145,7 @@ fun CurrentTrackScreen(
 ) {
     if (track == null) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Nenhuma música selecionada", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(t(R.string.nenhuma_musica_selecionada), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
         return
     }
@@ -205,7 +207,7 @@ fun CurrentTrackScreen(
             val value = broadMetadataSearch(repo, query, track)
             results = value
             searching = false
-            if (value.isEmpty()) message = "Nenhum resultado encontrado."
+            if (value.isEmpty()) message = t(R.string.nenhum_resultado_encontrado)
         }
     }
 
@@ -237,13 +239,13 @@ fun CurrentTrackScreen(
                 artworkUrl = result.artworkUrl.ifBlank { editor.artworkUrl },
             )
         )
-        message = "Sugestão carregada."
+        message = t(R.string.sugestao_carregada)
     }
 
     Box(Modifier.fillMaxSize()) {
     Column(Modifier.fillMaxSize()) {
     ScreenHeaderRow(
-        title = "Editar tags",
+        title = t(R.string.editar_tags),
         onBack = onBack,
         modifier = Modifier.padding(horizontal = UiTokens.screenPadding, vertical = UiTokens.space2),
     )
@@ -254,11 +256,11 @@ fun CurrentTrackScreen(
         verticalArrangement = Arrangement.spacedBy(UiTokens.sectionSpacing + UiTokens.itemSpacing),
     ) {
         item {
-            SectionTitle("Buscar dados online", "Procura título, artista, álbum e capa pelo nome da música.")
+            SectionTitle(t(R.string.buscar_dados_online), t(R.string.procura_titulo_artista_album_e))
             SearchBar(
                 value = query,
                 onValueChange = { query = it; message = null },
-                placeholder = "Nome da música ou vídeo",
+                placeholder = t(R.string.nome_da_musica_ou_video),
                 trailingContent = if (searching) { { CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp) } } else null,
             )
         }
@@ -275,7 +277,7 @@ fun CurrentTrackScreen(
         }
 
         item {
-            SectionTitle("Capa", "Toque na imagem para trocar.")
+            SectionTitle(t(R.string.capa), t(R.string.toque_na_imagem_para_trocar))
             ArtworkEditor(
                 artworkBytes = editor.artworkBytes,
                 artworkUrl = editor.artworkUrl,
@@ -284,17 +286,17 @@ fun CurrentTrackScreen(
         }
 
         item {
-            SectionTitle("Informações básicas")
+            SectionTitle(t(R.string.informacoes_basicas))
             FormCard {
-                EditableField("Título", editor.title) { updateEditor(editor.copy(title = it)) }
-                EditableField("Artista da música", editor.artist) { updateEditor(editor.copy(artist = it)) }
-                EditableField("Artista do álbum", editor.albumArtist) { updateEditor(editor.copy(albumArtist = it)) }
-                EditableField("Álbum", editor.album) { updateEditor(editor.copy(album = it)) }
+                EditableField(t(R.string.titulo), editor.title) { updateEditor(editor.copy(title = it)) }
+                EditableField(t(R.string.artista_da_musica), editor.artist) { updateEditor(editor.copy(artist = it)) }
+                EditableField(t(R.string.artista_do_album), editor.albumArtist) { updateEditor(editor.copy(albumArtist = it)) }
+                EditableField(t(R.string.album), editor.album) { updateEditor(editor.copy(album = it)) }
             }
         }
 
         item {
-            SectionTitle("Organização do álbum")
+            SectionTitle(t(R.string.organizacao_do_album))
             FormCard {
                 if (albumTracks.size > 1) {
                     // Ordem do álbum como o app mostra na tela do álbum (disco, faixa, título).
@@ -311,7 +313,7 @@ fun CurrentTrackScreen(
                     val fillTotal = editor.trackTotal.isBlank()
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text(
-                            "Este álbum tem ${albumTracks.size} músicas no app" + if (position > 0) " • esta é a $position" + "ª" else "",
+                            t(R.string.este_album_tem_musicas_no, albumTracks.size) + if (position > 0) t(R.string.esta_e_a, position) + "ª" else "",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.weight(1f),
@@ -326,29 +328,29 @@ fun CurrentTrackScreen(
                                     ),
                                 )
                             },
-                        ) { Text("Preencher vazios") }
+                        ) { Text(t(R.string.preencher_vazios)) }
                     }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
-                    Box(Modifier.weight(1f)) { EditableField("Faixa", editor.trackNumber) { updateEditor(editor.copy(trackNumber = it)) } }
-                    Box(Modifier.weight(1f)) { EditableField("Total de faixas", editor.trackTotal) { updateEditor(editor.copy(trackTotal = it)) } }
+                    Box(Modifier.weight(1f)) { EditableField(t(R.string.faixa), editor.trackNumber) { updateEditor(editor.copy(trackNumber = it)) } }
+                    Box(Modifier.weight(1f)) { EditableField(t(R.string.total_de_faixas), editor.trackTotal) { updateEditor(editor.copy(trackTotal = it)) } }
                 }
                 Row(horizontalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
-                    Box(Modifier.weight(1f)) { EditableField("Disco", editor.discNumber) { updateEditor(editor.copy(discNumber = it)) } }
-                    Box(Modifier.weight(1f)) { EditableField("Total de discos", editor.discTotal) { updateEditor(editor.copy(discTotal = it)) } }
+                    Box(Modifier.weight(1f)) { EditableField(t(R.string.disco), editor.discNumber) { updateEditor(editor.copy(discNumber = it)) } }
+                    Box(Modifier.weight(1f)) { EditableField(t(R.string.total_de_discos), editor.discTotal) { updateEditor(editor.copy(discTotal = it)) } }
                 }
             }
         }
 
         item {
-            SectionTitle("Detalhes")
+            SectionTitle(t(R.string.detalhes))
             FormCard {
                 Row(horizontalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
                     Box(Modifier.weight(1f)) { EditableField("Ano", editor.year) { updateEditor(editor.copy(year = it)) } }
-                    Box(Modifier.weight(1f)) { EditableField("Gênero", editor.genre) { updateEditor(editor.copy(genre = it)) } }
+                    Box(Modifier.weight(1f)) { EditableField(t(R.string.genero), editor.genre) { updateEditor(editor.copy(genre = it)) } }
                 }
                 if (track.durationMs > 0) {
-                    Text("Duração: ${formatDuration(track.durationMs)}", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+                    Text(t(R.string.duracao_2, formatDuration(track.durationMs)), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
                 }
             }
         }
@@ -366,7 +368,7 @@ fun CurrentTrackScreen(
             ) {
                 Icon(Icons.Rounded.Save, contentDescription = null)
                 Spacer(Modifier.width(8.dp))
-                Text(if (saving) "Salvando…" else "Salvar alterações")
+                Text(if (saving) t(R.string.salvando) else t(R.string.salvar_alteracoes))
             }
         }
     }
@@ -390,7 +392,7 @@ fun CurrentTrackScreen(
                 horizontalArrangement = Arrangement.spacedBy(UiTokens.space3),
             ) {
                 Text(
-                    message ?: "Alterações não salvas",
+                    message ?: t(R.string.alteracoes_nao_salvas),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,
@@ -402,7 +404,7 @@ fun CurrentTrackScreen(
                     enabled = !saving && editor.title.isNotBlank(),
                     shape = RoundedCornerShape(UiTokens.buttonRadius),
                     modifier = Modifier.height(UiTokens.controlHeight),
-                ) { Text(if (saving) "Salvando…" else "Salvar") }
+                ) { Text(if (saving) t(R.string.salvando) else t(R.string.salvar)) }
             }
         }
     }
@@ -545,8 +547,8 @@ private fun SuggestionStrip(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(UiTokens.sectionSpacing)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Text("Sugestões", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
-            if (loading) Text("Buscando…", color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
+            Text(t(R.string.sugestoes), style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, modifier = Modifier.weight(1f))
+            if (loading) Text(t(R.string.buscando), color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall)
         }
         val suggestionState = rememberLazyListState()
         LazyRow(
@@ -557,10 +559,10 @@ private fun SuggestionStrip(
             item {
                 SuggestionCard(
                     title = track.displayTitle(),
-                    subtitle = track.artist.ifBlank { "Arquivo atual" },
+                    subtitle = track.artist.ifBlank { t(R.string.arquivo_atual) },
                     artworkBytes = track.artworkBytes,
                     artworkUrl = "",
-                    label = "Atual",
+                    label = t(R.string.atual),
                     selected = true,
                     onOpen = onOpenCurrent,
                     onUse = null,
@@ -610,7 +612,7 @@ private fun SuggestionCard(
                 Text(label, modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.labelSmall)
                 if (onUse != null) {
                     IconButton(onClick = onUse, modifier = Modifier.size(30.dp)) {
-                        Icon(Icons.Rounded.Check, contentDescription = "Usar", modifier = Modifier.size(18.dp))
+                        Icon(Icons.Rounded.Check, contentDescription = t(R.string.usar), modifier = Modifier.size(18.dp))
                     }
                 }
             }
@@ -628,7 +630,7 @@ private fun CurrentTrackPreviewDialog(track: AudioTrack, onDismiss: () -> Unit) 
                 if (track.album.isNotBlank()) Text(track.album, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (track.artist.isNotBlank()) Text(track.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (track.durationMs > 0) Text(formatDuration(track.durationMs), color = MaterialTheme.colorScheme.onSurfaceVariant)
-                TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("Fechar") }
+                TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text(t(R.string.fechar)) }
             }
         }
     }
@@ -644,19 +646,19 @@ private fun SuggestionPreviewDialog(result: MetadataResult, onDismiss: () -> Uni
                 if (result.album.isNotBlank()) Text(result.album, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(result.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 val details = buildList {
-                    result.trackNumber?.let { add("Faixa $it${result.trackTotal?.let { total -> "/$total" } ?: ""}") }
-                    result.discNumber?.let { add("Disco $it${result.discTotal?.let { total -> "/$total" } ?: ""}") }
+                    result.trackNumber?.let { add(t(R.string.faixa_2, it, result.trackTotal?.let { total -> "/$total" } ?: "")) }
+                    result.discNumber?.let { add(t(R.string.disco_2, it, result.discTotal?.let { total -> "/$total" } ?: "")) }
                     if (result.year.isNotBlank()) add(result.year)
                     if (result.genre.isNotBlank()) add(result.genre)
                 }.joinToString(" • ")
                 if (details.isNotBlank()) Text(details, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Row(horizontalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
-                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text("Fechar") }
+                    TextButton(onClick = onDismiss, modifier = Modifier.weight(1f)) { Text(t(R.string.fechar)) }
                     Button(
                         onClick = onUse,
                         modifier = Modifier.weight(1f).height(UiTokens.controlHeight),
                         shape = RoundedCornerShape(UiTokens.buttonRadius),
-                    ) { Text("Usar") }
+                    ) { Text(t(R.string.usar)) }
                 }
             }
         }
@@ -691,7 +693,7 @@ fun ArtworkBox(bytes: ByteArray?, url: String, modifier: Modifier = Modifier) {
     }
     Box(modifier.clip(RoundedCornerShape(UiTokens.cardRadius)).background(MaterialTheme.colorScheme.surfaceVariant), contentAlignment = Alignment.Center) {
         if (bitmap != null) {
-            Image(bitmap!!.asImageBitmap(), contentDescription = "Capa", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+            Image(bitmap!!.asImageBitmap(), contentDescription = t(R.string.capa), modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
         } else {
             Icon(Icons.Rounded.Image, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -728,7 +730,7 @@ private fun ArtworkEditor(artworkBytes: ByteArray?, artworkUrl: String, onPickAr
             TextButton(onClick = onPickArtwork) {
                 Icon(Icons.Rounded.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(6.dp))
-                Text("Trocar capa")
+                Text(t(R.string.trocar_capa))
             }
         }
     }
@@ -737,10 +739,10 @@ private fun ArtworkEditor(artworkBytes: ByteArray?, artworkUrl: String, onPickAr
 @Composable
 fun ImportBanner(status: ImportStatus, onDismiss: () -> Unit) {
     val title = when {
-        status.failed -> "Falha no download"
-        status.completed -> "Download iniciado"
-        status.progress != null -> "Baixando • ${status.progress}%"
-        else -> "Download"
+        status.failed -> t(R.string.dl_falha_no_download)
+        status.completed -> t(R.string.download_iniciado)
+        status.progress != null -> t(R.string.baixando, status.progress)
+        else -> t(R.string.download)
     }
     Surface(
         color = if (status.failed) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.secondaryContainer,
@@ -754,7 +756,7 @@ fun ImportBanner(status: ImportStatus, onDismiss: () -> Unit) {
                     if (status.mediaTitle.isNotBlank()) Text(status.mediaTitle, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text(status.message, style = MaterialTheme.typography.bodySmall)
                 }
-                if (status.completed || status.failed) TextButton(onClick = onDismiss) { Text("Fechar") }
+                if (status.completed || status.failed) TextButton(onClick = onDismiss) { Text(t(R.string.fechar)) }
             }
             status.progress?.let { progress ->
                 LinearProgressIndicator(progress = { progress.coerceIn(0, 100) / 100f }, modifier = Modifier.fillMaxWidth())
@@ -806,7 +808,7 @@ private fun AudioTrack.cleanDisplayTitle(): String = displayName
     .substringBeforeLast('.')
     .replace(Regex("\\s*\\[[^]]+]$"), "")
     .trim()
-    .ifBlank { "Sem título" }
+    .ifBlank { t(R.string.sem_titulo) }
 
 private fun formatDuration(ms: Long): String {
     val seconds = ms / 1000

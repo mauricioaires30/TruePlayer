@@ -674,7 +674,7 @@ class MusicPlaybackService : Service() {
                 null,
                 audioAttributes,
                 0,
-            ) ?: throw IllegalStateException("MediaPlayer.create() retornou null para ${track.id}")
+            ) ?: throw IllegalStateException(t(R.string.pb_mediaplayer_create_retornou_null_para, track.id))
 
             if (generation != playerGeneration) {
                 runCatching { mediaPlayer.release() }
@@ -1012,8 +1012,8 @@ class MusicPlaybackService : Service() {
         val playbackState = PlaybackState.Builder()
             .setActions(actions)
             .setState(state, position, 1f)
-            .addCustomAction(PlaybackState.CustomAction.Builder(ACTION_SHUFFLE, if (shuffle) "Aleatório: ligado" else "Aleatório: desligado", if (shuffle) R.drawable.truetagger_shuffle_on else R.drawable.truetagger_shuffle_off).build())
-            .addCustomAction(PlaybackState.CustomAction.Builder(ACTION_REPEAT, if (repeat == RepeatMode.ONE) "Repetir música: ligado" else "Repetição: desligada", if (repeat == RepeatMode.ONE) R.drawable.truetagger_repeat_on else R.drawable.truetagger_repeat_off).build())
+            .addCustomAction(PlaybackState.CustomAction.Builder(ACTION_SHUFFLE, if (shuffle) t(R.string.pb_aleatorio_ligado) else t(R.string.pb_aleatorio_desligado), if (shuffle) R.drawable.truetagger_shuffle_on else R.drawable.truetagger_shuffle_off).build())
+            .addCustomAction(PlaybackState.CustomAction.Builder(ACTION_REPEAT, if (repeat == RepeatMode.ONE) t(R.string.pb_repetir_musica_ligado) else t(R.string.pb_repeticao_desligada), if (repeat == RepeatMode.ONE) R.drawable.truetagger_repeat_on else R.drawable.truetagger_repeat_off).build())
             .build()
         session.setPlaybackState(playbackState)
         if (track != null) {
@@ -1048,8 +1048,8 @@ class MusicPlaybackService : Service() {
             )
         ).build()
 
-        val shuffleTitle = if (shuffle) "Aleatório: ligado" else "Aleatório: desligado"
-        val repeatTitle = if (repeat == RepeatMode.ONE) "Repetir música: ligado" else "Repetição: desligada"
+        val shuffleTitle = if (shuffle) t(R.string.pb_aleatorio_ligado) else t(R.string.pb_aleatorio_desligado)
+        val repeatTitle = if (repeat == RepeatMode.ONE) t(R.string.pb_repetir_musica_ligado) else t(R.string.pb_repeticao_desligada)
         val style = Notification.MediaStyle().setMediaSession(session.sessionToken)
         val builder = Notification.Builder(this, CHANNEL)
             .setSmallIcon(R.drawable.truetagger_status)
@@ -1070,10 +1070,10 @@ class MusicPlaybackService : Service() {
         }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             style.setShowActionsInCompactView(0, 2, 4)
-            builder.addAction(action(ACTION_PREVIOUS, android.R.drawable.ic_media_previous, "Anterior"))
+            builder.addAction(action(ACTION_PREVIOUS, android.R.drawable.ic_media_previous, t(R.string.anterior)))
                 .addAction(action(ACTION_SHUFFLE, if (shuffle) R.drawable.truetagger_shuffle_on else R.drawable.truetagger_shuffle_off, shuffleTitle))
-                .addAction(action(ACTION_TOGGLE, if (playing) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play, if (playing) "Pausar" else "Tocar"))
-                .addAction(action(ACTION_NEXT, android.R.drawable.ic_media_next, "Próxima"))
+                .addAction(action(ACTION_TOGGLE, if (playing) android.R.drawable.ic_media_pause else android.R.drawable.ic_media_play, if (playing) t(R.string.pausar) else t(R.string.tocar)))
+                .addAction(action(ACTION_NEXT, android.R.drawable.ic_media_next, t(R.string.proxima)))
                 .addAction(action(ACTION_REPEAT, if (repeat == RepeatMode.ONE) R.drawable.truetagger_repeat_on else R.drawable.truetagger_repeat_off, repeatTitle))
         }
         if (Build.VERSION.SDK_INT >= 26) {
@@ -1173,8 +1173,8 @@ class MusicPlaybackService : Service() {
         if (Build.VERSION.SDK_INT >= 26) {
             val manager = getSystemService(NotificationManager::class.java)
             manager.createNotificationChannel(
-                NotificationChannel(CHANNEL, "Música", NotificationManager.IMPORTANCE_LOW).apply {
-                    description = "Player de música do TruePlayer"
+                NotificationChannel(CHANNEL, t(R.string.pb_musica), NotificationManager.IMPORTANCE_LOW).apply {
+                    description = t(R.string.pb_player_de_musica_do_trueplayer)
                     setSound(null, null)
                     enableVibration(false)
                     setShowBadge(false)

@@ -17,6 +17,8 @@ import java.time.LocalDate
 
 /** Roda o JGit de verdade (no PC) contra pastas temporárias e um repositório "remoto" local. */
 class GitManagerTest {
+    init { TestText.install() }
+
     @get:Rule val temp = TemporaryFolder()
 
     private fun music(): File = temp.newFolder("musicas").also {

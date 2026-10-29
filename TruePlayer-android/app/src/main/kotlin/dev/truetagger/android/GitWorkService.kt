@@ -106,7 +106,7 @@ class GitWorkService : Service() {
         releaseLocks()
         runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
         inForeground = false
-        val text = ui.message ?: if (ui.replaceBranch != null) "Abra o app para confirmar o envio." else null
+        val text = ui.message ?: if (ui.replaceBranch != null) t(R.string.git_abra_o_app_para_confirmar) else null
         if (text != null && !AppVisibility.visible) notifyManager().notify(RESULT_ID, result(text))
         stopSelf(lastStartId)
     }
@@ -119,20 +119,20 @@ class GitWorkService : Service() {
             .setSmallIcon(android.R.drawable.stat_sys_upload)
             .setContentTitle(title)
             .setContentText(ui.busy.orEmpty())
-            .setSubText(if (ui.busySteps > 0) "Etapa ${ui.busyStep} de ${ui.busySteps}" else null)
+            .setSubText(if (ui.busySteps > 0) t(R.string.git_etapa_de, ui.busyStep, ui.busySteps) else null)
             .setProgress(100, percent ?: 0, percent == null)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setShowWhen(false)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
             .setContentIntent(openApp())
-            .addAction(0, "Cancelar", cancelIntent())
+            .addAction(0, t(R.string.cancelar), cancelIntent())
             .build()
     }
 
     private fun result(text: String): Notification =
         NotificationCompat.Builder(this, RESULT_CHANNEL)
-            .setSmallIcon(if (text.startsWith("Não deu certo")) android.R.drawable.stat_notify_error else android.R.drawable.stat_sys_upload_done)
+            .setSmallIcon(if (text.startsWith(t(R.string.git_nao_deu_certo, "").trimEnd())) android.R.drawable.stat_notify_error else android.R.drawable.stat_sys_upload_done)
             .setContentTitle("GitHub")
             .setContentText(text.lineSequence().first())
             .setStyle(NotificationCompat.BigTextStyle().bigText(text))
@@ -174,8 +174,8 @@ class GitWorkService : Service() {
     private fun ensureChannels() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = notifyManager()
-        manager.createNotificationChannel(NotificationChannel(PROGRESS_CHANNEL, "Git em andamento", NotificationManager.IMPORTANCE_LOW))
-        manager.createNotificationChannel(NotificationChannel(RESULT_CHANNEL, "Git concluído", NotificationManager.IMPORTANCE_DEFAULT))
+        manager.createNotificationChannel(NotificationChannel(PROGRESS_CHANNEL, t(R.string.git_git_em_andamento), NotificationManager.IMPORTANCE_LOW))
+        manager.createNotificationChannel(NotificationChannel(RESULT_CHANNEL, t(R.string.git_git_concluido), NotificationManager.IMPORTANCE_DEFAULT))
     }
 
     private fun notifyManager(): NotificationManager = getSystemService(NotificationManager::class.java)

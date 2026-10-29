@@ -11,6 +11,8 @@ import java.util.Random
 
 /** Músicas de verdade passam de 1 MB: commit, envio e download têm que funcionar com arquivos assim (e não comprimíveis). */
 class GitBigFilesTest {
+    init { TestText.install() }
+
     @get:Rule val temp = TemporaryFolder()
 
     private fun bareRemote(): File = temp.newFolder("remoto.git").also { Git.init().setBare(true).setDirectory(it).setInitialBranch("main").call().close() }

@@ -2,6 +2,7 @@ package dev.truetagger.android
 
 import android.Manifest
 import android.app.RecoverableSecurityException
+import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
@@ -129,7 +130,7 @@ class MainActivity : ComponentActivity() {
         pendingSharedUrl?.let { url ->
             pendingSharedUrl = null
             YoutubeDownloadService.start(this, url)
-            importStatus = ImportStatus(url, "Download iniciado em segundo plano.", completed = true)
+            importStatus = ImportStatus(url, t(R.string.download_iniciado_em_segundo_plano), completed = true)
             if (shouldCloseAfterFolderPick) {
                 finish()
                 return@registerForActivityResult
@@ -142,6 +143,11 @@ class MainActivity : ComponentActivity() {
             writeContinuation = null
             if (continuation.isActive) continuation.resume(result.resultCode == RESULT_OK)
         }
+    }
+
+    override fun attachBaseContext(newBase: Context) {
+        // Antes do Android 13 o idioma do app é aplicado aqui; no 13+ o sistema cuida (veja LocaleHelper.apply).
+        super.attachBaseContext(if (Build.VERSION.SDK_INT < 33) LocaleHelper.wrap(newBase, LocaleHelper.saved(newBase)) else newBase)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -351,7 +357,7 @@ class MainActivity : ComponentActivity() {
                 if (!url.isNullOrBlank()) {
                     pendingSharedUrl = url
                     shouldCloseAfterFolderPick = true
-                    importStatus = ImportStatus(url, "Escolha a pasta de download.")
+                    importStatus = ImportStatus(url, t(R.string.escolha_a_pasta_de_download))
                     folderPicker.launch(savedDownloadTree())
                     setIntent(Intent(this, MainActivity::class.java).apply { action = Intent.ACTION_MAIN })
                 }
@@ -438,7 +444,7 @@ class MainActivity : ComponentActivity() {
                 accessPromptDismissed = false
                 folderAccessNeeded = true
             } else {
-                migrationMessage = "Você ainda não escolheu a pasta de músicas. Escolha uma em Configurações."
+                migrationMessage = t(R.string.voce_ainda_nao_escolheu_a)
             }
             return
         }
@@ -446,15 +452,15 @@ class MainActivity : ComponentActivity() {
             val diagnosis = withContext(Dispatchers.IO) { FolderMigrator(this@MainActivity, tree).diagnose() }
             Log.i("TruePlayer", "diagnostico da pasta: $diagnosis")
             if (diagnosis.error != null) {
-                migrationMessage = "Não consegui ler a pasta: ${diagnosis.error}"
+                migrationMessage = t(R.string.nao_consegui_ler_a_pasta, diagnosis.error)
             } else if (diagnosis.plan.isNotEmpty()) {
                 migrationPreview = FolderMigrator.Preview(diagnosis.audioOutside, diagnosis.playlistsOutside, diagnosis.plan)
             } else {
-                migrationMessage = "Não tem nada pra mover.\n\n" +
-                    "Pasta: $downloadFolderLabel\n" +
-                    "Arquivos: ${diagnosis.totalFiles}\n" +
-                    "Músicas: ${diagnosis.audioFiles} (${diagnosis.audioInSongs} já estão em songs)\n" +
-                    "Pastas songs e playlists: " + if (diagnosis.layoutOk) "ok" else "não consegui criar"
+                migrationMessage = t(R.string.nao_tem_nada_pra_mover) +
+                    t(R.string.pasta, downloadFolderLabel) +
+                    t(R.string.arquivos, diagnosis.totalFiles) +
+                    t(R.string.musicas_ja_estao_em_songs, diagnosis.audioFiles, diagnosis.audioInSongs) +
+                    t(R.string.pastas_songs_e_playlists) + if (diagnosis.layoutOk) "ok" else t(R.string.nao_consegui_criar)
             }
         }
     }
@@ -493,11 +499,11 @@ class MainActivity : ComponentActivity() {
         @Suppress("UNUSED_VARIABLE") val refresh = permissionsRevision
         val savedFolder = MusicFolder.savedUri(this)
         return listOf(
-            PermissionItem("Músicas do celular", hasAudioPermission(), "Para listar e tocar as músicas") {
+            PermissionItem(t(R.string.musicas_do_celular), hasAudioPermission(), t(R.string.para_listar_e_tocar_as)) {
                 openSettingsIfDenied = true
                 permissionsLauncher.launch(requiredPermissions())
             },
-            PermissionItem("Notificações", notificationsGranted(), "Controles do player, downloads e avisos") {
+            PermissionItem(t(R.string.notificacoes), notificationsGranted(), t(R.string.controles_do_player_downloads_e)) {
                 openSettingsIfDenied = true
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
@@ -505,13 +511,13 @@ class MainActivity : ComponentActivity() {
                     openAppSettingsIfAsked()
                 }
             },
-            PermissionItem("Pasta de músicas", savedFolder != null && MusicFolder.hasPermission(this, savedFolder), "Para ler e salvar na pasta escolhida") {
+            PermissionItem(t(R.string.pasta_de_musicas), savedFolder != null && MusicFolder.hasPermission(this, savedFolder), t(R.string.para_ler_e_salvar_na)) {
                 folderPicker.launch(savedDownloadTree())
             },
-            PermissionItem("Instalar atualizações", UpdateManager.canInstallPackages(this), "Para o app se atualizar sozinho") {
+            PermissionItem(t(R.string.instalar_atualizacoes), UpdateManager.canInstallPackages(this), t(R.string.para_o_app_se_atualizar)) {
                 UpdateManager.openInstallPermissionSettings(this)
             },
-            PermissionItem("Rodar em segundo plano", ignoresBatteryLimits(), "Downloads, envio ao GitHub e avisos com o app fechado") {
+            PermissionItem(t(R.string.rodar_em_segundo_plano), ignoresBatteryLimits(), t(R.string.downloads_envio_ao_github_e)) {
                 requestNoBatteryLimits()
             },
         )
@@ -525,7 +531,7 @@ class MainActivity : ComponentActivity() {
                 accessPromptDismissed = false
                 folderAccessNeeded = true
             } else {
-                migrationMessage = "Você ainda não escolheu a pasta de músicas. Escolha uma em Configurações."
+                migrationMessage = t(R.string.voce_ainda_nao_escolheu_a)
             }
             return
         }
@@ -533,12 +539,12 @@ class MainActivity : ComponentActivity() {
             val scan = withContext(Dispatchers.IO) { runCatching { FolderOrganizer(tree).scan() } }
             scan.onSuccess {
                 if (it.candidates.isEmpty()) {
-                    migrationMessage = "Não tem nada pra limpar. Só sobraram músicas, playlists e arquivos do app." +
-                        if (it.foldersWithMusic.isNotEmpty()) "\n\nPastas com música fora de songs: ${it.foldersWithMusic.joinToString(", ")}. Use \"Organizar pasta\"." else ""
+                    migrationMessage = t(R.string.nao_tem_nada_pra_limpar) +
+                        if (it.foldersWithMusic.isNotEmpty()) t(R.string.pastas_com_musica_fora_de, it.foldersWithMusic.joinToString(", ")) else ""
                 } else {
                     cleanupScan = it
                 }
-            }.onFailure { migrationMessage = "Não consegui ler a pasta: ${it.message}" }
+            }.onFailure { migrationMessage = t(R.string.nao_consegui_ler_a_pasta, it.message) }
         }
     }
 
@@ -548,10 +554,10 @@ class MainActivity : ComponentActivity() {
             val outcome = withContext(Dispatchers.IO) { runCatching { FolderOrganizer(tree).moveToTrash(selected) } }
             migrationMessage = outcome.fold(
                 onSuccess = { r ->
-                    "${dev.truetagger.ui.plural(r.moved, "item movido", "itens movidos")} para a pasta _lixeira." +
-                        if (r.failed.isNotEmpty()) "\n\nNão consegui mover: ${r.failed.joinToString(", ")}." else ""
+                    t(R.string.para_a_pasta_lixeira, tp(R.plurals.n_itens_movidos, r.moved)) +
+                        if (r.failed.isNotEmpty()) t(R.string.nao_consegui_mover, r.failed.joinToString(", ")) else ""
                 },
-                onFailure = { "Não deu pra limpar a pasta: ${it.message}. Nada foi apagado." },
+                onFailure = { t(R.string.nao_deu_pra_limpar_a, it.message) },
             )
             lastRefreshAtMs = 0L
             refreshLibrary()
@@ -594,7 +600,7 @@ class MainActivity : ComponentActivity() {
             outcome.onSuccess { migrationReport = it }.onFailure {
                 android.widget.Toast.makeText(
                     this@MainActivity,
-                    "Não deu pra organizar a pasta: ${it.message}. Nada foi apagado.",
+                    t(R.string.nao_deu_pra_organizar_a, it.message),
                     android.widget.Toast.LENGTH_LONG,
                 ).show()
             }
@@ -607,10 +613,10 @@ class MainActivity : ComponentActivity() {
     /** Antes de mover: backup das playlists do app e gravação delas em playlists/ já com os caminhos finais. */
     private fun prepareForMigration(tree: SafTree, plan: List<PlannedMove>) {
         val store = PlaylistStore(this)
-        val backupDir = tree.ensureDirPath("${MigrationPlanner.META_DIR}/backup") ?: error("não consegui criar a pasta de backup")
+        val backupDir = tree.ensureDirPath("${MigrationPlanner.META_DIR}/backup") ?: error(t(R.string.nao_consegui_criar_a_pasta))
         val stamp = java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(java.util.Date())
         tree.writeTextFile(backupDir, "playlists-$stamp.json", store.rawBackup(), "application/json")
-            ?: error("não consegui salvar o backup das playlists")
+            ?: error(t(R.string.nao_consegui_salvar_o_backup))
         store.remapKeys(
             plan.filter { it.kind == PlannedMove.Kind.SONG }.associate { TrackKeys.compareKey(it.from) to it.to },
         )
@@ -640,7 +646,7 @@ class MainActivity : ComponentActivity() {
         val uri = Uri.parse(track.id)
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R && uri.authority == MediaStore.AUTHORITY) {
-                if (!requestWriteAccess(uri)) return TagWriteResult(false, "Alteração cancelada.")
+                if (!requestWriteAccess(uri)) return TagWriteResult(false, t(R.string.alteracao_cancelada))
             }
             return withContext(Dispatchers.IO) {
                 audioService.applyEditsOrThrow(track, edits)
@@ -662,9 +668,9 @@ class MainActivity : ComponentActivity() {
                 val granted = requestIntentSender(error.userAction.actionIntent.intentSender)
                 if (granted) return saveEdits(track, edits)
             }
-            return TagWriteResult(false, "O Android não concedeu acesso para alterar esse arquivo.")
+            return TagWriteResult(false, t(R.string.o_android_nao_concedeu_acesso))
         } catch (error: Throwable) {
-            return TagWriteResult(false, "Erro ao salvar tags: ${error.message ?: error::class.simpleName}")
+            return TagWriteResult(false, t(R.string.erro_ao_salvar_tags, error.message ?: error::class.simpleName))
         }
     }
 
@@ -712,6 +718,7 @@ class MainActivity : ComponentActivity() {
         autoTag = prefs.getBoolean(ShareContract.PREF_AUTO_TAG, true),
         autoCheckUpdates = prefs.getBoolean(ShareContract.PREF_AUTO_CHECK_UPDATES, true),
         themeMode = ThemeMode.fromKey(prefs.getString(ShareContract.PREF_THEME_MODE, null)),
+        language = LocaleHelper.saved(this),
     )
 
     /**
@@ -736,8 +743,14 @@ class MainActivity : ComponentActivity() {
 
     private fun updateSettings(newSettings: AppSettings) {
         val themeChanged = settings.themeMode != newSettings.themeMode
+        val languageChanged = settings.language != newSettings.language
         settings = newSettings
         if (themeChanged) applySystemBars()
+        if (languageChanged) {
+            LocaleHelper.apply(this, newSettings.language)
+            // Recria a tela para todos os textos virem no idioma novo (e o sentido do layout, no árabe).
+            recreate()
+        }
         UpdateWorker.schedule(this, newSettings.autoCheckUpdates)
         SettingsBackup.scheduleWrite(this, newSettings)
         prefs.edit()
@@ -801,6 +814,6 @@ class MainActivity : ComponentActivity() {
     private fun folderLabel(uri: Uri): String = runCatching {
         DocumentsContract.getTreeDocumentId(uri)
             .substringAfter(':', DocumentsContract.getTreeDocumentId(uri))
-            .ifBlank { "Pasta escolhida" }
-    }.getOrDefault("Pasta escolhida")
+            .ifBlank { t(R.string.pasta_escolhida) }
+    }.getOrDefault(t(R.string.pasta_escolhida))
 }

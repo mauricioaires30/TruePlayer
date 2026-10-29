@@ -19,7 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -39,6 +39,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.truetagger.android.t
+import dev.truetagger.android.R
 
 /*
  * Peças de tela compartilhadas por Configurações, Git e diálogos: um grupo (título + cartão), linhas com
@@ -136,7 +138,7 @@ internal fun SettingsRow(
                 trailing()
             }
             onClick != null -> Icon(
-                Icons.Rounded.KeyboardArrowRight,
+                Icons.AutoMirrored.Rounded.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = UiTokens.space2),
@@ -179,7 +181,7 @@ internal fun AppDialog(
     confirmText: String? = null,
     onConfirm: (() -> Unit)? = null,
     confirmEnabled: Boolean = true,
-    dismissText: String = if (confirmText == null) "OK" else "Cancelar",
+    dismissText: String = if (confirmText == null) "OK" else t(R.string.cancelar),
     destructive: Boolean = false,
     dismissOnOutside: Boolean = true,
     content: @Composable ColumnScope.() -> Unit,

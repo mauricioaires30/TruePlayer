@@ -29,6 +29,9 @@ import dev.truetagger.data.MdKind
 import dev.truetagger.data.MdLine
 import dev.truetagger.data.ReleaseInfo
 import dev.truetagger.data.SimpleMarkdown
+import dev.truetagger.android.t
+import dev.truetagger.android.currentLanguageTag
+import dev.truetagger.android.R
 
 /** Avisos de atualização do app e "o que mudou" depois de atualizar. */
 @Composable
@@ -43,54 +46,54 @@ fun UpdateDialogs(
     when (state) {
         UpdateUi.Idle -> Unit
 
-        UpdateUi.Checking -> AppDialog(title = "Procurando atualização", onDismiss = onDismiss, dismissText = "Cancelar") {
+        UpdateUi.Checking -> AppDialog(title = t(R.string.upd_procurando_atualizacao), onDismiss = onDismiss, dismissText = t(R.string.cancelar)) {
             LinearProgressIndicator(Modifier.fillMaxWidth().padding(top = 4.dp))
         }
 
-        is UpdateUi.UpToDate -> AppDialog(title = "Tudo em dia", onDismiss = onDismiss) {
-            Text("Você já está na versão mais recente (${state.version}).")
+        is UpdateUi.UpToDate -> AppDialog(title = t(R.string.upd_tudo_em_dia), onDismiss = onDismiss) {
+            Text(t(R.string.upd_voce_ja_esta_na_versao, state.version))
         }
 
         is UpdateUi.Available -> AppDialog(
-            title = "Versão ${state.release.version} disponível",
+            title = t(R.string.upd_versao_disponivel, state.release.version),
             onDismiss = onDismiss,
-            confirmText = "Atualizar",
+            confirmText = t(R.string.atualizar),
             onConfirm = { onUpdate(state.release) },
-            dismissText = "Agora não",
+            dismissText = t(R.string.mig_agora_nao),
         ) {
-            ReleaseNotesText(state.release.notes.ifBlank { "Sem notas para esta versão." })
-            DialogNote("Download de ${formatSize(state.release.apkSizeBytes)}. Suas músicas e playlists não mudam.")
+            ReleaseNotesText(dev.truetagger.data.ReleaseNotesLocalizer.pick(state.release.notes, currentLanguageTag()).ifBlank { t(R.string.upd_sem_notas_para_esta_versao) })
+            DialogNote(t(R.string.upd_download_de_suas_musicas_e, formatSize(state.release.apkSizeBytes)))
         }
 
         // "Ocultar" só esconde: o download continua e o Android pede a confirmação da instalação no fim.
         is UpdateUi.Downloading -> if (!state.hidden) AppDialog(
-            title = "Baixando a atualização",
+            title = t(R.string.upd_baixando_a_atualizacao),
             onDismiss = onHideDownload,
-            dismissText = "Ocultar",
+            dismissText = t(R.string.git_ocultar),
             dismissOnOutside = false,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 LinearProgressIndicator(progress = { state.percent / 100f }, modifier = Modifier.weight(1f))
                 Text("${state.percent}%", fontWeight = FontWeight.SemiBold, modifier = Modifier.padding(start = 12.dp))
             }
-            DialogNote("No fim, o Android pede para confirmar a instalação.")
+            DialogNote(t(R.string.upd_no_fim_o_android_pede))
         }
 
         is UpdateUi.NeedsInstallPermission -> AppDialog(
-            title = "Libere a instalação",
+            title = t(R.string.upd_libere_a_instalacao),
             onDismiss = onDismiss,
-            confirmText = "Abrir ajustes",
+            confirmText = t(R.string.upd_abrir_ajustes),
             onConfirm = { onUpdate(state.release) },
-            dismissText = "Agora não",
+            dismissText = t(R.string.mig_agora_nao),
         ) {
-            Text("Ative a permissão para o TruePlayer instalar apps e volte aqui.")
+            Text(t(R.string.upd_ative_a_permissao_para_o))
         }
 
-        is UpdateUi.Failed -> AppDialog(title = "Atualização", onDismiss = onDismiss) { Text(state.message) }
+        is UpdateUi.Failed -> AppDialog(title = t(R.string.upd_atualizacao), onDismiss = onDismiss) { Text(state.message) }
     }
 
     if (whatsNew != null && state == UpdateUi.Idle) {
-        AppDialog(title = "Novidades da ${whatsNew.first}", onDismiss = onWhatsNewDismiss) {
+        AppDialog(title = t(R.string.upd_novidades_da, whatsNew.first), onDismiss = onWhatsNewDismiss) {
             ReleaseNotesText(whatsNew.second)
         }
     }
@@ -127,4 +130,4 @@ private fun styled(line: MdLine): AnnotatedString = buildAnnotatedString {
 }
 
 private fun formatSize(bytes: Long): String =
-    if (bytes <= 0L) "alguns MB" else "%.0f MB".format(bytes / 1_048_576.0)
+    if (bytes <= 0L) t(R.string.few_mb) else "%.0f MB".format(bytes / 1_048_576.0)

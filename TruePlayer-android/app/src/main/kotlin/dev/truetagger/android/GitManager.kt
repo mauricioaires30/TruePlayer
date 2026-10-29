@@ -24,12 +24,46 @@ import java.io.File
 
 /** Operações de git (JGit) na pasta de músicas. Todas bloqueiam: chame fora da thread principal. */
 internal object GitManager {
-    /** Mostra em português o andamento que o JGit informa em inglês. */
+    private fun reasonText(reason: GitRetry.Reason): String = when (reason) {
+        GitRetry.Reason.TIMEOUT -> t(R.string.git_reason_timeout)
+        GitRetry.Reason.CONNECTION -> t(R.string.git_reason_connection)
+        else -> t(R.string.git_reason_http, reason.httpCode)
+    }
+
+    /** Fases do envio e do download que o JGit informa (em inglês). */
+    enum class Phase { COUNTING, COMPRESSING, SENDING, PREPARING, RECEIVING, RESOLVING, CHECKOUT, OTHER }
+
+    /** Textos do andamento. O app usa os recursos de idioma; os testes passam textos fixos. */
+    interface Labels {
+        fun phase(phase: Phase, original: String): String
+        fun progress(label: String, done: Int, total: Int, percent: Int): String
+        fun waiting(): String
+    }
+
+    object AppLabels : Labels {
+        override fun phase(phase: Phase, original: String): String = when (phase) {
+            Phase.COUNTING -> t(R.string.git_phase_counting)
+            Phase.COMPRESSING -> t(R.string.git_phase_compressing)
+            Phase.SENDING -> t(R.string.git_phase_sending)
+            Phase.PREPARING -> t(R.string.git_phase_preparing)
+            Phase.RECEIVING -> t(R.string.git_phase_receiving)
+            Phase.RESOLVING -> t(R.string.git_phase_resolving)
+            Phase.CHECKOUT -> t(R.string.git_phase_checkout)
+            Phase.OTHER -> original
+        }
+
+        override fun progress(label: String, done: Int, total: Int, percent: Int): String = t(R.string.git_progress, label, done, total, percent)
+        override fun waiting(): String = t(R.string.git_waiting_confirm)
+    }
+
+    /** Mostra no idioma do app o andamento que o JGit informa em inglês. */
     class TextMonitor(
         private val onFraction: (Float?) -> Unit = {},
         private val cancelled: () -> Boolean = { false },
+        private val labels: Labels = AppLabels,
         private val onText: (String) -> Unit,
     ) : ProgressMonitor {
+        private var phase = Phase.OTHER
         private var title = ""
         private var total = 0
         private var done = 0
@@ -54,18 +88,19 @@ internal object GitManager {
         override fun start(totalTasks: Int) {}
 
         override fun beginTask(title: String, totalWork: Int) {
-            this.title = translate(title)
+            phase = phaseOf(title)
+            this.title = labels.phase(phase, title)
             total = totalWork
             done = 0
             lastPercent = -1
-            when (this.title) {
-                "Contando arquivos" -> { from = 0f; span = 0.1f }
-                "Compactando" -> { from = 0.1f; span = 0.2f }
-                "Enviando" -> { from = 0.3f; span = 0.7f }
+            when (phase) {
+                Phase.COUNTING -> { from = 0f; span = 0.1f }
+                Phase.COMPRESSING -> { from = 0.1f; span = 0.2f }
+                Phase.SENDING -> { from = 0.3f; span = 0.7f }
                 else -> { from = 0f; span = 1f }
             }
             if (totalWork > 0) emit(0f) else onFraction(null)
-            onText(prefix + if (totalWork > 0) "${this.title}: 0 de $totalWork (0%)" else this.title)
+            onText(prefix + if (totalWork > 0) labels.progress(this.title, 0, totalWork, 0) else this.title)
         }
 
         override fun update(completed: Int) {
@@ -76,15 +111,15 @@ internal object GitManager {
             if (percent == lastPercent) return
             lastPercent = percent
             emit(percent / 100f)
-            onText(prefix + "$title: ${done.coerceAtMost(total)} de $total ($percent%)")
+            onText(prefix + labels.progress(title, done.coerceAtMost(total), total, percent))
         }
 
         override fun endTask() {
             // Depois de enviar tudo o GitHub ainda confere e monta o que recebeu; isso pode levar minutos.
-            if (title == "Enviando") {
+            if (phase == Phase.SENDING) {
                 // Quase no fim da etapa, mas ainda falta o GitHub confirmar: não mostra 100%.
                 onFraction(((partIndex + 0.95f) / partCount.coerceAtLeast(1)).coerceIn(0f, 0.99f))
-                onText(prefix + "Aguardando o GitHub confirmar…")
+                onText(prefix + labels.waiting())
             }
         }
 
@@ -94,15 +129,15 @@ internal object GitManager {
         override fun isCancelled(): Boolean = cancelled()
         override fun showDuration(enabled: Boolean) {}
 
-        private fun translate(text: String) = when {
-            text.contains("Counting", true) -> "Contando arquivos"
-            text.contains("Compressing", true) -> "Compactando"
-            text.contains("Writing", true) -> "Enviando"
-            text.contains("Finding sources", true) -> "Preparando"
-            text.contains("Receiving", true) -> "Baixando do GitHub"
-            text.contains("Resolving", true) -> "Montando o histórico"
-            text.contains("Checking out", true) -> "Atualizando a pasta"
-            else -> text
+        private fun phaseOf(text: String) = when {
+            text.contains("Counting", true) -> Phase.COUNTING
+            text.contains("Compressing", true) -> Phase.COMPRESSING
+            text.contains("Writing", true) -> Phase.SENDING
+            text.contains("Finding sources", true) -> Phase.PREPARING
+            text.contains("Receiving", true) -> Phase.RECEIVING
+            text.contains("Resolving", true) -> Phase.RESOLVING
+            text.contains("Checking out", true) -> Phase.CHECKOUT
+            else -> Phase.OTHER
         }
     }
 
@@ -160,7 +195,7 @@ internal object GitManager {
         var removed = 0
         (listOf(File(git, "index.lock"), File(git, "HEAD.lock")) + heads).filter { it.isFile }.forEach { lock ->
             check(now - lock.lastModified() >= STALE_LOCK_MS) {
-                "outra operação do Git está em andamento (${lock.name} é recente). Espere um minuto e tente de novo."
+                t(R.string.git_outra_operacao_do_git_esta, lock.name)
             }
             if (lock.delete()) removed++
         }
@@ -249,7 +284,7 @@ internal object GitManager {
                 git.commit().setMessage(message).setAuthor(author).setCommitter(author).setAllowEmpty(false).call()
                 return skipped
             }
-            monitor.beginTask("Registrando arquivos", paths.size)
+            monitor.beginTask(t(R.string.git_registrando_arquivos), paths.size)
             parts.forEachIndexed { index, part ->
                 part.chunked(50).forEach { chunk ->
                     try {
@@ -269,7 +304,7 @@ internal object GitManager {
                     }
                     monitor.update(chunk.size)
                 }
-                val text = if (parts.size > 1) "$message (parte ${index + 1} de ${parts.size})" else message
+                val text = if (parts.size > 1) t(R.string.git_parte_de, message, index + 1, parts.size) else message
                 // Se tudo o que havia nesta parte falhou e não sobrou nada para registrar, não é erro.
                 try {
                     git.commit().setMessage(text).setAuthor(author).setCommitter(author).setAllowEmpty(false).call()
@@ -388,23 +423,23 @@ internal object GitManager {
         retryDelaysMs: List<Long> = listOf(5_000L, 20_000L, 60_000L),
     ) {
         val target = GitRemote.toHttps(remoteUrl)
-        check(target.isNotBlank()) { "este repositório não tem um endereço de envio (origin)" }
+        check(target.isNotBlank()) { t(R.string.git_este_repositorio_nao_tem_um) }
         val branch = Git.open(dir).use { it.repository.fullBranch.orEmpty() }
-        check(branch.startsWith("refs/heads/")) { "o repositório está sem branch ativa (HEAD solto)" }
+        check(branch.startsWith("refs/heads/")) { t(R.string.git_o_repositorio_esta_sem_branch) }
         val remoteTip = remoteHeads(target, user, token)[branch.removePrefix("refs/heads/")]
         val textMonitor = monitor as? TextMonitor
 
-        textMonitor?.prefix = "Dividindo em partes menores • "
+        textMonitor?.prefix = t(R.string.git_dividindo_em_partes_menores)
         resplitUnpushed(dir, remoteTip, monitor, maxPartBytes)
         textMonitor?.prefix = ""
 
         openRepo(dir).use { git ->
             val repo = git.repository
-            val head = repo.resolve("HEAD") ?: error("não há commits para enviar")
+            val head = repo.resolve("HEAD") ?: error(t(R.string.git_nao_ha_commits_para_enviar))
             val commits = unpushedCommits(repo, head, remoteTip).map { it.name }.ifEmpty { listOf(head.name) }
             commits.forEachIndexed { index, id ->
                 textMonitor?.let {
-                    it.prefix = if (commits.size > 1) "Parte ${index + 1} de ${commits.size} • " else ""
+                    it.prefix = if (commits.size > 1) t(R.string.git_parte_de_2, index + 1, commits.size) else ""
                     it.partIndex = index
                     it.partCount = commits.size
                 }
@@ -414,7 +449,7 @@ internal object GitManager {
                     delaysMs = retryDelaysMs,
                     shouldRetry = { GitRetry.isTransient(it) && !monitor.isCancelled },
                     onRetry = { attempt, delay, error ->
-                        textMonitor?.say("O GitHub falhou (${GitRetry.brief(error)}). Tentando de novo em ${delay / 1000} s ($attempt de ${retryDelaysMs.size})…")
+                        textMonitor?.say(t(R.string.git_o_github_falhou_tentando_de, reasonText(GitRetry.reason(error)), delay / 1000, attempt, retryDelaysMs.size))
                     },
                     sleep = { ms ->
                         var left = ms
@@ -436,10 +471,10 @@ internal object GitManager {
                     when (update.status) {
                         RemoteRefUpdate.Status.OK, RemoteRefUpdate.Status.UP_TO_DATE -> Unit
                         RemoteRefUpdate.Status.REJECTED_NONFASTFORWARD, RemoteRefUpdate.Status.REJECTED_REMOTE_CHANGED ->
-                            error("a branch do GitHub tem outro histórico. Nada foi sobrescrito.")
+                            error(t(R.string.git_a_branch_do_github_tem_2))
                         RemoteRefUpdate.Status.REJECTED_OTHER_REASON ->
-                            error(update.message ?: "o GitHub recusou o envio (confira se algum arquivo passa de 100 MB)")
-                        else -> error("o envio falhou (${update.status})")
+                            error(update.message ?: t(R.string.git_o_github_recusou_o_envio))
+                        else -> error(t(R.string.git_o_envio_falhou, update.status))
                     }
                 }
             }
@@ -458,7 +493,7 @@ internal object GitManager {
      */
     fun pull(dir: File, remoteUrl: String, user: String, token: String, monitor: ProgressMonitor): Pulled {
         val target = GitRemote.toHttps(remoteUrl)
-        check(target.isNotBlank()) { "este repositório não tem um endereço (origin)" }
+        check(target.isNotBlank()) { t(R.string.git_este_repositorio_nao_tem_um_2) }
         openRepo(dir).use { git ->
             val repo = git.repository
             git.fetch()
@@ -474,7 +509,7 @@ internal object GitManager {
             val chosen = listOf(wanted, "main", "master")
                 .firstNotNullOfOrNull { name -> remotes.firstOrNull { it.name == prefix + name } }
                 ?: remotes.firstOrNull()
-                ?: error("o repositório do GitHub está vazio")
+                ?: error(t(R.string.git_o_repositorio_do_github_esta))
             val name = chosen.name.removePrefix(prefix)
             val remoteId = chosen.objectId
 

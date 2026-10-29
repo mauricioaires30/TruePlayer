@@ -2,6 +2,7 @@ package dev.truetagger.android
 
 import android.content.Context
 import dev.truetagger.data.AppConfigCodec
+import dev.truetagger.data.AppLanguages
 import dev.truetagger.data.AppConfigFile
 import dev.truetagger.data.MigrationPlanner
 import dev.truetagger.data.ThemeMode
@@ -37,6 +38,7 @@ object SettingsBackup {
             autoTag = prefs.getBoolean(ShareContract.PREF_AUTO_TAG, true),
             autoCheckUpdates = prefs.getBoolean(ShareContract.PREF_AUTO_CHECK_UPDATES, true),
             themeMode = ThemeMode.fromKey(prefs.getString(ShareContract.PREF_THEME_MODE, null)),
+            language = AppLanguages.normalize(prefs.getString(ShareContract.PREF_LANGUAGE, null)),
         )
     }
 
@@ -55,6 +57,7 @@ object SettingsBackup {
             albumSort = filters.getString("album_sort", "").orEmpty(),
             albumAscending = filters.getBoolean("album_ascending", true),
             themeMode = settings.themeMode.key,
+            language = settings.language,
         )
     }
 
@@ -97,6 +100,7 @@ object SettingsBackup {
             autoTag = file.autoTag,
             autoCheckUpdates = file.autoCheckUpdates,
             themeMode = ThemeMode.fromKey(file.themeMode),
+            language = AppLanguages.normalize(file.language),
         )
     }
 

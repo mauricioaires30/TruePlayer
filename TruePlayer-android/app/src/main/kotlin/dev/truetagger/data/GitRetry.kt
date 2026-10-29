@@ -20,16 +20,20 @@ object GitRetry {
             transientMarks.any { it in text }
         }
 
-    /** Resumo curto do motivo, para a mensagem de "tentando de novo". */
-    fun brief(error: Throwable): String {
+    /** Motivo resumido de uma falha, para a mensagem de "tentando de novo". O texto vem de quem mostra. */
+    enum class Reason(val httpCode: Int?) {
+        HTTP_500(500), HTTP_502(502), HTTP_503(503), HTTP_504(504), TIMEOUT(null), CONNECTION(null)
+    }
+
+    fun reason(error: Throwable): Reason {
         val text = generateSequence(error) { it.cause }.take(8).joinToString(" ") { it.message.orEmpty() }.lowercase()
         return when {
-            "500" in text -> "erro 500"
-            "502" in text -> "erro 502"
-            "503" in text -> "erro 503"
-            "504" in text -> "erro 504"
-            "timed out" in text || "timeout" in text -> "tempo esgotado"
-            else -> "falha de conexão"
+            "500" in text -> Reason.HTTP_500
+            "502" in text -> Reason.HTTP_502
+            "503" in text -> Reason.HTTP_503
+            "504" in text -> Reason.HTTP_504
+            "timed out" in text || "timeout" in text -> Reason.TIMEOUT
+            else -> Reason.CONNECTION
         }
     }
 

@@ -85,6 +85,8 @@ data class AppSettings(
     val autoTag: Boolean = true,
     val autoCheckUpdates: Boolean = true,
     val themeMode: dev.truetagger.data.ThemeMode = dev.truetagger.data.ThemeMode.SYSTEM,
+    /** "system" (segue o celular) ou a etiqueta do idioma, ex.: "pt". */
+    val language: String = dev.truetagger.data.AppLanguages.SYSTEM,
 )
 
 /** Uma permissão que o app precisa, para o checklist de Configurações. */

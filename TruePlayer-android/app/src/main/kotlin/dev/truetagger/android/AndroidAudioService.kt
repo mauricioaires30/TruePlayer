@@ -213,7 +213,7 @@ class AndroidAudioService(private val context: Context) {
                 cacheFile.inputStream().use { input -> input.copyTo(output) }
             }
             syncMediaStore(uri, edits)
-            TagWriteResult(true, "Tags salvas.", read(uri))
+            TagWriteResult(true, t(R.string.tags_salvas), read(uri))
         } finally {
             cacheFile.delete()
         }

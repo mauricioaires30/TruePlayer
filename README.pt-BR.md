@@ -6,6 +6,7 @@ Player de músicas e editor de tags para Android. Toca os arquivos da sua pasta 
 
 ## O que faz
 - **Biblioteca e player:** músicas, álbuns, artistas, gêneros e playlists, com fila, aleatório, repetir e controle pelo fone, pela tela de bloqueio e pelo botão de mídia do sistema. A música que está tocando ganha ondas animadas no item e uma barra de progresso ondulada.
+- **Idiomas:** 21, do inglês e do português a espanhol, francês, alemão, italiano, holandês, sueco, polonês, turco, russo, ucraniano, árabe (da direita para a esquerda), hindi, indonésio, vietnamita, tailandês, japonês, coreano e chinês (simplificado e tradicional). Segue o idioma do celular por padrão, e você pode escolher um em Configurações. As traduções foram feitas sem revisão de quem fala cada idioma, então correções são bem-vindas.
 - **Tema claro e escuro:** segue o do celular por padrão, e você pode forçar um dos dois em Configurações.
 - **Editor de tags:** título, artista, álbum, capa, ano, faixa, gênero e mais.
 - **Downloads por link:** compartilhe um link do YouTube ou do SoundCloud para o TruePlayer. Link de playlist vira uma playlist do app, com as músicas na ordem original, baixadas uma por vez.

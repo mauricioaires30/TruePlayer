@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.Settings
 import dev.truetagger.data.CommitMessage
+import dev.truetagger.data.CommitText
 import dev.truetagger.data.GitRemote
 import dev.truetagger.data.GitSummary
 import kotlinx.coroutines.CoroutineScope
@@ -166,10 +167,10 @@ object GitController {
                             hasToken = base.hasToken || where.first?.let { GitRemote.embeddedCredentials(it) } != null,
                             userName = who.first.ifBlank { saved.getString("name", "").orEmpty() },
                             userEmail = who.second.ifBlank { saved.getString("email", "").orEmpty() },
-                            suggestedMessage = CommitMessage.build(summary, LocalDate.now(), PlayStatsState.minutesToday(app)),
+                            suggestedMessage = CommitMessage.build(summary, LocalDate.now(), PlayStatsState.minutesToday(app), AppCommitText),
                         )
                     }.onFailure {
-                        _ui.value = base.copy(availability = GitUi.Availability.READY, message = "Não consegui ler o repositório: ${it.message}")
+                        _ui.value = base.copy(availability = GitUi.Availability.READY, message = t(R.string.git_nao_consegui_ler_o_repositorio, it.message))
                     }
                 }
             }
@@ -193,7 +194,7 @@ object GitController {
     fun cancel() {
         if (_ui.value.busy == null) return
         cancelRequested = true
-        _ui.update { it.copy(busy = "Cancelando…", busyFraction = null) }
+        _ui.update { it.copy(busy = t(R.string.git_cancelando), busyFraction = null) }
     }
 
     /** Chamado depois de baixar arquivos do GitHub, para a biblioteca e as playlists lerem a pasta de novo. */
@@ -219,7 +220,7 @@ object GitController {
     }
 
     /** O envio só é possível substituindo a branch do GitHub. */
-    private class ReplaceNeeded(val branch: String) : Exception("a branch $branch do GitHub tem outro histórico")
+    private class ReplaceNeeded(val branch: String) : Exception(t(R.string.git_a_branch_do_github_tem, branch))
 
     private var pendingReplace: (() -> Unit)? = null
 
@@ -245,7 +246,7 @@ object GitController {
 
     fun cancelReplace() {
         pendingReplace = null
-        _ui.update { it.copy(replaceBranch = null, message = "Nada foi enviado. O GitHub continua como estava.") }
+        _ui.update { it.copy(replaceBranch = null, message = t(R.string.git_nada_foi_enviado_o_github)) }
     }
 
     /** Texto do erro com a causa de dentro (o JGit só diz "exception caught during execution of add command"). */
@@ -264,11 +265,10 @@ object GitController {
 
     private fun reason(error: Throwable): String {
         if (dev.truetagger.data.GitRetry.isTransient(error)) {
-            return "o GitHub ou a conexão falharam mesmo depois de tentar de novo. O que já foi enviado fica salvo e não é reenviado: " +
-                "toque em Enviar para continuar."
+            return t(R.string.git_err_transient)
         }
         if (generateSequence(error) { it.cause }.any { it.message.orEmpty().contains("Cannot lock") }) {
-            return "o repositório está travado por uma operação que ficou pela metade (arquivo .git/index.lock). Tente de novo em um minuto."
+            return t(R.string.git_o_repositorio_esta_travado_por)
         }
         val parts = generateSequence(error) { it.cause }
             .take(5)
@@ -279,16 +279,16 @@ object GitController {
     }
 
     private fun skippedNote(skipped: List<String>) =
-        if (skipped.isEmpty()) "" else "\n\n${if (skipped.size == 1) "1 arquivo não pôde" else "${skipped.size} arquivos não puderam"} ser lido e ficou de fora: ${skipped.take(3).joinToString(", ")}."
+        if (skipped.isEmpty()) "" else "\n\n" + tp(R.plurals.git_skipped_files, skipped.size, skipped.take(3).joinToString(", "))
 
     private fun finish(outcome: Result<String>, app: Context) {
         val cancelled = cancelRequested
         cancelRequested = false
-        val text = if (cancelled && outcome.isFailure) "Cancelado."
+        val text = if (cancelled && outcome.isFailure) t(R.string.git_cancelado)
         else outcome.fold({ ok -> ok }, { e ->
             saveError(app, e)
             val where = whereIs(e)
-            "Não deu certo: ${reason(e)}" + if (where.isNotBlank()) "\n\nOnde: $where" else ""
+            t(R.string.git_nao_deu_certo, reason(e)) + if (where.isNotBlank()) t(R.string.git_onde, where) else ""
         })
         _ui.update { it.copy(busy = null, busyFraction = null, busyStep = 0, busySteps = 0, busyTitle = "", progressHidden = false, busySinceMs = 0L, message = text) }
         refresh(app)
@@ -298,18 +298,18 @@ object GitController {
     private fun saveCovers(app: Context, dir: File, step: Int, steps: Int): CoverExport.Result? =
         runCatching {
             CoverExport.export(app, dir, LibraryIndex.all()) { done, total ->
-                if (total > 0) show(step, steps, "Salvando capas: $done de $total", done / total.toFloat())
+                if (total > 0) show(step, steps, t(R.string.git_salvando_capas_de, done, total), done / total.toFloat())
             }
         }.getOrNull()
 
     private fun coversNote(covers: CoverExport.Result?): String = when {
         covers == null || (covers.written == 0 && covers.missing == 0) -> ""
-        covers.missing > 0 -> "\n\n${dev.truetagger.ui.plural(covers.written, "capa salva", "capas salvas")}. Faltam ${covers.missing}, que vão no próximo envio."
-        else -> "\n\n${dev.truetagger.ui.plural(covers.written, "capa salva", "capas salvas")} em .trueplayer/covers."
+        covers.missing > 0 -> t(R.string.git_faltam_que_vao_no_proximo, tp(R.plurals.n_capas_salvas, covers.written), covers.missing)
+        else -> t(R.string.git_em_trueplayer_covers, tp(R.plurals.n_capas_salvas, covers.written))
     }
 
     private fun largeFilesNote(large: List<String>) =
-        if (large.isEmpty()) "" else "\n\nAcima de 100 MB (o GitHub recusa), ficaram de fora ${dev.truetagger.ui.plural(large.size, "arquivo", "arquivos")}: ${large.take(3).joinToString(", ")}."
+        if (large.isEmpty()) "" else t(R.string.git_acima_de_100_mb_o, tp(R.plurals.n_arquivos, large.size), large.take(3).joinToString(", "))
 
     // ---- ações
 
@@ -321,13 +321,13 @@ object GitController {
         val app = context.applicationContext
         if (_ui.value.busy != null) return
         val steps = if (push) 3 else 2
-        show(1, steps, "Conferindo o que mudou…")
-        startWork(app, if (push) "Commit e envio" else "Commit")
+        show(1, steps, t(R.string.git_conferindo_o_que_mudou))
+        startWork(app, if (push) t(R.string.git_commit_e_envio) else t(R.string.git_commit))
         _ui.update { it.copy(message = null) }
         launchGit {
             val outcome = runCatching {
-                val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("pasta não suportada")
-                require(name.isNotBlank() && email.isNotBlank()) { "informe nome e e-mail para o commit" }
+                val dir = realDir(MusicFolder.tree(app) ?: error(t(R.string.git_pasta_nao_encontrada))) ?: error(t(R.string.git_pasta_nao_suportada))
+                require(name.isNotBlank() && email.isNotBlank()) { t(R.string.git_informe_nome_e_e_mail) }
                 GitManager.clearStaleLocks(dir)
                 prefs(app).edit().putString("name", name).putString("email", email).apply()
                 if (remoteUrl.isNotBlank() && GitManager.remoteUrl(dir).isNullOrBlank()) GitManager.setRemote(dir, remoteUrl.trim())
@@ -337,7 +337,7 @@ object GitController {
                 var sendSecret = ""
                 if (push) {
                     val (user, secret) = credentials(app, dir, token)
-                    require(secret.isNotBlank()) { "informe o token do GitHub para enviar" }
+                    require(secret.isNotBlank()) { t(R.string.git_informe_o_token_do_github) }
                     sendUser = user
                     sendSecret = secret
                     if (!replace && GitManager.sendNeedsReplace(dir, GitManager.remoteUrl(dir).orEmpty(), user, secret)) {
@@ -354,17 +354,17 @@ object GitController {
                 // Arquivos grandes demais ficam de fora sem mexer no .gitignore do usuário (lista local em .git/info/exclude).
                 val large = GitManager.tooLarge(dir, changes)
                 GitManager.addLocalExclude(dir, large)
-                show(2, steps, "Registrando ${dev.truetagger.ui.plural(changes.size, "arquivo", "arquivos")}…")
-                val skipped = GitManager.commitAll(dir, message.ifBlank { "Atualização da pasta" }, name.trim(), email.trim(), monitor(2, steps))
+                show(2, steps, t(R.string.git_registrando, tp(R.plurals.n_arquivos, changes.size)))
+                val skipped = GitManager.commitAll(dir, message.ifBlank { t(R.string.git_atualizacao_da_pasta) }, name.trim(), email.trim(), monitor(2, steps))
 
                 var pushed = false
                 if (push) {
                     if (token.isNotBlank()) SecretStore.put(app, TOKEN, token)
-                    show(3, steps, "Conectando ao GitHub…")
+                    show(3, steps, t(R.string.git_conectando_ao_github))
                     GitManager.push(dir, GitManager.remoteUrl(dir).orEmpty(), sendUser, sendSecret, monitor(3, steps), replace)
                     pushed = true
                 }
-                (if (pushed) (if (replace) "Commit feito e enviado. O GitHub agora está igual à pasta." else "Commit feito e enviado ao GitHub.") else "Commit feito.") + skippedNote(skipped) + coversNote(covers) + largeFilesNote(large)
+                (if (pushed) (if (replace) t(R.string.git_commit_feito_e_enviado_o) else t(R.string.git_commit_feito_e_enviado_ao)) else t(R.string.git_commit_feito)) + skippedNote(skipped) + coversNote(covers) + largeFilesNote(large)
             }
             finishOrAsk(outcome, app) { commit(app, message, name, email, push, token, remoteUrl, replace = true) }
         }
@@ -374,22 +374,22 @@ object GitController {
     fun push(context: Context, token: String, remoteUrl: String = "", replace: Boolean = false) {
         val app = context.applicationContext
         if (_ui.value.busy != null) return
-        show(1, 2, "Conectando ao GitHub…")
-        startWork(app, "Envio ao GitHub")
+        show(1, 2, t(R.string.git_conectando_ao_github))
+        startWork(app, t(R.string.git_envio_ao_github))
         _ui.update { it.copy(message = null) }
         launchGit {
             val outcome = runCatching {
-                val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("pasta não suportada")
+                val dir = realDir(MusicFolder.tree(app) ?: error(t(R.string.git_pasta_nao_encontrada))) ?: error(t(R.string.git_pasta_nao_suportada))
                 if (remoteUrl.isNotBlank() && GitManager.remoteUrl(dir).isNullOrBlank()) GitManager.setRemote(dir, remoteUrl.trim())
                 val (user, secret) = credentials(app, dir, token)
-                require(secret.isNotBlank()) { "informe o token do GitHub" }
+                require(secret.isNotBlank()) { t(R.string.git_informe_o_token_do_github_2) }
                 if (!replace && GitManager.sendNeedsReplace(dir, GitManager.remoteUrl(dir).orEmpty(), user, secret)) {
                     throw ReplaceNeeded(GitManager.branch(dir).orEmpty())
                 }
                 if (token.isNotBlank()) SecretStore.put(app, TOKEN, token)
-                show(2, 2, "Enviando…")
+                show(2, 2, t(R.string.git_enviando))
                 GitManager.push(dir, GitManager.remoteUrl(dir).orEmpty(), user, secret, monitor(2, 2), replace)
-                if (replace) "Enviado. O GitHub agora está igual à pasta." else "Enviado ao GitHub."
+                if (replace) t(R.string.git_enviado_o_github_agora_esta) else t(R.string.git_enviado_ao_github)
             }
             finishOrAsk(outcome, app) { push(app, token, remoteUrl, replace = true) }
         }
@@ -402,15 +402,15 @@ object GitController {
     fun setup(context: Context, request: GitSetupRequest, replace: Boolean = false) {
         val app = context.applicationContext
         if (_ui.value.busy != null) return
-        show(1, 4, "Conferindo o repositório no GitHub…")
-        startWork(app, "Ligando ao GitHub")
+        show(1, 4, t(R.string.git_conferindo_o_repositorio_no_github))
+        startWork(app, t(R.string.git_ligando_ao_github))
         _ui.update { it.copy(message = null) }
         launchGit {
             val outcome = runCatching {
-                val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("a pasta precisa estar no armazenamento interno do celular")
-                require(request.url.startsWith("https://")) { "use o endereço https do repositório (https://github.com/usuario/repo.git)" }
-                require(request.token.isNotBlank()) { "informe o token do GitHub" }
-                require(request.githubUser.isNotBlank() && request.email.isNotBlank()) { "informe seu usuário e e-mail" }
+                val dir = realDir(MusicFolder.tree(app) ?: error(t(R.string.git_pasta_nao_encontrada))) ?: error(t(R.string.git_a_pasta_precisa_estar_no))
+                require(request.url.startsWith("https://")) { t(R.string.git_use_o_endereco_https_do) }
+                require(request.token.isNotBlank()) { t(R.string.git_informe_o_token_do_github_2) }
+                require(request.githubUser.isNotBlank() && request.email.isNotBlank()) { t(R.string.git_informe_seu_usuario_e_e) }
                 val branch = request.branch.ifBlank { "main" }
 
                 // Confere o endereço e o token (sem baixar nada). Branch já existente no GitHub pede confirmação.
@@ -420,19 +420,19 @@ object GitController {
                 runCatching { SettingsBackup.writeCurrent(app) }
                 val covers = saveCovers(app, dir, 3, 4)
 
-                show(2, 4, "Criando o repositório…")
+                show(2, 4, t(R.string.git_criando_o_repositorio))
                 GitManager.init(dir, branch, request.url, request.githubUser, request.email)
                 prefs(app).edit().putString("github_user", request.githubUser).putString("name", request.githubUser).putString("email", request.email).apply()
                 SecretStore.put(app, TOKEN, request.token)
 
-                show(3, 4, "Contando os arquivos da pasta…")
+                show(3, 4, t(R.string.git_contando_os_arquivos_da_pasta))
                 val changes = GitManager.status(dir)
                 val large = GitManager.tooLarge(dir, changes)
                 GitManager.updateGitignore(dir, large)
-                val skipped = GitManager.commitAll(dir, "Primeiro commit do TruePlayer", request.githubUser, request.email, monitor(3, 4))
-                show(4, 4, "Conectando ao GitHub…")
+                val skipped = GitManager.commitAll(dir, t(R.string.git_primeiro_commit_do_trueplayer), request.githubUser, request.email, monitor(3, 4))
+                show(4, 4, t(R.string.git_conectando_ao_github))
                 GitManager.push(dir, request.url, request.githubUser, request.token, monitor(4, 4), replace = replace && branch in heads)
-                (if (replace && branch in heads) "Pasta enviada. O GitHub agora está igual à pasta." else "Repositório criado e enviado ao GitHub.") + skippedNote(skipped) + coversNote(covers) + largeFilesNote(large)
+                (if (replace && branch in heads) t(R.string.git_pasta_enviada_o_github_agora) else t(R.string.git_repositorio_criado_e_enviado_ao)) + skippedNote(skipped) + coversNote(covers) + largeFilesNote(large)
             }
             finishOrAsk(outcome, app) { setup(app, request, replace = true) }
         }
@@ -442,22 +442,22 @@ object GitController {
     fun changeRemote(context: Context, url: String, token: String) {
         val app = context.applicationContext
         if (_ui.value.busy != null) return
-        _ui.update { it.copy(busy = "Conferindo o repositório no GitHub…", busyFraction = null, message = null) }
-        startWork(app, "Trocando repositório")
+        _ui.update { it.copy(busy = t(R.string.git_conferindo_o_repositorio_no_github), busyFraction = null, message = null) }
+        startWork(app, t(R.string.git_trocando_repositorio))
         launchGit {
             val outcome = runCatching {
-                val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("pasta não suportada")
+                val dir = realDir(MusicFolder.tree(app) ?: error(t(R.string.git_pasta_nao_encontrada))) ?: error(t(R.string.git_pasta_nao_suportada))
                 val target = url.trim()
-                require(target.startsWith("https://")) { "use o endereço https do repositório (https://github.com/usuario/repo.git)" }
+                require(target.startsWith("https://")) { t(R.string.git_use_o_endereco_https_do) }
                 val user = prefs(app).getString("github_user", "").orEmpty().ifBlank { GitRemote.authUser(target) }
                 val secret = token.ifBlank { SecretStore.get(app, TOKEN).orEmpty() }
-                require(user.isNotBlank()) { "informe o usuário do GitHub" }
-                require(secret.isNotBlank()) { "informe o token do GitHub" }
+                require(user.isNotBlank()) { t(R.string.git_informe_o_usuario_do_github) }
+                require(secret.isNotBlank()) { t(R.string.git_informe_o_token_do_github_2) }
                 // Se o endereço ou o token estiverem errados, isto falha antes de mudar qualquer coisa.
                 GitManager.remoteHeads(target, user, secret)
                 GitManager.setRemote(dir, target)
                 if (token.isNotBlank()) SecretStore.put(app, TOKEN, token)
-                "Repositório trocado para ${GitRemote.stripCredentials(target)}."
+                t(R.string.git_repositorio_trocado_para, GitRemote.stripCredentials(target))
             }
             finish(outcome, app)
         }
@@ -467,16 +467,16 @@ object GitController {
     fun pull(context: Context) {
         val app = context.applicationContext
         if (_ui.value.busy != null) return
-        show(1, 2, "Conectando ao GitHub…")
-        startWork(app, "Download do GitHub")
+        show(1, 2, t(R.string.git_conectando_ao_github))
+        startWork(app, t(R.string.git_download_do_github))
         _ui.update { it.copy(message = null) }
         launchGit {
             val outcome = runCatching {
-                val dir = realDir(MusicFolder.tree(app) ?: error("pasta não encontrada")) ?: error("pasta não suportada")
+                val dir = realDir(MusicFolder.tree(app) ?: error(t(R.string.git_pasta_nao_encontrada))) ?: error(t(R.string.git_pasta_nao_suportada))
                 GitManager.clearStaleLocks(dir)
                 val (user, secret) = credentials(app, dir, "")
-                require(secret.isNotBlank()) { "informe o token do GitHub (Trocar repositório)" }
-                show(2, 2, "Baixando do GitHub…")
+                require(secret.isNotBlank()) { t(R.string.git_informe_o_token_do_github_3) }
+                show(2, 2, t(R.string.git_baixando_do_github))
                 val result = GitManager.pull(dir, GitManager.remoteUrl(dir).orEmpty(), user, secret, monitor(2, 2))
                 if (result.files.isNotEmpty()) {
                     val audio = result.files
@@ -486,10 +486,24 @@ object GitController {
                     if (audio.isNotEmpty()) android.media.MediaScannerConnection.scanFile(app, audio.toTypedArray(), null, null)
                     onFolderChanged?.invoke()
                 }
-                if (result.upToDate) "A pasta já está em dia com o GitHub."
-                else "${dev.truetagger.ui.plural(result.files.size, "arquivo baixado", "arquivos baixados")} do GitHub. A biblioteca atualiza sozinha em instantes."
+                if (result.upToDate) t(R.string.git_a_pasta_ja_esta_em)
+                else t(R.string.git_do_github_a_biblioteca_atualiza, tp(R.plurals.n_arquivos_baixados, result.files.size))
             }
             finish(outcome, app)
         }
     }
+}
+
+/** Frases do commit sugerido no idioma do app. */
+private object AppCommitText : CommitText {
+    override fun songsAdded(n: Int) = tp(R.plurals.commit_songs_added, n)
+    override fun songsRemoved(n: Int) = tp(R.plurals.commit_songs_removed, n)
+    override fun playlistsAdded(n: Int) = tp(R.plurals.commit_playlists_added, n)
+    override fun playlistsChanged(n: Int) = tp(R.plurals.commit_playlists_changed, n)
+    override fun playlistsRemoved(n: Int) = tp(R.plurals.commit_playlists_removed, n)
+    override fun tagsEdited(n: Int) = tp(R.plurals.commit_tags_edited, n)
+    override fun settingsUpdated() = t(R.string.commit_settings)
+    override fun minutesListened(minutes: Long) = t(R.string.commit_minutes, minutes)
+    override fun folderUpdate() = t(R.string.commit_folder_update)
+    override fun andMore(n: Int) = t(R.string.commit_and_more, n)
 }

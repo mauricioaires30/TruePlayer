@@ -36,6 +36,9 @@ import dev.truetagger.android.GitSetupRequest
 import dev.truetagger.android.GitUi
 import dev.truetagger.data.GitSummary
 import kotlinx.coroutines.delay
+import dev.truetagger.android.t
+import dev.truetagger.android.tp
+import dev.truetagger.android.R
 
 /** Grupo "GitHub" de Configurações: guardar a pasta de músicas num repositório do GitHub. */
 @Composable
@@ -56,21 +59,21 @@ fun GitSection() {
         }
         when (state.availability) {
             GitUi.Availability.UNKNOWN, GitUi.Availability.NO_FOLDER -> SettingsRow(
-                Icons.Rounded.CloudUpload, "Guardar no GitHub", "Escolha a pasta de músicas primeiro", enabled = false,
+                Icons.Rounded.CloudUpload, t(R.string.git_guardar_no_github), t(R.string.git_escolha_a_pasta_de_musicas), enabled = false,
             )
 
             GitUi.Availability.UNSUPPORTED -> SettingsRow(
-                Icons.Rounded.CloudUpload, "Guardar no GitHub", "Só funciona com pasta na memória interna do celular", enabled = false,
+                Icons.Rounded.CloudUpload, t(R.string.git_guardar_no_github), t(R.string.git_so_funciona_com_pasta_na), enabled = false,
             )
 
             GitUi.Availability.NO_REPO -> SettingsRow(
-                Icons.Rounded.CloudUpload, "Ligar ao GitHub", "Guarda músicas, playlists e estatísticas num repositório seu",
+                Icons.Rounded.CloudUpload, t(R.string.git_ligar_ao_github), t(R.string.git_guarda_musicas_playlists_e_estatisticas),
             ) {
                 if (GitController.hasAllFilesAccess()) showSetup = true else GitController.requestAllFilesAccess(context)
             }
 
             GitUi.Availability.REPO_NEEDS_ACCESS -> SettingsRow(
-                Icons.Rounded.Folder, "Liberar acesso aos arquivos", "O Git precisa ler a pasta direto",
+                Icons.Rounded.Folder, t(R.string.git_liberar_acesso_aos_arquivos), t(R.string.git_o_git_precisa_ler_a),
             ) { GitController.requestAllFilesAccess(context) }
 
             GitUi.Availability.READY -> {
@@ -78,23 +81,23 @@ fun GitSection() {
                 SettingsRow(Icons.Rounded.Sync, repoLabel(state.remote), statusLine(state))
                 SettingsDivider()
                 SettingsRow(
-                    Icons.Rounded.Save, "Commitar",
-                    if (summary != null && summary.isEmpty) "Nada novo para salvar" else "Salva o que mudou, só neste celular",
+                    Icons.Rounded.Save, t(R.string.git_commitar),
+                    if (summary != null && summary.isEmpty) t(R.string.git_nada_novo_para_salvar) else t(R.string.git_salva_o_que_mudou_so),
                     enabled = summary != null && !summary.isEmpty && state.busy == null,
                 ) { showCommit = true }
                 SettingsDivider()
                 SettingsRow(
-                    Icons.Rounded.CloudUpload, "Enviar", "Manda os commits para o GitHub",
+                    Icons.Rounded.CloudUpload, t(R.string.git_enviar), t(R.string.git_manda_os_commits_para_o),
                     enabled = summary != null && state.busy == null,
                 ) { showSend = true }
                 SettingsDivider()
                 SettingsRow(
-                    Icons.Rounded.CloudDownload, "Baixar do GitHub", "Para restaurar tudo num celular novo",
+                    Icons.Rounded.CloudDownload, t(R.string.git_baixar_do_github), t(R.string.git_para_restaurar_tudo_num_celular),
                     enabled = state.remote != null && summary != null && state.busy == null,
                 ) { showPull = true }
                 SettingsDivider()
                 SettingsRow(
-                    Icons.Rounded.SwapHoriz, "Trocar repositório", "Usa outro repositório do GitHub",
+                    Icons.Rounded.SwapHoriz, t(R.string.git_trocar_repositorio), t(R.string.git_usa_outro_repositorio_do_github),
                     enabled = state.busy == null,
                 ) { showChange = true }
             }
@@ -122,13 +125,13 @@ fun GitSection() {
     }
     if (showPull) {
         AppDialog(
-            title = "Baixar do GitHub?",
+            title = t(R.string.git_baixar_do_github_2),
             onDismiss = { showPull = false },
-            confirmText = "Baixar",
+            confirmText = t(R.string.git_baixar),
             onConfirm = { showPull = false; GitController.pull(context) },
         ) {
-            Text("Traz o que só existe no GitHub e atualiza o que você não mexeu. O que você mudou continua como está.")
-            DialogNote("Pode usar bastante internet e espaço.")
+            Text(t(R.string.git_traz_o_que_so_existe))
+            DialogNote(t(R.string.git_pode_usar_bastante_internet_e))
         }
     }
     if (showChange) {
@@ -163,21 +166,21 @@ fun GitDialogs() {
     }
     state.replaceBranch?.let { branch ->
         AppDialog(
-            title = "Substituir o que está no GitHub?",
+            title = t(R.string.git_substituir_o_que_esta_no),
             onDismiss = GitController::cancelReplace,
-            confirmText = "Substituir",
+            confirmText = t(R.string.git_substituir),
             onConfirm = GitController::confirmReplace,
             destructive = true,
         ) {
-            Text("A branch $branch do GitHub tem outro histórico. Se continuar, ela fica só com o que está na pasta.")
-            DialogNote("O que estava lá se perde. Isso não dá para desfazer.")
+            Text(t(R.string.git_a_branch_do_github_tem_3, branch))
+            DialogNote(t(R.string.git_o_que_estava_la_se))
         }
     }
 }
 
 /** "usuario/repositorio" a partir do endereço (https, SSH, com usuário embutido, www...). */
 private fun repoLabel(remote: String?): String {
-    if (remote.isNullOrBlank()) return "Sem repositório"
+    if (remote.isNullOrBlank()) return t(R.string.git_sem_repositorio)
     val https = dev.truetagger.data.GitRemote.stripCredentials(dev.truetagger.data.GitRemote.toHttps(remote))
     val path = https.substringAfter("://", https).substringAfter('/', "").trimEnd('/').removeSuffix(".git")
     val parts = path.split('/').filter { it.isNotBlank() }
@@ -186,26 +189,25 @@ private fun repoLabel(remote: String?): String {
 
 private fun statusLine(state: GitUi): String {
     val summary = state.summary
-    val branch = state.branch?.let { " • branch $it" }.orEmpty()
+    val branch = state.branch?.let { t(R.string.git_branch, it) }.orEmpty()
     return when {
-        summary == null -> "Lendo as mudanças…"
-        summary.isEmpty -> "Tudo salvo$branch"
+        summary == null -> t(R.string.git_lendo_as_mudancas)
+        summary.isEmpty -> t(R.string.git_tudo_salvo, branch)
         else -> changesText(summary) + branch
     }
 }
 
 /** "3 músicas novas, 1 playlist" — o que mudou desde o último commit, em poucas palavras. */
 private fun changesText(summary: GitSummary): String {
-    fun count(n: Int, one: String, many: String) = "$n " + if (n == 1) one else many
     val parts = ArrayList<String>()
-    if (summary.songsAdded.isNotEmpty()) parts += count(summary.songsAdded.size, "música nova", "músicas novas")
-    if (summary.songsRemoved.isNotEmpty()) parts += count(summary.songsRemoved.size, "removida", "removidas")
-    if (summary.tagsEdited.isNotEmpty()) parts += count(summary.tagsEdited.size, "tag editada", "tags editadas")
+    if (summary.songsAdded.isNotEmpty()) parts += tp(R.plurals.git_n_songs_added, summary.songsAdded.size)
+    if (summary.songsRemoved.isNotEmpty()) parts += tp(R.plurals.git_n_removed, summary.songsRemoved.size)
+    if (summary.tagsEdited.isNotEmpty()) parts += tp(R.plurals.git_n_tags_edited, summary.tagsEdited.size)
     val playlists = summary.playlistsAdded.size + summary.playlistsChanged.size + summary.playlistsRemoved.size
-    if (playlists > 0) parts += count(playlists, "playlist", "playlists")
-    if (summary.statsChanged) parts += "estatísticas"
-    if (summary.settingsChanged) parts += "configurações"
-    if (parts.isEmpty()) parts += count(summary.other, "arquivo", "arquivos")
+    if (playlists > 0) parts += tp(R.plurals.n_playlists, playlists)
+    if (summary.statsChanged) parts += t(R.string.git_stats_word)
+    if (summary.settingsChanged) parts += t(R.string.git_settings_word)
+    if (parts.isEmpty()) parts += tp(R.plurals.n_arquivos, summary.other)
     return parts.joinToString(", ")
 }
 
@@ -244,12 +246,12 @@ private fun ProgressDialog(state: GitUi) {
     AppDialog(
         title = state.busyTitle.ifBlank { "Git" },
         onDismiss = GitController::cancel,
-        confirmText = "Ocultar",
+        confirmText = t(R.string.git_ocultar),
         onConfirm = GitController::hideProgress,
-        dismissText = "Cancelar",
+        dismissText = t(R.string.cancelar),
         dismissOnOutside = false,
     ) {
-        if (state.busySteps > 0) Text("Etapa ${state.busyStep} de ${state.busySteps}", fontWeight = FontWeight.SemiBold)
+        if (state.busySteps > 0) Text(t(R.string.git_etapa_de, state.busyStep, state.busySteps), fontWeight = FontWeight.SemiBold)
         if (overall == null) {
             LinearProgressIndicator(Modifier.fillMaxWidth())
         } else {
@@ -259,15 +261,15 @@ private fun ProgressDialog(state: GitUi) {
             }
         }
         Text(state.busy.orEmpty())
-        DialogNote("Tempo: ${elapsedText(elapsedS)}. Pode ocultar: continua em segundo plano, com o andamento na notificação.")
+        DialogNote(t(R.string.git_tempo_pode_ocultar_continua_em, elapsedText(elapsedS)))
     }
 }
 
 /** "45 s", "2 min 05 s", "1 h 02 min". */
 private fun elapsedText(seconds: Long): String = when {
     seconds < 60 -> "$seconds s"
-    seconds < 3600 -> "${seconds / 60} min ${(seconds % 60).toString().padStart(2, '0')} s"
-    else -> "${seconds / 3600} h ${((seconds % 3600) / 60).toString().padStart(2, '0')} min"
+    seconds < 3600 -> t(R.string.git_min_s, seconds / 60, (seconds % 60).toString().padStart(2, '0'))
+    else -> t(R.string.git_h_min, seconds / 3600, ((seconds % 3600) / 60).toString().padStart(2, '0'))
 }
 
 @Composable
@@ -275,17 +277,17 @@ private fun ChangeRemoteDialog(hasToken: Boolean, onCancel: () -> Unit, onConfir
     var url by remember { mutableStateOf("") }
     var token by remember { mutableStateOf("") }
     AppDialog(
-        title = "Trocar repositório",
+        title = t(R.string.git_trocar_repositorio),
         onDismiss = onCancel,
-        confirmText = "Trocar",
+        confirmText = t(R.string.trocar),
         onConfirm = { onConfirm(url, token) },
         confirmEnabled = url.isNotBlank() && (hasToken || token.isNotBlank()),
     ) {
-        DialogNote("Cole o endereço do outro repositório. O app confere antes de trocar.")
-        OutlinedTextField(url, { url = it.trim() }, label = { Text("Endereço do repositório") }, placeholder = { Text("https://github.com/usuario/repo.git") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        DialogNote(t(R.string.git_cole_o_endereco_do_outro))
+        OutlinedTextField(url, { url = it.trim() }, label = { Text(t(R.string.git_endereco_do_repositorio)) }, placeholder = { Text("https://github.com/usuario/repo.git") }, singleLine = true, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(
             token, { token = it.trim() },
-            label = { Text(if (hasToken) "Token (vazio usa o guardado)" else "Token do GitHub") },
+            label = { Text(if (hasToken) t(R.string.git_token_vazio_usa_o_guardado) else t(R.string.git_token_do_github)) },
             visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth(),
         )
     }
@@ -299,22 +301,22 @@ private fun SetupDialog(initialUser: String, onCancel: () -> Unit, onConfirm: (G
     var branch by remember { mutableStateOf("main") }
     var token by remember { mutableStateOf("") }
     AppDialog(
-        title = "Ligar ao GitHub",
+        title = t(R.string.git_ligar_ao_github),
         onDismiss = onCancel,
-        confirmText = "Ligar e enviar",
+        confirmText = t(R.string.git_ligar_e_enviar),
         onConfirm = { onConfirm(GitSetupRequest(url, user, email, branch, token)) },
         confirmEnabled = url.isNotBlank() && user.isNotBlank() && email.isNotBlank() && token.isNotBlank(),
     ) {
-        DialogNote("Pode ser um repositório novo ou que já tenha arquivos. Nada do GitHub vem para a pasta.")
-        OutlinedTextField(url, { url = it.trim() }, label = { Text("Endereço do repositório") }, placeholder = { Text("https://github.com/usuario/repo.git") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(user, { user = it.trim() }, label = { Text("Usuário do GitHub") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(email, { email = it.trim() }, label = { Text("E-mail dos commits") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-        OutlinedTextField(branch, { branch = it.trim() }, label = { Text("Branch") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        DialogNote(t(R.string.git_pode_ser_um_repositorio_novo))
+        OutlinedTextField(url, { url = it.trim() }, label = { Text(t(R.string.git_endereco_do_repositorio)) }, placeholder = { Text("https://github.com/usuario/repo.git") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(user, { user = it.trim() }, label = { Text(t(R.string.git_usuario_do_github)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(email, { email = it.trim() }, label = { Text(t(R.string.git_e_mail_dos_commits)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(branch, { branch = it.trim() }, label = { Text(t(R.string.git_branch_2)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(
-            token, { token = it.trim() }, label = { Text("Token do GitHub") },
+            token, { token = it.trim() }, label = { Text(t(R.string.git_token_do_github)) },
             visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth(),
         )
-        DialogNote("Token: GitHub > Settings > Developer settings > Personal access tokens, com escrita em Contents. Fica cifrado neste celular. O primeiro envio é grande: use Wi-Fi.")
+        DialogNote(t(R.string.git_token_github_settings_developer_settings))
     }
 }
 
@@ -329,19 +331,19 @@ private fun CommitDialog(
     var name by remember { mutableStateOf(state.userName) }
     var email by remember { mutableStateOf(state.userEmail) }
     AppDialog(
-        title = "Commitar",
+        title = t(R.string.git_commitar),
         onDismiss = onClose,
-        confirmText = "Commitar",
+        confirmText = t(R.string.git_commitar),
         onConfirm = { onCommit(message, name, email) },
         confirmEnabled = !summary.isEmpty && name.isNotBlank() && email.isNotBlank(),
     ) {
-        Text(if (summary.isEmpty) "Nada mudou desde o último commit." else "Mudou: ${changesText(summary)}.")
-        OutlinedTextField(message, { message = it }, label = { Text("Mensagem") }, modifier = Modifier.fillMaxWidth())
+        Text(if (summary.isEmpty) t(R.string.git_nada_mudou_desde_o_ultimo) else t(R.string.git_mudou, changesText(summary)))
+        OutlinedTextField(message, { message = it }, label = { Text(t(R.string.git_mensagem)) }, modifier = Modifier.fillMaxWidth())
         if (state.userName.isBlank() || state.userEmail.isBlank()) {
-            OutlinedTextField(name, { name = it }, label = { Text("Seu nome") }, singleLine = true, modifier = Modifier.fillMaxWidth())
-            OutlinedTextField(email, { email = it.trim() }, label = { Text("Seu e-mail") }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(name, { name = it }, label = { Text(t(R.string.git_seu_nome)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+            OutlinedTextField(email, { email = it.trim() }, label = { Text(t(R.string.git_seu_e_mail)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
         }
-        DialogNote("Fica salvo só neste celular até você tocar em Enviar. Arquivos acima de 100 MB ficam de fora.")
+        DialogNote(t(R.string.git_fica_salvo_so_neste_celular))
     }
 }
 
@@ -357,29 +359,29 @@ private fun SendDialog(
     val needsToken = !state.hasToken
     val needsRemote = state.remote.isNullOrBlank()
     AppDialog(
-        title = "Enviar ao GitHub",
+        title = t(R.string.git_enviar_ao_github),
         onDismiss = onClose,
-        confirmText = "Enviar",
+        confirmText = t(R.string.git_enviar),
         onConfirm = { onSend(token, remoteUrl) },
         confirmEnabled = (!needsToken || token.isNotBlank()) && (!needsRemote || remoteUrl.isNotBlank()),
     ) {
         if (needsRemote) {
             OutlinedTextField(
-                remoteUrl, { remoteUrl = it.trim() }, label = { Text("Endereço do repositório") },
+                remoteUrl, { remoteUrl = it.trim() }, label = { Text(t(R.string.git_endereco_do_repositorio)) },
                 placeholder = { Text("https://github.com/usuario/repo.git") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
             )
         } else {
-            Text("Para: ${repoLabel(state.remote)}")
+            Text(t(R.string.git_para, repoLabel(state.remote)))
         }
         if (needsToken) {
             OutlinedTextField(
-                token, { token = it.trim() }, label = { Text("Token do GitHub") },
+                token, { token = it.trim() }, label = { Text(t(R.string.git_token_do_github)) },
                 visualTransformation = PasswordVisualTransformation(), singleLine = true, modifier = Modifier.fillMaxWidth(),
             )
         }
         if (!summary.isEmpty) {
-            Text("Há mudanças sem commit. Elas não vão: faça o commit antes.", color = MaterialTheme.colorScheme.tertiary)
+            Text(t(R.string.git_ha_mudancas_sem_commit_elas), color = MaterialTheme.colorScheme.tertiary)
         }
-        DialogNote("Roda em segundo plano. Se falhar, o próximo envio continua de onde parou.")
+        DialogNote(t(R.string.git_roda_em_segundo_plano_se))
     }
 }

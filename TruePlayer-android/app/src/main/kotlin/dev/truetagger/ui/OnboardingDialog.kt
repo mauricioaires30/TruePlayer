@@ -30,6 +30,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import dev.truetagger.model.PermissionItem
+import dev.truetagger.android.t
+import dev.truetagger.android.R
 
 private const val STEPS = 4
 
@@ -53,48 +55,48 @@ fun OnboardingDialog(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             ) {
                 Column(Modifier.fillMaxWidth().padding(UiTokens.dialogPadding), verticalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
-                    Text("${step + 1} de $STEPS", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(t(R.string.onb_de, step + 1, STEPS), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
                         when (step) {
                             0 -> {
-                                Title("Bem-vindo ao TruePlayer")
-                                Text("Toca as músicas da sua pasta, edita as tags e baixa por link. Falta pouco para começar.")
+                                Title(t(R.string.onb_bem_vindo_ao_trueplayer))
+                                Text(t(R.string.onb_toca_as_musicas_da_sua))
                             }
                             1 -> {
-                                Title("Escolha a pasta das músicas")
-                                Text("É nela que ficam as músicas (songs) e as playlists (playlists). Trocar de celular não perde nada.")
+                                Title(t(R.string.onb_escolha_a_pasta_das_musicas))
+                                Text(t(R.string.onb_e_nela_que_ficam_as))
                                 Text(
-                                    folderLabel.ifBlank { "Nenhuma pasta escolhida" },
+                                    folderLabel.ifBlank { t(R.string.onb_nenhuma_pasta_escolhida) },
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     maxLines = 2,
                                     overflow = TextOverflow.Ellipsis,
                                 )
                                 ActionButton(
-                                    if (folderLabel.isBlank()) "Escolher pasta" else "Trocar pasta",
+                                    if (folderLabel.isBlank()) t(R.string.mig_escolher_pasta) else t(R.string.onb_trocar_pasta),
                                     Icons.Rounded.Folder,
                                     onChooseFolder,
                                     Modifier.fillMaxWidth(),
                                 )
                             }
                             2 -> {
-                                Title("Permissões")
-                                Text("Toque em Conceder nas que faltam.")
+                                Title(t(R.string.permissoes))
+                                Text(t(R.string.onb_toque_em_conceder_nas_que))
                                 permissions.forEach { item ->
                                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                                         Text(item.label, modifier = Modifier.weight(1f))
                                         if (item.granted) {
                                             Text("OK", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.SemiBold)
                                         } else {
-                                            TextButton(onClick = item.onGrant) { Text("Conceder") }
+                                            TextButton(onClick = item.onGrant) { Text(t(R.string.conceder)) }
                                         }
                                     }
                                 }
                             }
                             else -> {
-                                Title("Baixe por link")
-                                Text("No YouTube ou no SoundCloud, toque em Compartilhar e escolha o TruePlayer. Playlists também. As tags são ajustadas sozinhas.")
+                                Title(t(R.string.onb_baixe_por_link))
+                                Text(t(R.string.onb_no_youtube_ou_no_soundcloud))
                                 Text(
-                                    "O app avisa quando sair versão nova. Cada opção tem uma explicação em Configurações.",
+                                    t(R.string.onb_o_app_avisa_quando_sair),
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     style = MaterialTheme.typography.bodySmall,
                                 )
@@ -104,17 +106,17 @@ fun OnboardingDialog(
                     Spacer(Modifier.height(UiTokens.space1))
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         if (step < STEPS - 1) {
-                            TextButton(onClick = onFinish) { Text("Pular") }
+                            TextButton(onClick = onFinish) { Text(t(R.string.onb_pular)) }
                         }
                         Spacer(Modifier.weight(1f))
                         if (step > 0) {
-                            TextButton(onClick = { step -= 1 }) { Text("Voltar") }
+                            TextButton(onClick = { step -= 1 }) { Text(t(R.string.voltar)) }
                         }
                         Button(
                             onClick = { if (step < STEPS - 1) step += 1 else onFinish() },
                             modifier = Modifier.height(UiTokens.controlHeight),
                             shape = RoundedCornerShape(UiTokens.buttonRadius),
-                        ) { Text(if (step < STEPS - 1) "Próximo" else "Concluir") }
+                        ) { Text(if (step < STEPS - 1) t(R.string.onb_proximo) else t(R.string.onb_concluir)) }
                     }
                 }
             }

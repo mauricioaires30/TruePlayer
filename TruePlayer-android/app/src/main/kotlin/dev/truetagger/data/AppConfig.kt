@@ -23,6 +23,7 @@ data class AppConfigFile(
     val albumSort: String = "",
     val albumAscending: Boolean = true,
     val themeMode: String = ThemeMode.SYSTEM.key,
+    val language: String = AppLanguages.SYSTEM,
 )
 
 object AppConfigCodec {

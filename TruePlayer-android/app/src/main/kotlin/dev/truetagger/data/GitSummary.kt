@@ -63,38 +63,56 @@ data class GitSummary(
     }
 }
 
+/** Frases da mensagem de commit sugerida. O app usa o idioma escolhido; o padrão (e os testes) é português. */
+interface CommitText {
+    fun songsAdded(n: Int): String
+    fun songsRemoved(n: Int): String
+    fun playlistsAdded(n: Int): String
+    fun playlistsChanged(n: Int): String
+    fun playlistsRemoved(n: Int): String
+    fun tagsEdited(n: Int): String
+    fun settingsUpdated(): String
+    fun minutesListened(minutes: Long): String
+    fun folderUpdate(): String
+    fun andMore(n: Int): String
+}
+
+object PortugueseCommitText : CommitText {
+    private fun plural(n: Int, one: String, many: String) = if (n == 1) one else many
+    override fun songsAdded(n: Int) = "+$n " + plural(n, "música", "músicas")
+    override fun songsRemoved(n: Int) = "-$n " + plural(n, "música", "músicas")
+    override fun playlistsAdded(n: Int) = "+$n " + plural(n, "playlist", "playlists")
+    override fun playlistsChanged(n: Int) = "$n " + plural(n, "playlist alterada", "playlists alteradas")
+    override fun playlistsRemoved(n: Int) = "-$n " + plural(n, "playlist", "playlists")
+    override fun tagsEdited(n: Int) = "$n " + plural(n, "tag editada", "tags editadas")
+    override fun settingsUpdated() = "configurações atualizadas"
+    override fun minutesListened(minutes: Long) = "$minutes min ouvidos"
+    override fun folderUpdate() = "atualização da pasta"
+    override fun andMore(n: Int) = " e mais $n"
+}
+
 object CommitMessage {
     /**
      * "2026-10-27: +3 músicas, +1 playlist (Treino), 5 tags editadas, 142 min ouvidos".
      * [minutesListened] é o tempo ouvido no dia (0 = não menciona).
      */
-    fun build(summary: GitSummary, date: LocalDate, minutesListened: Long = 0L): String {
+    fun build(summary: GitSummary, date: LocalDate, minutesListened: Long = 0L, text: CommitText = PortugueseCommitText): String {
         val parts = ArrayList<String>()
-        if (summary.songsAdded.isNotEmpty()) parts += "+${summary.songsAdded.size} " + plural(summary.songsAdded.size, "música", "músicas")
-        if (summary.songsRemoved.isNotEmpty()) parts += "-${summary.songsRemoved.size} " + plural(summary.songsRemoved.size, "música", "músicas")
-        if (summary.playlistsAdded.isNotEmpty()) {
-            parts += "+${summary.playlistsAdded.size} " + plural(summary.playlistsAdded.size, "playlist", "playlists") + names(summary.playlistsAdded)
-        }
-        if (summary.playlistsChanged.isNotEmpty()) {
-            parts += "${summary.playlistsChanged.size} " + plural(summary.playlistsChanged.size, "playlist alterada", "playlists alteradas") + names(summary.playlistsChanged)
-        }
-        if (summary.playlistsRemoved.isNotEmpty()) {
-            parts += "-${summary.playlistsRemoved.size} " + plural(summary.playlistsRemoved.size, "playlist", "playlists")
-        }
-        if (summary.tagsEdited.isNotEmpty()) {
-            parts += "${summary.tagsEdited.size} " + plural(summary.tagsEdited.size, "tag editada", "tags editadas")
-        }
-        if (summary.settingsChanged) parts += "configurações atualizadas"
-        if (minutesListened > 0L) parts += "$minutesListened min ouvidos"
-        if (parts.isEmpty()) parts += "atualização da pasta"
+        if (summary.songsAdded.isNotEmpty()) parts += text.songsAdded(summary.songsAdded.size)
+        if (summary.songsRemoved.isNotEmpty()) parts += text.songsRemoved(summary.songsRemoved.size)
+        if (summary.playlistsAdded.isNotEmpty()) parts += text.playlistsAdded(summary.playlistsAdded.size) + names(summary.playlistsAdded, text)
+        if (summary.playlistsChanged.isNotEmpty()) parts += text.playlistsChanged(summary.playlistsChanged.size) + names(summary.playlistsChanged, text)
+        if (summary.playlistsRemoved.isNotEmpty()) parts += text.playlistsRemoved(summary.playlistsRemoved.size)
+        if (summary.tagsEdited.isNotEmpty()) parts += text.tagsEdited(summary.tagsEdited.size)
+        if (summary.settingsChanged) parts += text.settingsUpdated()
+        if (minutesListened > 0L) parts += text.minutesListened(minutesListened)
+        if (parts.isEmpty()) parts += text.folderUpdate()
         return "$date: " + parts.joinToString(", ")
     }
 
-    private fun plural(n: Int, one: String, many: String) = if (n == 1) one else many
-
-    private fun names(list: List<String>): String {
+    private fun names(list: List<String>, text: CommitText): String {
         val shown = list.take(3).joinToString(", ")
-        val extra = if (list.size > 3) " e mais ${list.size - 3}" else ""
+        val extra = if (list.size > 3) text.andMore(list.size - 3) else ""
         return " ($shown$extra)"
     }
 }

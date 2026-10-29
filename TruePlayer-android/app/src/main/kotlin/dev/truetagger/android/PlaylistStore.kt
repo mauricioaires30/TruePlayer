@@ -175,7 +175,7 @@ internal class PlaylistStore(private val context: Context) {
     }
 
     /** Nome que ainda não existe: "Treino" -> "Treino (2)". */
-    fun uniqueNameFor(base: String): String = uniqueName(base.trim().ifBlank { "Playlist" })
+    fun uniqueNameFor(base: String): String = uniqueName(base.trim().ifBlank { t(R.string.playlist) })
 
     fun delete(name: String) {
         val current = loadStored()
@@ -324,7 +324,7 @@ internal class PlaylistStore(private val context: Context) {
         val entries = M3u.parse(text, rootRelativePath = MusicFolder.rootRelativePath(context))
         if (entries.isEmpty()) return null
         val fileName = queryDisplayName(uri)
-        val base = fileName.substringBeforeLast('.', fileName).trim().ifBlank { "Playlist importada" }
+        val base = fileName.substringBeforeLast('.', fileName).trim().ifBlank { t(R.string.playlist_importada) }
         val name = uniqueName(base)
         createWithEntries(name, entries)
         return name

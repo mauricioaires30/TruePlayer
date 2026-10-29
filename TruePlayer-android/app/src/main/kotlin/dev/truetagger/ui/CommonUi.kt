@@ -11,7 +11,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material3.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CheckBox
 import androidx.compose.material.icons.rounded.CheckBoxOutlineBlank
@@ -31,6 +31,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.vector.ImageVector
+import dev.truetagger.android.t
+import dev.truetagger.android.tp
+import dev.truetagger.android.R
 
 /**
  * Geometria única do app.
@@ -251,7 +254,7 @@ internal fun ScreenHeaderRow(
     ) {
         if (onBack != null) {
             IconButton(onClick = onBack, modifier = Modifier.size(UiTokens.iconButtonSize)) {
-                Icon(Icons.Rounded.ArrowBack, "Voltar", modifier = Modifier.size(UiTokens.primaryIconSize))
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, t(R.string.voltar), modifier = Modifier.size(UiTokens.primaryIconSize))
             }
             Spacer(Modifier.width(UiTokens.space1))
         }
@@ -348,10 +351,10 @@ internal fun SelectionToolbar(
         horizontalArrangement = Arrangement.spacedBy(UiTokens.toolbarGap),
     ) {
         IconButton(onClick = onCancel, modifier = Modifier.size(UiTokens.iconButtonSize)) {
-            Icon(Icons.Rounded.Close, "Cancelar seleção", modifier = Modifier.size(UiTokens.primaryIconSize))
+            Icon(Icons.Rounded.Close, t(R.string.cancelar_selecao), modifier = Modifier.size(UiTokens.primaryIconSize))
         }
         Text(
-            if (selectedCount == 1) "1 selecionada" else "$selectedCount selecionadas",
+            tp(R.plurals.n_selected, selectedCount),
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
@@ -359,7 +362,7 @@ internal fun SelectionToolbar(
             modifier = Modifier.weight(1f),
         )
         TextButton(onClick = onToggleAll) {
-            Text(if (totalCount > 0 && selectedCount == totalCount) "Nenhuma" else "Todas")
+            Text(if (totalCount > 0 && selectedCount == totalCount) t(R.string.nenhuma) else t(R.string.todas))
         }
         actions()
     }
@@ -378,7 +381,7 @@ internal fun SelectionToggle(
         horizontalArrangement = Arrangement.End,
     ) {
         Text(
-            if (active) "Selecionando" else "Selecionar",
+            if (active) t(R.string.selecionando) else t(R.string.selecionar),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -386,7 +389,7 @@ internal fun SelectionToggle(
         IconButton(onClick = onToggle, modifier = Modifier.size(UiTokens.smallIconButtonSize)) {
             Icon(
                 imageVector = if (active) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
-                contentDescription = if (active) "Encerrar seleção" else "Selecionar",
+                contentDescription = if (active) t(R.string.encerrar_selecao) else t(R.string.selecionar),
                 modifier = Modifier.size(UiTokens.primaryIconSize),
             )
         }

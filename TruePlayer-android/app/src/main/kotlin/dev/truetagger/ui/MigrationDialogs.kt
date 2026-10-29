@@ -21,6 +21,9 @@ import androidx.compose.ui.unit.dp
 import dev.truetagger.android.FolderMigrator
 import dev.truetagger.android.FolderOrganizer
 import dev.truetagger.data.PlannedMove
+import dev.truetagger.android.t
+import dev.truetagger.android.tp
+import dev.truetagger.android.R
 
 /** Avisos da organização da pasta (songs/ e playlists/) e do acesso à pasta. */
 @Composable
@@ -41,29 +44,29 @@ fun FolderMigrationDialogs(
         when {
             accessNeeded -> AlertDialog(
                 onDismissRequest = onAccessLater,
-                title = { Text("Libere a pasta de novo") },
+                title = { Text(t(R.string.mig_libere_a_pasta_de_novo)) },
                 text = {
                     Text(
-                        "Escolha a mesma pasta de antes e toque em \"Usar esta pasta\".",
+                        t(R.string.mig_escolha_a_mesma_pasta_de),
                     )
                 },
-                confirmButton = { TextButton(onClick = onGrantAccess) { Text("Escolher pasta") } },
-                dismissButton = { TextButton(onClick = onAccessLater) { Text("Agora não") } },
+                confirmButton = { TextButton(onClick = onGrantAccess) { Text(t(R.string.mig_escolher_pasta)) } },
+                dismissButton = { TextButton(onClick = onAccessLater) { Text(t(R.string.mig_agora_nao)) } },
             )
 
             progress != null -> AlertDialog(
                 onDismissRequest = {},
-                title = { Text("Organizando a pasta") },
+                title = { Text(t(R.string.mig_organizando_a_pasta)) },
                 text = {
                     Column {
                         val isSong = progress.kind == PlannedMove.Kind.SONG
                         if (progress.name.isBlank()) {
-                            Text("Preparando…")
+                            Text(t(R.string.mig_preparando))
                         } else {
-                            Text(if (isSong) "Movendo música" else "Movendo playlist", style = MaterialTheme.typography.bodySmall)
+                            Text(if (isSong) t(R.string.mig_movendo_musica) else t(R.string.mig_movendo_playlist), style = MaterialTheme.typography.bodySmall)
                             Text(progress.name, fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             Text(
-                                "${progress.index} de ${progress.total} " + if (isSong) "músicas" else "playlists",
+                                t(R.string.mig_de, progress.index, progress.total) + if (isSong) t(R.string.mig_musicas) else "playlists",
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
@@ -78,7 +81,7 @@ fun FolderMigrationDialogs(
                             )
                         }
                         Spacer(Modifier.height(12.dp))
-                        Text("Não feche o app.", style = MaterialTheme.typography.bodySmall)
+                        Text(t(R.string.mig_nao_feche_o_app), style = MaterialTheme.typography.bodySmall)
                     }
                 },
                 confirmButton = {},
@@ -86,46 +89,46 @@ fun FolderMigrationDialogs(
 
             preview != null -> AlertDialog(
                 onDismissRequest = onLater,
-                title = { Text("Organizar a pasta?") },
+                title = { Text(t(R.string.mig_organizar_a_pasta)) },
                 text = {
                     Column(Modifier.verticalScroll(rememberScrollState())) {
                         Text(
-                            "${plural(preview.songs, "música", "músicas")} e ${plural(preview.playlists, "playlist", "playlists")} fora de songs e playlists. Mover para lá?",
+                            t(R.string.mig_e_fora_de_songs_e, tp(R.plurals.n_musicas, preview.songs), tp(R.plurals.n_playlists, preview.playlists)),
                         )
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Os arquivos só mudam de lugar, nada é apagado. O que não der para mover fica onde está.",
+                            t(R.string.mig_os_arquivos_so_mudam_de),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
                 },
-                confirmButton = { TextButton(onClick = onConfirm) { Text("Organizar") } },
-                dismissButton = { TextButton(onClick = onLater) { Text("Agora não") } },
+                confirmButton = { TextButton(onClick = onConfirm) { Text(t(R.string.mig_organizar)) } },
+                dismissButton = { TextButton(onClick = onLater) { Text(t(R.string.mig_agora_nao)) } },
             )
 
             message != null -> AlertDialog(
                 onDismissRequest = onMessageDismiss,
-                title = { Text("Organizar pasta") },
+                title = { Text(t(R.string.organizar_pasta)) },
                 text = { Column(Modifier.verticalScroll(rememberScrollState())) { Text(message) } },
                 confirmButton = { TextButton(onClick = onMessageDismiss) { Text("OK") } },
             )
 
             report != null -> AlertDialog(
                 onDismissRequest = onReportDismiss,
-                title = { Text(if (report.failed.isEmpty()) "Pasta organizada" else "Organizei, mas teve problema") },
+                title = { Text(if (report.failed.isEmpty()) t(R.string.mig_pasta_organizada) else t(R.string.mig_organizei_mas_teve_problema)) },
                 text = {
                     Column(Modifier.verticalScroll(rememberScrollState())) {
-                        Text("Movidas: ${plural(report.songsMoved, "música", "músicas")} e ${plural(report.playlistsMoved, "playlist", "playlists")}. Nada foi apagado.")
+                        Text(t(R.string.mig_movidas_e_nada_foi_apagado, tp(R.plurals.n_musicas, report.songsMoved), tp(R.plurals.n_playlists, report.playlistsMoved)))
                         if (report.failed.isNotEmpty()) {
                             Spacer(Modifier.height(8.dp))
-                            Text("Estes ficaram onde estavam (${report.failed.size}):", style = MaterialTheme.typography.bodySmall)
+                            Text(t(R.string.mig_estes_ficaram_onde_estavam, report.failed.size), style = MaterialTheme.typography.bodySmall)
                             report.failed.take(8).forEach {
                                 Text("• ${it.path}: ${it.reason}", style = MaterialTheme.typography.bodySmall, modifier = Modifier.padding(top = 2.dp))
                             }
-                            if (report.failed.size > 8) Text("e mais ${report.failed.size - 8}.", style = MaterialTheme.typography.bodySmall)
+                            if (report.failed.size > 8) Text(t(R.string.mig_e_mais, report.failed.size - 8), style = MaterialTheme.typography.bodySmall)
                         }
                         Spacer(Modifier.height(8.dp))
-                        Text("Registro salvo em .trueplayer/${report.logName}", style = MaterialTheme.typography.bodySmall)
+                        Text(t(R.string.mig_registro_salvo_em_trueplayer, report.logName), style = MaterialTheme.typography.bodySmall)
                     }
                 },
                 confirmButton = { TextButton(onClick = onReportDismiss) { Text("OK") } },
@@ -148,11 +151,11 @@ fun FolderCleanupDialog(
     TruePlayerTheme {
         AlertDialog(
             onDismissRequest = onCancel,
-            title = { Text("Limpar a pasta") },
+            title = { Text(t(R.string.mig_limpar_a_pasta)) },
             text = {
                 Column(Modifier.verticalScroll(rememberScrollState())) {
                     Text(
-                        "Nada aqui é música nem playlist. Vai tudo para a _lixeira, sem apagar.",
+                        t(R.string.mig_nada_aqui_e_musica_nem),
                         style = MaterialTheme.typography.bodySmall,
                     )
                     Spacer(Modifier.height(8.dp))
@@ -169,7 +172,7 @@ fun FolderCleanupDialog(
                                 Text(item.name, fontWeight = FontWeight.SemiBold)
                                 val size = android.text.format.Formatter.formatShortFileSize(context, item.sizeBytes)
                                 Text(
-                                    if (item.isDir) "${plural(item.files, "arquivo", "arquivos")}, $size" else size,
+                                    if (item.isDir) "${tp(R.plurals.n_arquivos, item.files)}, $size" else size,
                                     style = MaterialTheme.typography.bodySmall,
                                 )
                                 item.samples.forEach {
@@ -181,8 +184,7 @@ fun FolderCleanupDialog(
                     if (scan.foldersWithMusic.isNotEmpty()) {
                         Spacer(Modifier.height(8.dp))
                         Text(
-                            "Não mexi em ${scan.foldersWithMusic.joinToString(", ")}: tem música dentro. " +
-                                "Use \"Organizar pasta\" para levar essas músicas para songs.",
+                            t(R.string.mig_nao_mexi_em_tem_musica, scan.foldersWithMusic.joinToString(", ")),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
@@ -191,10 +193,10 @@ fun FolderCleanupDialog(
             confirmButton = {
                 val selected = scan.candidates.filter { checked[it.name] == true }
                 TextButton(enabled = selected.isNotEmpty(), onClick = { onConfirm(selected) }) {
-                    Text("Mover ${selected.size} para a lixeira")
+                    Text(t(R.string.mig_mover_para_a_lixeira, selected.size))
                 }
             },
-            dismissButton = { TextButton(onClick = onCancel) { Text("Cancelar") } },
+            dismissButton = { TextButton(onClick = onCancel) { Text(t(R.string.cancelar)) } },
         )
     }
 }

@@ -14,7 +14,7 @@ class AppConfigTest {
             autoTag = false, autoCheckUpdates = false,
             volumeNormalization = false, volumeOutputLevel = 0.7f,
             librarySort = "ARTIST", libraryAscending = false, albumSort = "YEAR", albumAscending = false,
-            themeMode = "dark",
+            themeMode = "dark", language = "pt",
         )
         assertEquals(original, AppConfigCodec.decode(AppConfigCodec.encode(original)))
     }

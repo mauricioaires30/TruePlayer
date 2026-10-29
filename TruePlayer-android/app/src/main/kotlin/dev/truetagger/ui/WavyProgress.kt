@@ -191,3 +191,12 @@ internal fun SeekableWavyBar(
             },
     )
 }
+
+/** Barras de progresso e tempos andam sempre da esquerda para a direita, também em idiomas escritos da direita para a esquerda. */
+@Composable
+internal fun LtrContent(content: @Composable () -> Unit) {
+    androidx.compose.runtime.CompositionLocalProvider(
+        androidx.compose.ui.platform.LocalLayoutDirection provides androidx.compose.ui.unit.LayoutDirection.Ltr,
+        content = content,
+    )
+}

@@ -5,8 +5,20 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class TextMonitorTest {
+    private val pt = object : GitManager.Labels {
+        override fun phase(phase: GitManager.Phase, original: String) = when (phase) {
+            GitManager.Phase.COUNTING -> "Contando arquivos"
+            GitManager.Phase.COMPRESSING -> "Compactando"
+            GitManager.Phase.SENDING -> "Enviando"
+            else -> original
+        }
+
+        override fun progress(label: String, done: Int, total: Int, percent: Int) = "$label: $done de $total ($percent%)"
+        override fun waiting() = "Aguardando o GitHub confirmar…"
+    }
+
     private fun monitor(fractions: MutableList<Float?>, texts: MutableList<String>) =
-        GitManager.TextMonitor(onFraction = { fractions += it }) { texts += it }
+        GitManager.TextMonitor(onFraction = { fractions += it }, labels = pt) { texts += it }
 
     @Test fun eachPhaseOfASendTakesItsOwnSliceOfTheStep() {
         val f = ArrayList<Float?>()

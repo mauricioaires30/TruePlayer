@@ -60,6 +60,9 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.*
+import androidx.compose.material.icons.automirrored.rounded.QueueMusic
+import androidx.compose.material.icons.automirrored.rounded.PlaylistAdd
+import androidx.compose.material.icons.automirrored.rounded.DriveFileMove
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -91,7 +94,10 @@ import dev.truetagger.android.R
 import dev.truetagger.android.PlayerSnapshot
 import dev.truetagger.android.PlayerState
 import dev.truetagger.android.RepeatMode
+import dev.truetagger.data.AppLanguages
 import dev.truetagger.data.ThemeMode
+import androidx.annotation.StringRes
+import dev.truetagger.android.AppText
 import dev.truetagger.model.AppSettings
 import dev.truetagger.model.AudioTrack
 import dev.truetagger.android.AppEvents
@@ -112,6 +118,8 @@ import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import java.text.Normalizer
+import dev.truetagger.android.t
+import dev.truetagger.android.tp
 
 
 
@@ -209,22 +217,27 @@ private suspend fun fetchArtistPhoto(artist: String): Bitmap? = withContext(Disp
     result
 }
 
-private enum class HomeTab(val label: String) {
-    LIBRARY("Biblioteca"), MOST_PLAYED("Playlists"), PLAYLISTS("Playlists"), ARTISTS("Artistas"), ALBUMS("Álbuns"), GENRES("Gêneros"), SETTINGS("Config.")
+private enum class HomeTab(@StringRes val labelRes: Int) {
+    LIBRARY(R.string.biblioteca), MOST_PLAYED(R.string.playlists), PLAYLISTS(R.string.playlists), ARTISTS(R.string.artistas), ALBUMS(R.string.albuns_2), GENRES(R.string.generos), SETTINGS(R.string.config_short);
+    val label: String get() = t(labelRes)
 }
 private enum class PlayerScreen { NONE, FULL, QUEUE }
 private enum class Detail { NONE, ARTIST, ALBUM, GENRE, PLAYLIST }
-private enum class PlayerSortMode(val label: String) {
-    NAME("Nome"), TITLE("Título"), ARTIST("Artista"), ALBUM("Álbum"), DATE("Data"), DURATION("Duração")
+private enum class PlayerSortMode(@StringRes val labelRes: Int) {
+    NAME(R.string.nome), TITLE(R.string.titulo), ARTIST(R.string.artista), ALBUM(R.string.album), DATE(R.string.sort_date), DURATION(R.string.duracao);
+    val label: String get() = t(labelRes)
 }
-private enum class PlaylistSortMode(val label: String) {
-    MANUAL("Manual"), TITLE("Título"), ARTIST("Artista"), ALBUM("Álbum"), DATE("Data"), DURATION("Duração")
+private enum class PlaylistSortMode(@StringRes val labelRes: Int) {
+    MANUAL(R.string.sort_manual), TITLE(R.string.titulo), ARTIST(R.string.artista), ALBUM(R.string.album), DATE(R.string.sort_date), DURATION(R.string.duracao);
+    val label: String get() = t(labelRes)
 }
-private enum class AlbumSortMode(val label: String) {
-    NAME("Nome"), ARTIST("Artista"), YEAR("Ano"), DURATION("Duração"), SONGS("Quantidade de músicas")
+private enum class AlbumSortMode(@StringRes val labelRes: Int) {
+    NAME(R.string.nome), ARTIST(R.string.artista), YEAR(R.string.sort_year), DURATION(R.string.duracao), SONGS(R.string.sort_song_count);
+    val label: String get() = t(labelRes)
 }
-private enum class MostPlayedMode(val label: String) {
-    OVERVIEW("Playlists"), TRACKS("Músicas"), ALBUMS("Álbuns"), ARTISTS("Artistas"), PLAYLISTS("Playlists")
+private enum class MostPlayedMode(@StringRes val labelRes: Int) {
+    OVERVIEW(R.string.playlists), TRACKS(R.string.songs_title), ALBUMS(R.string.albuns_2), ARTISTS(R.string.artistas), PLAYLISTS(R.string.playlists);
+    val label: String get() = t(labelRes)
 }
 
 private class PlayStatsStore(context: Context) {
@@ -287,8 +300,8 @@ private class PlayStatsStore(context: Context) {
 
 private fun StatValue.minutesText(): String = when {
     ms <= 0L -> "—"
-    ms < 60_000L -> "<1 min"
-    else -> NumberFormat.getIntegerInstance(Locale("pt", "BR")).format(minutes) + " min"
+    ms < 60_000L -> t(R.string.less_than_1_min)
+    else -> t(R.string.n_min, NumberFormat.getIntegerInstance(AppText.context().resources.configuration.locales[0]).format(minutes))
 }
 
 @Composable
@@ -299,7 +312,7 @@ private fun StatsRangeChips(range: StatsRange, onChange: (StatsRange) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         StatsRange.entries.forEach { r ->
-            FilterChip(selected = r == range, onClick = { onChange(r) }, label = { Text(r.label) })
+            FilterChip(selected = r == range, onClick = { onChange(r) }, label = { Text(rangeLabel(r)) })
         }
     }
 }
@@ -307,14 +320,14 @@ private fun StatsRangeChips(range: StatsRange, onChange: (StatsRange) -> Unit) {
 @Composable
 private fun StatsResetDialog(onConfirm: () -> Unit, onDismiss: () -> Unit) {
     AppDialog(
-        title = "Zerar estatísticas?",
+        title = t(R.string.zerar_estatisticas),
         onDismiss = onDismiss,
-        confirmText = "Zerar",
+        confirmText = t(R.string.zerar),
         onConfirm = onConfirm,
         destructive = true,
     ) {
-        Text("Apaga o tempo ouvido e as vezes tocadas de todas as músicas.")
-        DialogNote("Uma cópia fica guardada em .trueplayer/backup.")
+        Text(t(R.string.apaga_o_tempo_ouvido_e))
+        DialogNote(t(R.string.uma_copia_fica_guardada_em))
     }
 }
 
@@ -462,7 +475,7 @@ private fun TruePlayerIntro() {
                 color = MaterialTheme.colorScheme.onBackground,
             )
             Text(
-                text = "Carregando app…",
+                text = t(R.string.carregando_app),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -682,7 +695,7 @@ fun TrueTaggerPlayerApp(
             type = "audio/*"
             putExtra(Intent.EXTRA_STREAM, Uri.parse(track.id))
             addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }, "Compartilhar música"))
+        }, t(R.string.compartilhar_musica)))
     }
     fun openEditor(track: AudioTrack) { onSelectTrack(track); editorOpen = true }
     fun currentEntry() = NavEntry(tab, playerScreen, detail, detailKey, editorOpen)
@@ -745,11 +758,11 @@ fun TrueTaggerPlayerApp(
                                 label = t.label,
                                 icon = when (t) {
                                     HomeTab.LIBRARY -> Icons.Rounded.LibraryMusic
-                                    HomeTab.PLAYLISTS -> Icons.Rounded.QueueMusic
+                                    HomeTab.PLAYLISTS -> Icons.AutoMirrored.Rounded.QueueMusic
                                     HomeTab.ARTISTS -> Icons.Rounded.Person
                                     HomeTab.ALBUMS -> Icons.Rounded.Album
                                     HomeTab.GENRES -> Icons.Rounded.Category
-                                    HomeTab.MOST_PLAYED -> Icons.Rounded.QueueMusic
+                                    HomeTab.MOST_PLAYED -> Icons.AutoMirrored.Rounded.QueueMusic
                                     HomeTab.SETTINGS -> Icons.Rounded.Settings
                                 },
                             )
@@ -1011,26 +1024,26 @@ private fun MiniPlayer(
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = onPrevious, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_MAIN_BUTTON)) {
-                            Icon(Icons.Rounded.SkipPrevious, "Anterior", Modifier.size(28.dp))
+                            Icon(Icons.Rounded.SkipPrevious, t(R.string.anterior), Modifier.size(28.dp))
                         }
                         FilledIconButton(onClick = onToggle, modifier = Modifier.size(MINI_MAIN_BUTTON)) {
-                            Icon(if (s.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (s.playing) "Pausar" else "Reproduzir", Modifier.size(30.dp))
+                            Icon(if (s.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (s.playing) t(R.string.pausar) else t(R.string.reproduzir), Modifier.size(30.dp))
                         }
                         IconButton(onClick = onNext, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_MAIN_BUTTON)) {
-                            Icon(Icons.Rounded.SkipNext, "Próxima", Modifier.size(28.dp))
+                            Icon(Icons.Rounded.SkipNext, t(R.string.proxima), Modifier.size(28.dp))
                         }
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         IconButton(onClick = onShuffle, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_SMALL_BUTTON)) {
                             Icon(
                                 painterResource(if (s.shuffle) R.drawable.truetagger_shuffle_on else R.drawable.truetagger_shuffle_off),
-                                "Aleatório", modifier = Modifier.size(22.dp), tint = if (s.shuffle) accent else LocalContentColor.current,
+                                t(R.string.aleatorio), modifier = Modifier.size(22.dp), tint = if (s.shuffle) accent else LocalContentColor.current,
                             )
                         }
                         // No meio, o botão da fila (debaixo do tocar/pausar); sem ele, o espaço fica vazio.
                         if (onQueue != null) {
                             IconButton(onClick = onQueue, modifier = Modifier.size(MINI_MAIN_BUTTON, MINI_SMALL_BUTTON)) {
-                                Icon(Icons.Rounded.QueueMusic, "Ver fila", modifier = Modifier.size(22.dp))
+                                Icon(Icons.AutoMirrored.Rounded.QueueMusic, t(R.string.ver_fila), modifier = Modifier.size(22.dp))
                             }
                         } else {
                             Spacer(Modifier.width(MINI_MAIN_BUTTON))
@@ -1038,7 +1051,7 @@ private fun MiniPlayer(
                         IconButton(onClick = onRepeat, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_SMALL_BUTTON)) {
                             Icon(
                                 painterResource(if (s.repeat == RepeatMode.ONE) R.drawable.truetagger_repeat_on else R.drawable.truetagger_repeat_off),
-                                "Repetição", modifier = Modifier.size(22.dp), tint = if (s.repeat != RepeatMode.OFF) accent else LocalContentColor.current,
+                                t(R.string.repeticao), modifier = Modifier.size(22.dp), tint = if (s.repeat != RepeatMode.OFF) accent else LocalContentColor.current,
                             )
                         }
                     }
@@ -1058,7 +1071,7 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
     val context = LocalContext.current
     Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(Modifier.fillMaxSize().padding(horizontal = UiTokens.screenHorizontalPadding, vertical = UiTokens.screenVerticalPadding), horizontalAlignment = Alignment.CenterHorizontally) {
-            ScreenHeaderRow(title = "Reproduzindo", onBack = onClose)
+            ScreenHeaderRow(title = t(R.string.reproduzindo), onBack = onClose)
             Spacer(Modifier.height(UiTokens.sectionSpacing))
             key(s.current?.id) {
                 PlayerArtworkBox(
@@ -1102,6 +1115,7 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
                     justSought = null
                 }
             }
+            LtrContent {
             Slider(
                 value = dragging ?: justSought ?: if (s.durationMs > 0) (s.positionMs.toFloat() / s.durationMs).coerceIn(0f, 1f) else 0f,
                 onValueChange = { dragging = it },
@@ -1127,15 +1141,16 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
                 Text(formatDuration(s.positionMs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(formatDuration(s.durationMs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
+            }
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth().padding(vertical = UiTokens.space2)) {
-                IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_SHUFFLE) }, modifier = Modifier.size(UiTokens.iconButtonSize)) { Icon(painterResource(if (s.shuffle) dev.truetagger.android.R.drawable.truetagger_shuffle_on else dev.truetagger.android.R.drawable.truetagger_shuffle_off), "Aleatório", modifier = Modifier.size(UiTokens.primaryIconSize), tint = if (s.shuffle) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
-                IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_PREVIOUS) }, modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.SkipPrevious, "Anterior", Modifier.size(40.dp)) }
-                FilledIconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_TOGGLE) }, modifier = Modifier.size(68.dp)) { Icon(if (s.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (s.playing) "Pausar" else "Reproduzir", Modifier.size(36.dp)) }
-                IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_NEXT) }, modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.SkipNext, "Próxima", Modifier.size(40.dp)) }
-                IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_REPEAT) }, modifier = Modifier.size(UiTokens.iconButtonSize)) { Icon(painterResource(if (s.repeat == RepeatMode.ONE) dev.truetagger.android.R.drawable.truetagger_repeat_on else dev.truetagger.android.R.drawable.truetagger_repeat_off), "Repetição", modifier = Modifier.size(UiTokens.primaryIconSize), tint = if (s.repeat != RepeatMode.OFF) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
+                IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_SHUFFLE) }, modifier = Modifier.size(UiTokens.iconButtonSize)) { Icon(painterResource(if (s.shuffle) dev.truetagger.android.R.drawable.truetagger_shuffle_on else dev.truetagger.android.R.drawable.truetagger_shuffle_off), t(R.string.aleatorio), modifier = Modifier.size(UiTokens.primaryIconSize), tint = if (s.shuffle) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
+                IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_PREVIOUS) }, modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.SkipPrevious, t(R.string.anterior), Modifier.size(40.dp)) }
+                FilledIconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_TOGGLE) }, modifier = Modifier.size(68.dp)) { Icon(if (s.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (s.playing) t(R.string.pausar) else t(R.string.reproduzir), Modifier.size(36.dp)) }
+                IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_NEXT) }, modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.SkipNext, t(R.string.proxima), Modifier.size(40.dp)) }
+                IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_REPEAT) }, modifier = Modifier.size(UiTokens.iconButtonSize)) { Icon(painterResource(if (s.repeat == RepeatMode.ONE) dev.truetagger.android.R.drawable.truetagger_repeat_on else dev.truetagger.android.R.drawable.truetagger_repeat_off), t(R.string.repeticao), modifier = Modifier.size(UiTokens.primaryIconSize), tint = if (s.repeat != RepeatMode.OFF) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
             }
             ActionButtonRow {
-                ActionButton("Abrir fila", Icons.Rounded.QueueMusic, onQueue, Modifier.weight(1f))
+                ActionButton(t(R.string.abrir_fila), Icons.AutoMirrored.Rounded.QueueMusic, onQueue, Modifier.weight(1f))
             }
         }
     }
@@ -1160,7 +1175,7 @@ private fun QueueScreen(
     }
     Column(Modifier.fillMaxSize()) {
         ScreenHeaderRow(
-            title = "Fila atual",
+            title = t(R.string.fila_atual),
             modifier = Modifier.padding(
                 horizontal = UiTokens.screenHorizontalPadding,
                 vertical = UiTokens.screenVerticalPadding,
@@ -1345,14 +1360,14 @@ private fun LibraryPlayerScreen(
 
     Column(Modifier.fillMaxSize()) {
         ScreenHeaderRow(
-            title = "Biblioteca",
+            title = t(R.string.biblioteca),
             modifier = Modifier.padding(
                 horizontal = UiTokens.screenHorizontalPadding,
                 vertical = UiTokens.screenVerticalPadding,
             ),
         ) {
             IconButton(onClick = refresh, modifier = Modifier.size(UiTokens.iconButtonSize)) {
-                Icon(Icons.Rounded.Refresh, "Atualizar", modifier = Modifier.size(UiTokens.primaryIconSize))
+                Icon(Icons.Rounded.Refresh, t(R.string.atualizar), modifier = Modifier.size(UiTokens.primaryIconSize))
             }
         }
         if (loading) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -1406,13 +1421,13 @@ private fun LibraryPlayerScreen(
     }
     if (showDeleteConfirm) {
         AppDialog(
-            title = "Excluir ${plural(selectedIds.size, "música", "músicas")}?",
+            title = t(R.string.excluir, tp(R.plurals.n_musicas, selectedIds.size)),
             onDismiss = { showDeleteConfirm = false },
-            confirmText = "Excluir",
+            confirmText = t(R.string.excluir_2),
             onConfirm = { performDelete() },
             destructive = true,
         ) {
-            Text("Apaga do celular. Não dá para desfazer.")
+            Text(t(R.string.apaga_do_celular_nao_da))
         }
     }
     if (showPlaylistPicker) {
@@ -1442,11 +1457,11 @@ private fun LibraryListContent(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(UiTokens.space1),
         ) {
-            SearchBar(value = librarySearch, onValueChange = onLibrarySearchChange, placeholder = "Pesquisar músicas", modifier = Modifier.weight(1f))
+            SearchBar(value = librarySearch, onValueChange = onLibrarySearchChange, placeholder = t(R.string.pesquisar_musicas), modifier = Modifier.weight(1f))
             SortMenuButton(
                 open = sortOpen,
                 onOpenChange = onSortOpenChange,
-                title = "Ordenar por",
+                title = t(R.string.ordenar_por),
                 options = PlayerSortMode.entries,
                 selected = sortMode,
                 label = { it.label },
@@ -1457,7 +1472,7 @@ private fun LibraryListContent(
             IconButton(onClick = onSelectionModeToggle, modifier = Modifier.size(UiTokens.iconButtonSize)) {
                 Icon(
                     imageVector = if (selectionMode) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
-                    contentDescription = if (selectionMode) "Encerrar seleção" else "Selecionar",
+                    contentDescription = if (selectionMode) t(R.string.encerrar_selecao) else t(R.string.selecionar),
                     tint = if (selectionMode) MaterialTheme.colorScheme.primary else LocalContentColor.current,
                     modifier = Modifier.size(UiTokens.primaryIconSize),
                 )
@@ -1471,17 +1486,17 @@ private fun LibraryListContent(
                 onToggleAll = onSelectAll,
             )
             ActionButtonRow(Modifier.padding(vertical = UiTokens.sectionSpacing)) {
-                ActionButton("Remover", Icons.Rounded.Delete, onDeleteClick, Modifier.weight(1f), enabled = selectedIds.isNotEmpty(), contentColor = MaterialTheme.colorScheme.error)
-                ActionButton("Playlist", Icons.Rounded.PlaylistAdd, onPlaylistClick, Modifier.weight(1f), enabled = selectedIds.isNotEmpty())
+                ActionButton(t(R.string.remover), Icons.Rounded.Delete, onDeleteClick, Modifier.weight(1f), enabled = selectedIds.isNotEmpty(), contentColor = MaterialTheme.colorScheme.error)
+                ActionButton(t(R.string.playlist), Icons.AutoMirrored.Rounded.PlaylistAdd, onPlaylistClick, Modifier.weight(1f), enabled = selectedIds.isNotEmpty())
             }
         } else {
             ActionButtonRow(Modifier.padding(top = UiTokens.sectionSpacing, bottom = UiTokens.space1)) {
-                ActionButton("Tocar", Icons.Rounded.PlayArrow, onPlayAll, Modifier.weight(1f), enabled = shown.isNotEmpty())
-                ActionButton("Aleatório", Icons.Rounded.Shuffle, onPlayRandom, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, onPlayAll, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                ActionButton(t(R.string.aleatorio), Icons.Rounded.Shuffle, onPlayRandom, Modifier.weight(1f), enabled = shown.isNotEmpty())
             }
             if (shown.isNotEmpty()) {
                 Text(
-                    plural(shown.size, "música", "músicas"),
+                    tp(R.plurals.n_musicas, shown.size),
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = UiTokens.space1, top = UiTokens.space1, bottom = UiTokens.space2),
@@ -1491,8 +1506,8 @@ private fun LibraryListContent(
         if (shown.isEmpty()) {
             EmptyState(
                 if (librarySearch.isBlank()) Icons.Rounded.LibraryMusic else Icons.Rounded.Search,
-                if (librarySearch.isBlank()) "Nenhuma música" else "Nada encontrado",
-                if (librarySearch.isBlank()) "Escolha a pasta de músicas em Configurações ou baixe por link." else "Tente outro nome de música, artista ou álbum.",
+                if (librarySearch.isBlank()) t(R.string.nenhuma_musica) else t(R.string.nada_encontrado),
+                if (librarySearch.isBlank()) t(R.string.escolha_a_pasta_de_musicas) else t(R.string.tente_outro_nome_de_musica),
             )
         }
         SongListContainer(state = listState, modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -1554,7 +1569,7 @@ private fun <T> SortMenuButton(
 ) {
     Box {
         IconButton(onClick = { onOpenChange(true) }, modifier = Modifier.size(UiTokens.iconButtonSize)) {
-            Icon(Icons.Rounded.FilterAlt, "Filtros", modifier = Modifier.size(UiTokens.primaryIconSize))
+            Icon(Icons.Rounded.FilterAlt, t(R.string.filtros), modifier = Modifier.size(UiTokens.primaryIconSize))
         }
         DropdownMenu(expanded = open, onDismissRequest = { onOpenChange(false) }) {
             Text(title, modifier = Modifier.padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.space2), fontWeight = FontWeight.Bold)
@@ -1566,7 +1581,7 @@ private fun <T> SortMenuButton(
             }
             if (ascending != null && onToggleAscending != null) {
                 DropdownMenuItem(
-                    text = { Text(if (ascending) "Crescente" else "Decrescente") },
+                    text = { Text(if (ascending) t(R.string.crescente) else t(R.string.decrescente)) },
                     onClick = { onToggleAscending(); onOpenChange(false) },
                 )
             }
@@ -1615,7 +1630,7 @@ private fun CombinedMostPlayedPlaylistHost(
     StandardPage {
         Column(Modifier.fillMaxSize()) {
             ScreenHeaderRow(
-                title = if (mode == MostPlayedMode.OVERVIEW) "Playlists" else "Mais ouvidas",
+                title = if (mode == MostPlayedMode.OVERVIEW) t(R.string.playlists) else t(R.string.mais_ouvidas),
                 onBack = if (mode != MostPlayedMode.OVERVIEW) ({ mode = MostPlayedMode.OVERVIEW }) else null,
             )
             Spacer(Modifier.height(UiTokens.listHeaderGap))
@@ -1625,8 +1640,8 @@ private fun CombinedMostPlayedPlaylistHost(
                 PersistListScroll(state, "playlists_home")
                 Column(Modifier.fillMaxSize()) {
                     ActionButtonRow {
-                        ActionButton("Criar", Icons.Rounded.Add, { creating = true; createName = "" }, Modifier.weight(1f))
-                        ActionButton("Importar", Icons.Rounded.FileOpen, onImport, Modifier.weight(1f))
+                        ActionButton(t(R.string.criar), Icons.Rounded.Add, { creating = true; createName = "" }, Modifier.weight(1f))
+                        ActionButton(t(R.string.importar), Icons.Rounded.FileOpen, onImport, Modifier.weight(1f))
                     }
                     Spacer(Modifier.height(UiTokens.sectionSpacing))
                     Box(Modifier.fillMaxSize()) {
@@ -1642,29 +1657,29 @@ private fun CombinedMostPlayedPlaylistHost(
                                     ListCardRow(onClick = { onOpen(playlist.name) }) {
                                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(UiTokens.songItemSpacing)) {
                                             ScrollingText(playlist.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                                            Text(plural(playlist.trackIds.size, "música", "músicas"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                                            Text(tp(R.plurals.n_musicas, playlist.trackIds.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         }
                                         Box {
                                             IconButton(onClick = { expanded = true }, modifier = Modifier.size(UiTokens.iconButtonSize)) {
-                                                Icon(Icons.Rounded.MoreVert, "Opções", modifier = Modifier.size(UiTokens.primaryIconSize))
+                                                Icon(Icons.Rounded.MoreVert, t(R.string.opcoes), modifier = Modifier.size(UiTokens.primaryIconSize))
                                             }
                                             DropdownMenu(expanded, { expanded = false }) {
-                                                DropdownMenuItem({ Text("Exportar M3U") }, onClick = { expanded = false; onExport(playlist) })
-                                                DropdownMenuItem({ Text("Renomear") }, onClick = { expanded = false; renameText = playlist.name; renaming = playlist })
-                                                DropdownMenuItem({ Text("Excluir") }, onClick = { expanded = false; onDelete(playlist.name) })
+                                                DropdownMenuItem({ Text(t(R.string.exportar_m3u)) }, onClick = { expanded = false; onExport(playlist) })
+                                                DropdownMenuItem({ Text(t(R.string.renomear)) }, onClick = { expanded = false; renameText = playlist.name; renaming = playlist })
+                                                DropdownMenuItem({ Text(t(R.string.excluir_2)) }, onClick = { expanded = false; onDelete(playlist.name) })
                                             }
                                         }
                                     }
                                 }
                             } else {
-                                item { EmptyState(Icons.Rounded.QueueMusic, "Nenhuma playlist", "Crie uma na aba Playlists para agrupar suas músicas.") }
+                                item { EmptyState(Icons.AutoMirrored.Rounded.QueueMusic, t(R.string.nenhuma_playlist), t(R.string.crie_uma_na_aba_playlists)) }
                             }
 
                             item {
                                 HorizontalDivider(Modifier.padding(vertical = UiTokens.sectionSpacing))
                             }
                             item {
-                                Text("MAIS OUVIDAS", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = UiTokens.space2))
+                                Text(t(R.string.mais_ouvidas_2), style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold, modifier = Modifier.padding(bottom = UiTokens.space2))
                             }
                             item { StatsRangeChips(range) { range = it } }
                             item {
@@ -1680,7 +1695,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                                 ?: tracks.firstOrNull { it.album.equals(album, true) }
                                         }
                                         MostPlayedCategoryCard(
-                                        title = "MÚSICAS",
+                                        title = t(R.string.musicas),
                                         subtitle = topTrack?.let { "${it.displayTitle()} • ${liveTopTrack?.second?.minutesText().orEmpty()}" },
                                         artwork = topTrack?.artworkBytes,
                                         artworkUri = topTrack?.id,
@@ -1688,7 +1703,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                         onClick = { mode = MostPlayedMode.TRACKS },
                                     )
                                     MostPlayedCategoryCard(
-                                        title = "ÁLBUNS",
+                                        title = t(R.string.albuns),
                                         subtitle = topAlbum?.let { "$it • ${liveTopAlbum?.third?.minutesText().orEmpty()}" },
                                         artwork = topAlbumTrack?.artworkBytes,
                                         artworkUri = topAlbumTrack?.id,
@@ -1696,7 +1711,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                         onClick = { mode = MostPlayedMode.ALBUMS },
                                     )
                                         MostPlayedCategoryCard(
-                                            title = "ARTISTAS",
+                                            title = t(R.string.artistas_caps),
                                             subtitle = liveTopArtist?.let { "${it.first} • ${it.second.minutesText()}" },
                                             artistName = liveTopArtist?.first,
                                             modifier = Modifier.weight(1f),
@@ -1773,18 +1788,18 @@ private fun CombinedMostPlayedPlaylistHost(
 
     if (creating) AlertDialog(
         onDismissRequest = { creating = false },
-        title = { Text("Nova playlist") },
-        text = { OutlinedTextField(value = createName, onValueChange = { createName = it }, label = { Text("Nome") }, singleLine = true) },
-        confirmButton = { TextButton(enabled = createName.isNotBlank(), onClick = { onCreate(createName.trim()); creating = false }) { Text("Criar") } },
-        dismissButton = { TextButton(onClick = { creating = false }) { Text("Cancelar") } },
+        title = { Text(t(R.string.nova_playlist)) },
+        text = { OutlinedTextField(value = createName, onValueChange = { createName = it }, label = { Text(t(R.string.nome)) }, singleLine = true) },
+        confirmButton = { TextButton(enabled = createName.isNotBlank(), onClick = { onCreate(createName.trim()); creating = false }) { Text(t(R.string.criar)) } },
+        dismissButton = { TextButton(onClick = { creating = false }) { Text(t(R.string.cancelar)) } },
     )
     renaming?.let { playlist ->
         AlertDialog(
             onDismissRequest = { renaming = null },
-            title = { Text("Renomear playlist") },
+            title = { Text(t(R.string.renomear_playlist)) },
             text = { OutlinedTextField(value = renameText, onValueChange = { renameText = it }, singleLine = true) },
-            confirmButton = { TextButton(enabled = renameText.isNotBlank(), onClick = { onRename(playlist.name, renameText.trim()); renaming = null }) { Text("Salvar") } },
-            dismissButton = { TextButton(onClick = { renaming = null }) { Text("Cancelar") } },
+            confirmButton = { TextButton(enabled = renameText.isNotBlank(), onClick = { onRename(playlist.name, renameText.trim()); renaming = null }) { Text(t(R.string.salvar)) } },
+            dismissButton = { TextButton(onClick = { renaming = null }) { Text(t(R.string.cancelar)) } },
         )
     }
 }
@@ -1845,7 +1860,7 @@ private fun MostPlayedCategoryCard(
 @Composable
 private fun EmptyMostPlayed() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        EmptyState(Icons.Rounded.MusicNote, "Nada tocado ainda", "As músicas que você mais ouve aparecem aqui.")
+        EmptyState(Icons.Rounded.MusicNote, t(R.string.nada_tocado_ainda), t(R.string.as_musicas_que_voce_mais))
     }
 }
 
@@ -1895,7 +1910,7 @@ private fun SelectionIndicator(
     ) {
         Icon(
             imageVector = if (selected) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
-            contentDescription = if (selected) "Desselecionar" else "Selecionar",
+            contentDescription = if (selected) t(R.string.desselecionar) else t(R.string.selecionar),
         )
     }
 }
@@ -1960,10 +1975,10 @@ private fun SongItem(
                 verticalArrangement = Arrangement.spacedBy((-6).dp),
             ) {
                 IconButton(onClick = onMoveUp, enabled = canMoveUp, modifier = Modifier.size(UiTokens.smallIconButtonSize)) {
-                    Icon(Icons.Rounded.KeyboardArrowUp, "Subir música", modifier = Modifier.size(UiTokens.primaryIconSize))
+                    Icon(Icons.Rounded.KeyboardArrowUp, t(R.string.subir_musica), modifier = Modifier.size(UiTokens.primaryIconSize))
                 }
                 IconButton(onClick = onMoveDown, enabled = canMoveDown, modifier = Modifier.size(UiTokens.smallIconButtonSize)) {
-                    Icon(Icons.Rounded.KeyboardArrowDown, "Abaixar música", modifier = Modifier.size(UiTokens.primaryIconSize))
+                    Icon(Icons.Rounded.KeyboardArrowDown, t(R.string.abaixar_musica), modifier = Modifier.size(UiTokens.primaryIconSize))
                 }
             }
         }
@@ -2012,19 +2027,19 @@ private fun SongItem(
         )
         Box {
             IconButton(onClick = { expanded = true }, modifier = Modifier.size(UiTokens.iconButtonSize)) {
-                Icon(Icons.Rounded.MoreVert, "Opções", modifier = Modifier.size(UiTokens.primaryIconSize))
+                Icon(Icons.Rounded.MoreVert, t(R.string.opcoes), modifier = Modifier.size(UiTokens.primaryIconSize))
             }
             DropdownMenu(expanded, { expanded = false }) {
-                DropdownMenuItem({ Text("Informações") }, leadingIcon = { Icon(Icons.Rounded.Info, null) }, onClick = { expanded = false; info = true })
-                DropdownMenuItem({ Text("Editar tags") }, leadingIcon = { Icon(Icons.Rounded.Edit, null) }, onClick = { expanded = false; onEdit() })
-                if (showAddToPlaylist) DropdownMenuItem({ Text("Adicionar à playlist") }, leadingIcon = { Icon(Icons.Rounded.PlaylistAdd, null) }, onClick = { expanded = false; onAddToPlaylist() })
-                DropdownMenuItem({ Text("Compartilhar") }, leadingIcon = { Icon(Icons.Rounded.Share, null) }, onClick = { expanded = false; onShare() })
+                DropdownMenuItem({ Text(t(R.string.informacoes)) }, leadingIcon = { Icon(Icons.Rounded.Info, null) }, onClick = { expanded = false; info = true })
+                DropdownMenuItem({ Text(t(R.string.editar_tags)) }, leadingIcon = { Icon(Icons.Rounded.Edit, null) }, onClick = { expanded = false; onEdit() })
+                if (showAddToPlaylist) DropdownMenuItem({ Text(t(R.string.adicionar_a_playlist)) }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, null) }, onClick = { expanded = false; onAddToPlaylist() })
+                DropdownMenuItem({ Text(t(R.string.compartilhar)) }, leadingIcon = { Icon(Icons.Rounded.Share, null) }, onClick = { expanded = false; onShare() })
                 onRemoveFromPlaylist?.let { remove ->
-                    DropdownMenuItem({ Text("Tirar da playlist") }, leadingIcon = { Icon(Icons.Rounded.RemoveCircleOutline, null) }, onClick = { expanded = false; remove() })
+                    DropdownMenuItem({ Text(t(R.string.tirar_da_playlist)) }, leadingIcon = { Icon(Icons.Rounded.RemoveCircleOutline, null) }, onClick = { expanded = false; remove() })
                 }
                 if (onRemoveFromPlaylist == null && onDelete != null) {
                     DropdownMenuItem(
-                        { Text("Excluir do celular", color = MaterialTheme.colorScheme.error) },
+                        { Text(t(R.string.excluir_do_celular), color = MaterialTheme.colorScheme.error) },
                         leadingIcon = { Icon(Icons.Rounded.Delete, null, tint = MaterialTheme.colorScheme.error) },
                         onClick = { expanded = false; onDelete() },
                     )
@@ -2042,15 +2057,15 @@ private fun InfoDialog(track: AudioTrack, onArtist: () -> Unit, onAlbum: () -> U
         title = { Text(track.displayTitle()) },
         text = {
             Column(Modifier.fillMaxWidth()) {
-                InfoRow("Álbum", track.album, onAlbum)
-                InfoRow("Artista", track.artist, onArtist)
+                InfoRow(t(R.string.album), track.album, onAlbum)
+                InfoRow(t(R.string.artista), track.artist, onArtist)
                 InfoRow("Ano", track.year)
-                InfoRow("Gênero", track.genre)
-                InfoRow("Faixa", track.trackNumber)
-                InfoRow("Duração", formatDuration(track.durationMs))
+                InfoRow(t(R.string.genero), track.genre)
+                InfoRow(t(R.string.faixa), track.trackNumber)
+                InfoRow(t(R.string.duracao), formatDuration(track.durationMs))
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Fechar") } },
+        confirmButton = { TextButton(onClick = onDismiss) { Text(t(R.string.fechar)) } },
     )
 }
 
@@ -2079,8 +2094,8 @@ private fun AddToPlaylistDialog(track: AudioTrack, onDismiss: () -> Unit, onPlay
     val context = LocalContext.current
     val store = remember { PlaylistStore(context) }
     LaunchedEffect(Unit) { playlists = store.load() }
-    AlertDialog(onDismissRequest = onDismiss, title = { Text("Adicionar à playlist") }, text = {
-        if (playlists.isEmpty()) Text("Crie uma playlist primeiro na aba Playlists.") else Column {
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(t(R.string.adicionar_a_playlist)) }, text = {
+        if (playlists.isEmpty()) Text(t(R.string.crie_uma_playlist_primeiro_na)) else Column {
             playlists.forEach { p ->
                 TextButton(
                     onClick = {
@@ -2094,7 +2109,7 @@ private fun AddToPlaylistDialog(track: AudioTrack, onDismiss: () -> Unit, onPlay
                 ) { Text(p.name, Modifier.fillMaxWidth()) }
             }
         }
-    }, confirmButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } })
+    }, confirmButton = { TextButton(onClick = onDismiss) { Text(t(R.string.cancelar)) } })
 }
 
 @Composable
@@ -2103,8 +2118,8 @@ private fun AddSelectedToPlaylistDialog(trackIds: List<String>, onDismiss: () ->
     val context = LocalContext.current
     val store = remember { PlaylistStore(context) }
     LaunchedEffect(Unit) { playlists = store.load() }
-    AlertDialog(onDismissRequest = onDismiss, title = { Text("Adicionar ${plural(trackIds.size, "música", "músicas")} à playlist") }, text = {
-        if (playlists.isEmpty()) Text("Crie uma playlist primeiro na aba Playlists.") else Column {
+    AlertDialog(onDismissRequest = onDismiss, title = { Text(t(R.string.adicionar_a_playlist_2, tp(R.plurals.n_musicas, trackIds.size))) }, text = {
+        if (playlists.isEmpty()) Text(t(R.string.crie_uma_playlist_primeiro_na)) else Column {
             playlists.forEach { p ->
                 TextButton(
                     onClick = {
@@ -2117,7 +2132,7 @@ private fun AddSelectedToPlaylistDialog(trackIds: List<String>, onDismiss: () ->
                 ) { Text(p.name, Modifier.fillMaxWidth()) }
             }
         }
-    }, confirmButton = { TextButton(onClick = onDismiss) { Text("Cancelar") } })
+    }, confirmButton = { TextButton(onClick = onDismiss) { Text(t(R.string.cancelar)) } })
 }
 
 @Composable
@@ -2144,30 +2159,30 @@ private fun PlaylistScreen(
             contentPadding = PaddingValues(bottom = UiTokens.songListBottomPadding),
         ) {
             item {
-                ScreenHeaderRow(title = "Playlists")
+                ScreenHeaderRow(title = t(R.string.playlists))
                 Spacer(Modifier.height(UiTokens.listHeaderGap))
                 ActionButtonRow {
-                    ActionButton("Criar", Icons.Rounded.Add, { creating = true; name = "" }, Modifier.weight(1f))
-                    ActionButton("Importar", Icons.Rounded.FileOpen, onImport, Modifier.weight(1f))
+                    ActionButton(t(R.string.criar), Icons.Rounded.Add, { creating = true; name = "" }, Modifier.weight(1f))
+                    ActionButton(t(R.string.importar), Icons.Rounded.FileOpen, onImport, Modifier.weight(1f))
                 }
                 HorizontalDivider(Modifier.padding(vertical = UiTokens.sectionSpacing))
             }
-            if (playlists.isEmpty()) item { EmptyState(Icons.Rounded.QueueMusic, "Nenhuma playlist", "Toque em Criar ou em Importar para começar.") }
+            if (playlists.isEmpty()) item { EmptyState(Icons.AutoMirrored.Rounded.QueueMusic, t(R.string.nenhuma_playlist), t(R.string.toque_em_criar_ou_em)) }
             else items(playlists, key = { it.name }) { playlist ->
                 var expanded by remember(playlist.name) { mutableStateOf(false) }
                 ListCardRow(onClick = { onOpen(playlist.name) }) {
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(UiTokens.songItemSpacing)) {
                         ScrollingText(playlist.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                        Text(plural(playlist.trackIds.size, "música", "músicas"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        Text(tp(R.plurals.n_musicas, playlist.trackIds.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
                     Box {
                         IconButton(onClick = { expanded = true }, modifier = Modifier.size(UiTokens.iconButtonSize)) {
-                            Icon(Icons.Rounded.MoreVert, "Opções", modifier = Modifier.size(UiTokens.primaryIconSize))
+                            Icon(Icons.Rounded.MoreVert, t(R.string.opcoes), modifier = Modifier.size(UiTokens.primaryIconSize))
                         }
                         DropdownMenu(expanded, { expanded = false }) {
-                            DropdownMenuItem({ Text("Exportar M3U") }, onClick = { expanded = false; onExport(playlist) })
-                            DropdownMenuItem({ Text("Renomear") }, onClick = { expanded = false; renameText = playlist.name; renaming = playlist })
-                            DropdownMenuItem({ Text("Excluir") }, onClick = { expanded = false; onDelete(playlist.name) })
+                            DropdownMenuItem({ Text(t(R.string.exportar_m3u)) }, onClick = { expanded = false; onExport(playlist) })
+                            DropdownMenuItem({ Text(t(R.string.renomear)) }, onClick = { expanded = false; renameText = playlist.name; renaming = playlist })
+                            DropdownMenuItem({ Text(t(R.string.excluir_2)) }, onClick = { expanded = false; onDelete(playlist.name) })
                         }
                     }
                 }
@@ -2178,18 +2193,18 @@ private fun PlaylistScreen(
     }
     if (creating) AlertDialog(
         onDismissRequest = { creating = false },
-        title = { Text("Nova playlist") },
-        text = { OutlinedTextField(name, { name = it }, singleLine = true, label = { Text("Nome") }) },
-        confirmButton = { TextButton(enabled = name.isNotBlank(), onClick = { onCreate(name); creating = false }) { Text("Criar") } },
-        dismissButton = { TextButton(onClick = { creating = false }) { Text("Cancelar") } },
+        title = { Text(t(R.string.nova_playlist)) },
+        text = { OutlinedTextField(name, { name = it }, singleLine = true, label = { Text(t(R.string.nome)) }) },
+        confirmButton = { TextButton(enabled = name.isNotBlank(), onClick = { onCreate(name); creating = false }) { Text(t(R.string.criar)) } },
+        dismissButton = { TextButton(onClick = { creating = false }) { Text(t(R.string.cancelar)) } },
     )
     renaming?.let { playlist ->
         AlertDialog(
             onDismissRequest = { renaming = null },
-            title = { Text("Renomear playlist") },
-            text = { OutlinedTextField(renameText, { renameText = it }, singleLine = true, label = { Text("Nome") }) },
-            confirmButton = { TextButton(enabled = renameText.isNotBlank(), onClick = { onRename(playlist.name, renameText); renaming = null }) { Text("Salvar") } },
-            dismissButton = { TextButton(onClick = { renaming = null }) { Text("Cancelar") } },
+            title = { Text(t(R.string.renomear_playlist)) },
+            text = { OutlinedTextField(renameText, { renameText = it }, singleLine = true, label = { Text(t(R.string.nome)) }) },
+            confirmButton = { TextButton(enabled = renameText.isNotBlank(), onClick = { onRename(playlist.name, renameText); renaming = null }) { Text(t(R.string.salvar)) } },
+            dismissButton = { TextButton(onClick = { renaming = null }) { Text(t(R.string.cancelar)) } },
         )
     }
 }
@@ -2211,12 +2226,12 @@ private fun ArtistsScreen(tracks: List<AudioTrack>, open: (String) -> Unit) {
     }
     Box(Modifier.fillMaxSize()) {
         StandardPage {
-        ScreenHeaderRow(title = "Artistas")
+        ScreenHeaderRow(title = t(R.string.artistas))
         Spacer(Modifier.height(UiTokens.listHeaderGap))
-        SearchBar(value = search, onValueChange = { search = it }, placeholder = "Pesquisar artistas")
+        SearchBar(value = search, onValueChange = { search = it }, placeholder = t(R.string.pesquisar_artistas))
         if (artists.isNotEmpty()) {
             Text(
-                plural(artists.size, "artista", "artistas"),
+                tp(R.plurals.n_artistas, artists.size),
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = UiTokens.space1, top = UiTokens.space2),
@@ -2228,8 +2243,8 @@ private fun ArtistsScreen(tracks: List<AudioTrack>, open: (String) -> Unit) {
         if (artists.isEmpty()) {
             EmptyState(
                 if (search.isBlank()) Icons.Rounded.Person else Icons.Rounded.Search,
-                if (search.isBlank()) "Nenhum artista" else "Nada encontrado",
-                if (search.isBlank()) "Os artistas aparecem quando a biblioteca tem músicas com artista nas tags." else "Tente outro nome.",
+                if (search.isBlank()) t(R.string.nenhum_artista) else t(R.string.nada_encontrado),
+                if (search.isBlank()) t(R.string.os_artistas_aparecem_quando_a) else t(R.string.tente_outro_nome),
             )
         }
         SongListContainer(state = state, modifier = Modifier.weight(1f)) {
@@ -2250,7 +2265,7 @@ private fun ArtistsScreen(tracks: List<AudioTrack>, open: (String) -> Unit) {
                         ) {
                             ScrollingText(item.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                             Text(
-                                plural(item.songs, "música", "músicas"),
+                                tp(R.plurals.n_musicas, item.songs),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
@@ -2311,18 +2326,18 @@ private fun GenresScreen(tracks: List<AudioTrack>, open: (String) -> Unit) {
             .sortedBy { it.first.lowercase(Locale.ROOT) }
         val untagged = tracks.count { it.genre.isBlank() }
         // "Sem gênero" só aparece sem busca; com busca sem resultado a tela diz "Nada encontrado".
-        if (search.isBlank() && untagged > 0) tagged + ("Sem gênero" to untagged) else tagged
+        if (search.isBlank() && untagged > 0) tagged + (t(R.string.sem_genero) to untagged) else tagged
     }
     StandardPage {
-        ScreenHeaderRow(title = "Gêneros")
+        ScreenHeaderRow(title = t(R.string.generos))
         Spacer(Modifier.height(UiTokens.listHeaderGap))
-        SearchBar(value = search, onValueChange = { search = it }, placeholder = "Pesquisar gêneros")
+        SearchBar(value = search, onValueChange = { search = it }, placeholder = t(R.string.pesquisar_generos))
         Spacer(Modifier.height(UiTokens.standardListTopSpacing))
         if (genres.isEmpty()) {
             EmptyState(
                 if (search.isBlank()) Icons.Rounded.Category else Icons.Rounded.Search,
-                if (search.isBlank()) "Nenhum gênero" else "Nada encontrado",
-                if (search.isBlank()) "Os gêneros aparecem quando as músicas têm gênero nas tags." else "Tente outro nome.",
+                if (search.isBlank()) t(R.string.nenhum_genero) else t(R.string.nada_encontrado),
+                if (search.isBlank()) t(R.string.os_generos_aparecem_quando_as) else t(R.string.tente_outro_nome),
             )
         }
         GenreList(genres, open, Modifier.weight(1f))
@@ -2342,7 +2357,7 @@ private fun GenreList(values: List<Pair<String, Int>>, open: (String) -> Unit, m
             items(genres, key = { (name, _) -> "$letter-$name" }) { (name, songs) ->
                 ListCardRow(onClick = { open(name) }, minHeight = UiTokens.controlHeight) {
                     ScrollingText(name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                    Text(plural(songs, "música", "músicas"), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, modifier = Modifier.padding(start = UiTokens.space2))
+                    Text(tp(R.plurals.n_musicas, songs), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, modifier = Modifier.padding(start = UiTokens.space2))
                 }
             }
         }
@@ -2384,21 +2399,21 @@ private fun AlbumsScreen(tracks: List<AudioTrack>, search: String, onSearchChang
     val changeAlbumSearch: (String) -> Unit = onSearchChange
     val changeAlbumSort: (AlbumSortMode) -> Unit = { mode -> onSortModeChange(mode) }
     val changeAlbumAscending: () -> Unit = { onAscendingChange() }
-    val albumTrackIds = remember(tracks) { tracks.groupBy { it.album.ifBlank { "Sem álbum" } }.mapValues { (_, list) -> list.firstOrNull()?.id } }
+    val albumTrackIds = remember(tracks) { tracks.groupBy { it.album.ifBlank { t(R.string.sem_album) } }.mapValues { (_, list) -> list.firstOrNull()?.id } }
     Box(Modifier.fillMaxSize()) {
         StandardScreenColumn {
-            ScreenHeaderRow(title = "Álbuns")
+            ScreenHeaderRow(title = t(R.string.albuns_2))
             Spacer(Modifier.height(UiTokens.listHeaderGap))
             Row(
                 Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(UiTokens.space1),
             ) {
-                SearchBar(value = search, onValueChange = changeAlbumSearch, placeholder = "Pesquisar álbuns", modifier = Modifier.weight(1f))
+                SearchBar(value = search, onValueChange = changeAlbumSearch, placeholder = t(R.string.pesquisar_albuns), modifier = Modifier.weight(1f))
                 SortMenuButton(
                     open = filterOpen,
                     onOpenChange = { filterOpen = it },
-                    title = "Ordenar por",
+                    title = t(R.string.ordenar_por),
                     options = AlbumSortMode.entries,
                     selected = sortMode,
                     label = { it.label },
@@ -2412,8 +2427,8 @@ private fun AlbumsScreen(tracks: List<AudioTrack>, search: String, onSearchChang
                 if (albums.isEmpty()) {
                     EmptyState(
                         if (search.isBlank()) Icons.Rounded.Album else Icons.Rounded.Search,
-                        if (search.isBlank()) "Nenhum álbum" else "Nada encontrado",
-                        if (search.isBlank()) "Os álbuns aparecem quando as músicas têm álbum nas tags." else "Tente outro nome de álbum ou artista.",
+                        if (search.isBlank()) t(R.string.nenhum_album) else t(R.string.nada_encontrado),
+                        if (search.isBlank()) t(R.string.os_albuns_aparecem_quando_as) else t(R.string.tente_outro_nome_de_album),
                     )
                 }
                 LazyVerticalGrid(state = gridState, columns = GridCells.Fixed(2), modifier = Modifier.fillMaxSize().songListSpace(), contentPadding = PaddingValues(bottom = UiTokens.songListBottomPadding), verticalArrangement = Arrangement.spacedBy(UiTokens.songListSpacing), horizontalArrangement = Arrangement.spacedBy(UiTokens.songListSpacing)) {
@@ -2444,7 +2459,7 @@ private fun AlbumsScreen(tracks: List<AudioTrack>, search: String, onSearchChang
                                 ScrollingText(item.artist.ifBlank { "—" }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 Text(
                                     listOfNotNull(
-                                        plural(item.songs, "música", "músicas"),
+                                        tp(R.plurals.n_musicas, item.songs),
                                         formatDuration(item.duration),
                                         item.year.takeIf { it.isNotBlank() },
                                     ).joinToString(" • "),
@@ -2478,7 +2493,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
     val base = when (type) {
         Detail.ARTIST -> tracks.filter { it.artist.equals(key, true) }
         Detail.ALBUM -> tracks.filter { it.album.equals(key, true) }
-        Detail.GENRE -> if (key.equals("Sem gênero", true)) tracks.filter { it.genre.isBlank() } else tracks.filter { it.genre.equals(key, true) }
+        Detail.GENRE -> if (key.equals(t(R.string.sem_genero), true)) tracks.filter { it.genre.isBlank() } else tracks.filter { it.genre.equals(key, true) }
         Detail.PLAYLIST -> playlistOrderIds.mapNotNull(detailTrackById::get)
         else -> emptyList()
     }
@@ -2563,11 +2578,11 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
             Spacer(Modifier.height(UiTokens.listHeaderGap))
             if (type == Detail.PLAYLIST) {
                 Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(UiTokens.space1)) {
-                    SearchBar(value = playlistSearch, onValueChange = { playlistSearch = it }, placeholder = "Pesquisar músicas", modifier = Modifier.weight(1f))
+                    SearchBar(value = playlistSearch, onValueChange = { playlistSearch = it }, placeholder = t(R.string.pesquisar_musicas), modifier = Modifier.weight(1f))
                     SortMenuButton(
                         open = playlistSortOpen,
                         onOpenChange = { playlistSortOpen = it },
-                        title = "Ordenar por",
+                        title = t(R.string.ordenar_por),
                         options = PlaylistSortMode.entries,
                         selected = playlistSortMode,
                         label = { it.label },
@@ -2584,7 +2599,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                     ) {
                         Icon(
                             imageVector = if (playlistSelectionMode) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
-                            contentDescription = if (playlistSelectionMode) "Encerrar seleção" else "Selecionar",
+                            contentDescription = if (playlistSelectionMode) t(R.string.encerrar_selecao) else t(R.string.selecionar),
                             tint = if (playlistSelectionMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(UiTokens.primaryIconSize),
                         )
@@ -2602,7 +2617,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                     )
                     ActionButtonRow(Modifier.padding(vertical = UiTokens.sectionSpacing)) {
                         ActionButton(
-                            "Remover da playlist",
+                            t(R.string.remover_da_playlist),
                             Icons.Rounded.Delete,
                             { onRemoveSelectedFromPlaylist(key, selectedPlaylistIds.toList()); exitPlaylistSelection() },
                             Modifier.weight(1f),
@@ -2613,19 +2628,19 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                 } else {
                     Spacer(Modifier.height(UiTokens.sectionSpacing))
                     ActionButtonRow {
-                        ActionButton("Tocar", Icons.Rounded.PlayArrow, { onPlay(shown, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
-                        ActionButton("Aleatório", Icons.Rounded.Shuffle, { onPlayRandom(shown) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                        ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(shown, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                        ActionButton(t(R.string.aleatorio), Icons.Rounded.Shuffle, { onPlayRandom(shown) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
                     }
                 }
                 Spacer(Modifier.height(UiTokens.sectionSpacing))
-                Text("${plural(shown.size, "música", "músicas")} • ${formatDuration(duration)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (playlistSortMode != PlaylistSortMode.MANUAL || playlistSearch.isNotBlank()) Text("Para reordenar manualmente, use Manual e deixe a busca vazia.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("${tp(R.plurals.n_musicas, shown.size)} • ${formatDuration(duration)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (playlistSortMode != PlaylistSortMode.MANUAL || playlistSearch.isNotBlank()) Text(t(R.string.para_reordenar_manualmente_use_manual), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Spacer(Modifier.height(UiTokens.standardListTopSpacing))
                 if (shown.isEmpty()) {
                     EmptyState(
-                        if (playlistSearch.isBlank()) Icons.Rounded.QueueMusic else Icons.Rounded.Search,
-                        if (playlistSearch.isBlank()) "Playlist vazia" else "Nada encontrado",
-                        if (playlistSearch.isBlank()) "Abra o menu de uma música e escolha Adicionar à playlist." else "Tente outro nome de música, artista ou álbum.",
+                        if (playlistSearch.isBlank()) Icons.AutoMirrored.Rounded.QueueMusic else Icons.Rounded.Search,
+                        if (playlistSearch.isBlank()) t(R.string.playlist_vazia) else t(R.string.nada_encontrado),
+                        if (playlistSearch.isBlank()) t(R.string.abra_o_menu_de_uma) else t(R.string.tente_outro_nome_de_musica),
                     )
                 }
                 SongListContainer(state = state, modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -2673,11 +2688,11 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                             onClick = { onOpenArtist(artist) },
                             contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp),
                         ) {
-                            ScrollingText(artist.ifBlank { "Artista desconhecido" }, color = MaterialTheme.colorScheme.primary)
+                            ScrollingText(artist.ifBlank { t(R.string.artista_desconhecido) }, color = MaterialTheme.colorScheme.primary)
                         }
                         ScrollingText(
                             listOfNotNull(
-                                plural(shown.size, "música", "músicas"),
+                                tp(R.plurals.n_musicas, shown.size),
                                 formatDuration(duration),
                                 shown.firstOrNull()?.year?.takeIf { it.isNotBlank() },
                             ).joinToString(" • "),
@@ -2688,8 +2703,8 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                 }
                 Spacer(Modifier.height(UiTokens.sectionSpacing))
                 ActionButtonRow {
-                    ActionButton("Tocar", Icons.Rounded.PlayArrow, { onPlay(shown, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
-                    ActionButton("Aleatório", Icons.Rounded.Shuffle, { onPlayRandom(shown) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                    ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(shown, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                    ActionButton(t(R.string.aleatorio), Icons.Rounded.Shuffle, { onPlayRandom(shown) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
                 }
                 Spacer(Modifier.height(UiTokens.sectionSpacing))
                 SongListContainer(state = state, modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -2698,7 +2713,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                         }
                     }
              } else if (type == Detail.ARTIST) {
-                    val albums = shown.groupBy { it.album.ifBlank { "Sem álbum" } }.toSortedMap(String.CASE_INSENSITIVE_ORDER)
+                    val albums = shown.groupBy { it.album.ifBlank { t(R.string.sem_album) } }.toSortedMap(String.CASE_INSENSITIVE_ORDER)
                     // A fila segue exatamente a ordem da lista na tela (álbum por álbum).
                     val playOrder = albums.values.flatten()
                     Row(
@@ -2716,7 +2731,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                         ) {
                             ScrollingText(key, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                             ScrollingText(
-                                listOf(plural(shown.size, "música", "músicas"), plural(albums.size, "álbum", "álbuns"), formatDuration(duration)).joinToString(" • "),
+                                listOf(tp(R.plurals.n_musicas, shown.size), tp(R.plurals.n_albuns, albums.size), formatDuration(duration)).joinToString(" • "),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
@@ -2724,8 +2739,8 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                     }
                     Spacer(Modifier.height(UiTokens.sectionSpacing))
                     ActionButtonRow {
-                        ActionButton("Tocar", Icons.Rounded.PlayArrow, { onPlay(playOrder, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
-                        ActionButton("Aleatório", Icons.Rounded.Shuffle, { onPlayRandom(playOrder) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                        ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(playOrder, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                        ActionButton(t(R.string.aleatorio), Icons.Rounded.Shuffle, { onPlayRandom(playOrder) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
                     }
                     Spacer(Modifier.height(UiTokens.sectionSpacing))
                     SongListContainer(state = state, modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -2733,7 +2748,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                             item(key = "album-$album") {
                                 Column(Modifier.fillMaxWidth().padding(top = UiTokens.standardListTopSpacing, bottom = UiTokens.space1)) {
                                     TextButton(onClick = { onOpenAlbum(album) }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) { ScrollingText(album, fontWeight = FontWeight.Bold) }
-                                    Text("${plural(albumTracks.size, "música", "músicas")} • ${formatDuration(albumTracks.sumOf { it.durationMs })}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    Text("${tp(R.plurals.n_musicas, albumTracks.size)} • ${formatDuration(albumTracks.sumOf { it.durationMs })}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                             }
                             items(albumTracks, key = { it.id }) { t ->
@@ -2742,11 +2757,11 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                         }
                     }
                 } else {
-                    if (shown.isNotEmpty()) Text("${plural(shown.size, "música", "músicas")} • ${formatDuration(duration)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    if (shown.isNotEmpty()) Text("${tp(R.plurals.n_musicas, shown.size)} • ${formatDuration(duration)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(UiTokens.sectionSpacing))
                     ActionButtonRow {
-                        ActionButton("Tocar", Icons.Rounded.PlayArrow, { onPlay(shown, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
-                        ActionButton("Aleatório", Icons.Rounded.Shuffle, { onPlayRandom(shown) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                        ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(shown, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                        ActionButton(t(R.string.aleatorio), Icons.Rounded.Shuffle, { onPlayRandom(shown) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
                     }
                     Spacer(Modifier.height(UiTokens.sectionSpacing))
                     SongListContainer(state = state, modifier = Modifier.fillMaxWidth().weight(1f)) {
@@ -2757,15 +2772,41 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
         }
     }
 
+private fun rangeLabel(range: StatsRange): String = when (range) {
+    StatsRange.ALL -> t(R.string.range_all)
+    StatsRange.WEEK -> t(R.string.range_week)
+    StatsRange.MONTH -> t(R.string.range_month)
+    StatsRange.SIX_MONTHS -> t(R.string.range_6months)
+    StatsRange.YEAR -> t(R.string.range_year)
+}
+
 private fun themeModeLabel(mode: ThemeMode): String = when (mode) {
-    ThemeMode.SYSTEM -> "Sistema"
-    ThemeMode.LIGHT -> "Claro"
-    ThemeMode.DARK -> "Escuro"
+    ThemeMode.SYSTEM -> t(R.string.sistema)
+    ThemeMode.LIGHT -> t(R.string.claro)
+    ThemeMode.DARK -> t(R.string.escuro)
+}
+
+private fun languageLabel(tag: String): String =
+    AppLanguages.all.firstOrNull { it.tag == tag }?.nativeName ?: t(R.string.sistema)
+
+@Composable
+private fun LanguageDialog(current: String, onPick: (String) -> Unit, onDismiss: () -> Unit) {
+    AppDialog(title = t(R.string.language), onDismiss = onDismiss) {
+        (listOf(AppLanguages.SYSTEM to t(R.string.sistema)) + AppLanguages.all.map { it.tag to it.nativeName }).forEach { (tag, label) ->
+            Row(
+                Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onPick(tag) },
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                RadioButton(selected = tag == current, onClick = { onPick(tag) })
+                Text(label, style = MaterialTheme.typography.bodyLarge)
+            }
+        }
+    }
 }
 
 @Composable
 private fun ThemeModeDialog(current: ThemeMode, onPick: (ThemeMode) -> Unit, onDismiss: () -> Unit) {
-    AppDialog(title = "Tema", onDismiss = onDismiss) {
+    AppDialog(title = t(R.string.tema), onDismiss = onDismiss) {
         ThemeMode.entries.forEach { mode ->
             Row(
                 Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)).clickable { onPick(mode) },
@@ -2785,17 +2826,18 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
     PersistListScroll(state, "settings")
     var confirmReleaseFolder by remember { mutableStateOf(false) }
     var themeDialog by remember { mutableStateOf(false) }
+    var languageDialog by remember { mutableStateOf(false) }
     var confirmResetStats by remember { mutableStateOf(false) }
     val settingsScope = rememberCoroutineScope()
 
     if (confirmReleaseFolder) {
         AppDialog(
-            title = "Liberar a pasta?",
+            title = t(R.string.liberar_a_pasta),
             onDismiss = { confirmReleaseFolder = false },
-            confirmText = "Liberar",
+            confirmText = t(R.string.liberar),
             onConfirm = { confirmReleaseFolder = false; onReleaseDownloadFolder?.invoke() },
         ) {
-            Text("A biblioteca some da tela até você escolher a pasta de novo. Nenhuma música é apagada.")
+            Text(t(R.string.a_biblioteca_some_da_tela))
         }
     }
     if (themeDialog) {
@@ -2803,6 +2845,13 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
             current = settings.themeMode,
             onPick = { themeDialog = false; onChange(settings.copy(themeMode = it)) },
             onDismiss = { themeDialog = false },
+        )
+    }
+    if (languageDialog) {
+        LanguageDialog(
+            current = settings.language,
+            onPick = { languageDialog = false; onChange(settings.copy(language = it)) },
+            onDismiss = { languageDialog = false },
         )
     }
     if (confirmResetStats) {
@@ -2817,14 +2866,14 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
 
     // Permissões que faltam aparecem no topo (é o que impede algo de funcionar); com tudo certo, vão para o fim.
     val permissionsGroup: @Composable () -> Unit = {
-        SettingsGroup(if (missingPermissions > 0) "Permissões • faltam $missingPermissions" else "Permissões") {
+        SettingsGroup(if (missingPermissions > 0) t(R.string.permissoes_faltam, missingPermissions) else t(R.string.permissoes)) {
             permissions.forEachIndexed { index, item ->
                 if (index > 0) SettingsDivider()
                 SettingsRow(
                     icon = if (item.granted) Icons.Rounded.CheckCircle else Icons.Rounded.Warning,
                     title = item.label,
                     subtitle = item.description.ifBlank { null },
-                    trailing = { if (item.granted) RowHint("OK") else RowHint("Conceder", highlighted = true) },
+                    trailing = { if (item.granted) RowHint("OK") else RowHint(t(R.string.conceder), highlighted = true) },
                     onClick = if (item.granted) null else item.onGrant,
                 )
             }
@@ -2832,7 +2881,7 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
     }
 
     StandardPage {
-        ScreenHeaderRow(title = "Configurações")
+        ScreenHeaderRow(title = t(R.string.configuracoes))
         Box(Modifier.weight(1f).fillMaxWidth()) {
             LazyColumn(
                 state = state,
@@ -2841,92 +2890,97 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
             ) {
                 if (missingPermissions > 0) item { permissionsGroup() }
                 item {
-                    SettingsGroup("Aparência") {
+                    SettingsGroup(t(R.string.aparencia)) {
                         SettingsRow(
-                            Icons.Rounded.Palette, "Tema", "Claro, escuro ou o mesmo do celular",
+                            Icons.Rounded.Palette, t(R.string.tema), t(R.string.claro_escuro_ou_o_mesmo),
                             trailing = { RowHint(themeModeLabel(settings.themeMode)) },
                         ) { themeDialog = true }
+                        SettingsDivider()
+                        SettingsRow(
+                            Icons.Rounded.Language, t(R.string.language), t(R.string.language_hint),
+                            trailing = { RowHint(languageLabel(settings.language)) },
+                        ) { languageDialog = true }
                     }
                 }
                 item {
-                    SettingsGroup("Biblioteca") {
+                    SettingsGroup(t(R.string.biblioteca)) {
                         SettingsRow(
-                            Icons.Rounded.Folder, "Pasta de músicas", downloadFolderLabel.ifBlank { "Nenhuma escolhida" },
-                            trailing = { RowHint(if (hasFolder) "Trocar" else "Escolher", highlighted = !hasFolder) },
+                            Icons.Rounded.Folder, t(R.string.pasta_de_musicas), downloadFolderLabel.ifBlank { t(R.string.nenhuma_escolhida) },
+                            trailing = { RowHint(if (hasFolder) t(R.string.trocar) else t(R.string.escolher), highlighted = !hasFolder) },
                         ) { onChooseDownloadFolder?.invoke() }
                         SettingsDivider()
                         SettingsSwitchRow(
-                            Icons.Rounded.Sync, "Atualizar sozinha", "Lê a pasta de novo quando algo muda",
+                            Icons.Rounded.Sync, t(R.string.atualizar_sozinha), t(R.string.le_a_pasta_de_novo),
                             settings.autoRefreshLibrary,
                         ) { onChange(settings.copy(autoRefreshLibrary = it)) }
                         SettingsDivider()
                         SettingsRow(
-                            Icons.Rounded.DriveFileMove, "Organizar pasta", "Põe músicas em songs e playlists em playlists",
+                            Icons.AutoMirrored.Rounded.DriveFileMove, t(R.string.organizar_pasta), t(R.string.poe_musicas_em_songs_e),
                             enabled = hasFolder,
                         ) { onOrganizeFolder?.invoke() }
                         SettingsDivider()
                         SettingsRow(
-                            Icons.Rounded.CleaningServices, "Limpar pasta", "Move o que não é música para a _lixeira",
+                            Icons.Rounded.CleaningServices, t(R.string.limpar_pasta), t(R.string.move_o_que_nao_e),
                             enabled = hasFolder,
                         ) { onCleanFolder?.invoke() }
                         SettingsDivider()
                         SettingsRow(
-                            Icons.Rounded.FolderOff, "Liberar pasta", "Solta a pasta para renomear ou apagar",
+                            Icons.Rounded.FolderOff, t(R.string.liberar_pasta), t(R.string.solta_a_pasta_para_renomear),
                             enabled = hasFolder,
                         ) { confirmReleaseFolder = true }
                     }
                 }
                 item {
-                    SettingsGroup("Downloads") {
+                    SettingsGroup(t(R.string.downloads)) {
                         SettingsSwitchRow(
-                            Icons.Rounded.AutoFixHigh, "Corrigir tags", "Busca título, artista e capa depois de baixar",
+                            Icons.Rounded.AutoFixHigh, t(R.string.corrigir_tags), t(R.string.busca_titulo_artista_e_capa),
                             settings.autoTag,
                         ) { onChange(settings.copy(autoTag = it)) }
                         SettingsDivider()
                         SettingsSwitchRow(
-                            Icons.Rounded.Image, "Capa do vídeo", "Usa a imagem do vídeo quando falta capa",
+                            Icons.Rounded.Image, t(R.string.capa_do_video), t(R.string.usa_a_imagem_do_video),
                             settings.embedYoutubeThumbnail,
                         ) { onChange(settings.copy(embedYoutubeThumbnail = it)) }
                         SettingsDivider()
                         SettingsSwitchRow(
-                            Icons.Rounded.Download, "Atualizar o baixador", "Mantém os downloads funcionando",
+                            Icons.Rounded.Download, t(R.string.atualizar_o_baixador), t(R.string.mantem_os_downloads_funcionando),
                             settings.autoUpdateDownloader,
                         ) { onChange(settings.copy(autoUpdateDownloader = it)) }
                     }
                 }
                 item { GitSection() }
                 item {
-                    SettingsGroup("Estatísticas") {
+                    SettingsGroup(t(R.string.estatisticas)) {
                         SettingsRow(
-                            Icons.Rounded.Delete, "Zerar estatísticas", "Apaga tempo ouvido e vezes tocadas",
+                            Icons.Rounded.Delete, t(R.string.zerar_estatisticas_2), t(R.string.apaga_tempo_ouvido_e_vezes),
                             destructive = true,
                         ) { confirmResetStats = true }
                     }
                 }
                 if (missingPermissions == 0 && permissions.isNotEmpty()) item { permissionsGroup() }
                 item {
-                    SettingsGroup("Atualizações") {
+                    SettingsGroup(t(R.string.atualizacoes)) {
                         SettingsSwitchRow(
-                            Icons.Rounded.Notifications, "Avisar sobre versão nova", "Confere sozinho e avisa por notificação",
+                            Icons.Rounded.Notifications, t(R.string.avisar_sobre_versao_nova), t(R.string.confere_sozinho_e_avisa_por),
                             settings.autoCheckUpdates,
                         ) { onChange(settings.copy(autoCheckUpdates = it)) }
                         SettingsDivider()
                         val lastBackground = remember { UpdateManager.lastBackgroundCheckMs(context) }
                         SettingsRow(
-                            Icons.Rounded.SystemUpdate, "Procurar atualização",
-                            "Versão $appVersion • " + if (lastBackground > 0) {
-                                "conferiu sozinho " + android.text.format.DateUtils.getRelativeTimeSpanString(
+                            Icons.Rounded.SystemUpdate, t(R.string.procurar_atualizacao),
+                            t(R.string.versao, appVersion) + if (lastBackground > 0) {
+                                t(R.string.conferiu_sozinho) + android.text.format.DateUtils.getRelativeTimeSpanString(
                                     lastBackground, System.currentTimeMillis(), android.text.format.DateUtils.MINUTE_IN_MILLIS,
                                 )
                             } else {
-                                "ainda não conferiu sozinho"
+                                t(R.string.ainda_nao_conferiu_sozinho)
                             },
                         ) { onCheckUpdate?.invoke() }
                     }
                 }
                 item {
                     Text(
-                        "TruePlayer $appVersion",
+                        t(R.string.trueplayer, appVersion),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -2944,8 +2998,8 @@ private fun SettingsTab(settings: AppSettings, onChange: (AppSettings) -> Unit, 
 private fun AlbumGridJumpButtons(state: androidx.compose.foundation.lazy.grid.LazyGridState, modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        FilledTonalIconButton(onClick = { scope.launch { state.scrollToItem(0) } }) { Icon(Icons.Rounded.KeyboardArrowUp, "Ir para o topo") }
-        FilledTonalIconButton(onClick = { scope.launch { val last = (state.layoutInfo.totalItemsCount - 1).coerceAtLeast(0); state.scrollToItem(last) } }) { Icon(Icons.Rounded.KeyboardArrowDown, "Ir para o final") }
+        FilledTonalIconButton(onClick = { scope.launch { state.scrollToItem(0) } }) { Icon(Icons.Rounded.KeyboardArrowUp, t(R.string.ir_para_o_topo)) }
+        FilledTonalIconButton(onClick = { scope.launch { val last = (state.layoutInfo.totalItemsCount - 1).coerceAtLeast(0); state.scrollToItem(last) } }) { Icon(Icons.Rounded.KeyboardArrowDown, t(R.string.ir_para_o_final)) }
     }
 }
 
@@ -3000,8 +3054,8 @@ private fun TouchGridScrollbar(state: LazyGridState, modifier: Modifier, topInse
 private fun ListJumpButtons(state: LazyListState, modifier: Modifier = Modifier) {
     val scope = rememberCoroutineScope()
     Column(modifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        FilledTonalIconButton(onClick = { scope.launch { state.scrollToItem(0) } }) { Icon(Icons.Rounded.KeyboardArrowUp, "Ir para o topo") }
-        FilledTonalIconButton(onClick = { scope.launch { val last = (state.layoutInfo.totalItemsCount - 1).coerceAtLeast(0); state.scrollToItem(last) } }) { Icon(Icons.Rounded.KeyboardArrowDown, "Ir para o final") }
+        FilledTonalIconButton(onClick = { scope.launch { state.scrollToItem(0) } }) { Icon(Icons.Rounded.KeyboardArrowUp, t(R.string.ir_para_o_topo)) }
+        FilledTonalIconButton(onClick = { scope.launch { val last = (state.layoutInfo.totalItemsCount - 1).coerceAtLeast(0); state.scrollToItem(last) } }) { Icon(Icons.Rounded.KeyboardArrowDown, t(R.string.ir_para_o_final)) }
     }
 }
 
@@ -3058,7 +3112,7 @@ private fun formatDuration(ms: Long): String {
     val rest = (seconds % 60).toString().padStart(2, '0')
     return if (hours > 0) String.format(Locale.getDefault(), "%02d:%02d:%s", hours, minutes, rest) else "$minutes:$rest"
 }
-private fun AudioTrack.displayTitle(): String = title.ifBlank { displayName.substringBeforeLast('.').ifBlank { "Sem título" } }
+private fun AudioTrack.displayTitle(): String = title.ifBlank { displayName.substringBeforeLast('.').ifBlank { t(R.string.sem_titulo) } }
 /** Artista principal, sem "feat.", vírgulas ou "&": serve para juntar as faixas de um mesmo álbum. */
 private fun primaryArtist(name: String): String =
     name.lowercase().split(" feat", " ft.", ",", " & ", ";", " x ").first().trim()
