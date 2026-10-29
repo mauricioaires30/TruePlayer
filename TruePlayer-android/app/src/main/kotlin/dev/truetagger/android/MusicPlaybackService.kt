@@ -1054,7 +1054,9 @@ class MusicPlaybackService : Service() {
             .setCategory(Notification.CATEGORY_TRANSPORT)
             .setPriority(Notification.PRIORITY_LOW)
             .setContentTitle(track.displayTitle())
-            .setContentText(listOf(track.album, track.artist).filter { it.isNotBlank() }.joinToString(" - "))
+            // Título, álbum e artista em linhas separadas: o álbum no texto e o artista logo acima, no cabeçalho.
+            .setContentText(dev.truetagger.data.subtitleLines(track.album, track.artist).firstOrNull().orEmpty())
+            .setSubText(dev.truetagger.data.subtitleLines(track.album, track.artist).getOrNull(1))
             .setContentIntent(open)
             .setOngoing(true)
             .setShowWhen(false)
@@ -1105,6 +1107,7 @@ class MusicPlaybackService : Service() {
                 .putString(android.media.MediaMetadata.METADATA_KEY_DISPLAY_TITLE, track.displayTitle())
                 .putString(android.media.MediaMetadata.METADATA_KEY_ARTIST, track.artist)
                 .putString(android.media.MediaMetadata.METADATA_KEY_DISPLAY_SUBTITLE, track.artist)
+                .putString(android.media.MediaMetadata.METADATA_KEY_DISPLAY_DESCRIPTION, track.album)
                 .putString(android.media.MediaMetadata.METADATA_KEY_ALBUM, track.album)
                 .putString(android.media.MediaMetadata.METADATA_KEY_ALBUM_ARTIST, track.albumArtist.ifBlank { track.artist })
                 .putLong(android.media.MediaMetadata.METADATA_KEY_DURATION, durationMs.coerceAtLeast(0L))

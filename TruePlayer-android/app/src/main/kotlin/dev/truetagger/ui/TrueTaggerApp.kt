@@ -602,8 +602,8 @@ private fun CurrentTrackPreviewDialog(track: AudioTrack, onDismiss: () -> Unit) 
             Column(Modifier.fillMaxWidth().padding(UiTokens.dialogPadding), verticalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
                 ArtworkBox(track.artworkBytes, "", Modifier.fillMaxWidth().height(UiTokens.dialogArtworkSize))
                 Text(track.displayTitle(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                if (track.artist.isNotBlank()) Text(track.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (track.album.isNotBlank()) Text(track.album, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (track.artist.isNotBlank()) Text(track.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (track.durationMs > 0) Text(formatDuration(track.durationMs), color = MaterialTheme.colorScheme.onSurfaceVariant)
                 TextButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("Fechar") }
             }
@@ -618,8 +618,8 @@ private fun SuggestionPreviewDialog(result: MetadataResult, onDismiss: () -> Uni
             Column(Modifier.fillMaxWidth().padding(UiTokens.dialogPadding), verticalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing)) {
                 ArtworkBox(null, result.artworkUrl, Modifier.fillMaxWidth().height(UiTokens.dialogArtworkSize))
                 Text(result.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text(result.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 if (result.album.isNotBlank()) Text(result.album, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(result.artist, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 val details = buildList {
                     result.trackNumber?.let { add("Faixa $it${result.trackTotal?.let { total -> "/$total" } ?: ""}") }
                     result.discNumber?.let { add("Disco $it${result.discTotal?.let { total -> "/$total" } ?: ""}") }

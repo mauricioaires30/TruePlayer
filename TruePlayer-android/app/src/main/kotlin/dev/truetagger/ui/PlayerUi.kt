@@ -19,6 +19,7 @@ import dev.truetagger.data.StatsRange
 import java.text.NumberFormat
 import dev.truetagger.android.ConnectivityObserver
 import dev.truetagger.android.UpdateManager
+import dev.truetagger.data.subtitleLines
 import dev.truetagger.android.PlaylistData
 import dev.truetagger.model.TrackKeys
 import dev.truetagger.android.PlaylistStore
@@ -998,11 +999,10 @@ private fun MiniPlayer(
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = FontWeight.SemiBold,
                     )
-                    ScrollingText(
-                        listOf(s.current?.artist, s.current?.album).filter { !it.isNullOrBlank() }.joinToString(" • "),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    // Álbum em cima, artista embaixo; cada linha rola sozinha se o nome for grande.
+                    subtitleLines(s.current?.album, s.current?.artist).forEach { line ->
+                        ScrollingText(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
                 }
                 // Direita, em duas linhas: [anterior] [tocar/pausar] [próxima] em cima; embaixo, na mesma ordem,
                 // [aleatório] [fila] [repetir].
@@ -1072,19 +1072,18 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth(),
             )
-            // Artista e álbum em uma linha só, cada um tocável (abre a tela dele).
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
-                val artist = s.current?.artist.orEmpty()
+            // Álbum e artista em duas linhas, cada um tocável (abre a tela dele) e com rolagem se for grande.
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
                 val album = s.current?.album.orEmpty()
-                if (artist.isNotBlank()) {
-                    TextButton(onClick = onArtist, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), modifier = Modifier.weight(1f, fill = false)) {
-                        ScrollingText(artist, style = MaterialTheme.typography.bodyMedium)
+                val artist = s.current?.artist.orEmpty()
+                if (album.isNotBlank()) {
+                    TextButton(onClick = onAlbum, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), modifier = Modifier.fillMaxWidth()) {
+                        ScrollingText(album, modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
                     }
                 }
-                if (artist.isNotBlank() && album.isNotBlank()) Text("•", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (album.isNotBlank()) {
-                    TextButton(onClick = onAlbum, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), modifier = Modifier.weight(1f, fill = false)) {
-                        ScrollingText(album, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                if (artist.isNotBlank()) {
+                    TextButton(onClick = onArtist, contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp), modifier = Modifier.fillMaxWidth()) {
+                        ScrollingText(artist, modifier = Modifier.fillMaxWidth(), style = MaterialTheme.typography.bodyMedium, textAlign = TextAlign.Center)
                     }
                 }
             }
@@ -1844,9 +1843,8 @@ private fun MostPlayedRow(rank: Int, title: String, artist: String, album: Strin
         }
         Column(Modifier.weight(1f).padding(horizontal = UiTokens.cardItemHorizontalPadding), verticalArrangement = Arrangement.spacedBy(UiTokens.songItemSpacing)) {
             ScrollingText(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-            val detail = listOf(artist, album).filter { it.isNotBlank() }.joinToString(" • ")
-            if (detail.isNotBlank()) {
-                ScrollingText(detail, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            subtitleLines(album, artist).forEach { line ->
+                ScrollingText(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         Column(horizontalAlignment = Alignment.End) {
@@ -1964,21 +1962,20 @@ private fun SongItem(
                 fontWeight = FontWeight.SemiBold,
                 color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
             )
-            ScrollingText(
-                listOf(track.artist, track.album)
-                    .filter { it.isNotBlank() }
-                    .joinToString(" • ")
-                    .ifBlank { "—" },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                formatDuration(track.durationMs),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-            )
+            // Álbum em cima, artista embaixo (cada linha rola sozinha se o nome for grande).
+            val lines = subtitleLines(track.album, track.artist).ifEmpty { listOf("—") }
+            lines.forEach { line ->
+                ScrollingText(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
+        // A duração saiu de baixo do nome para o lado, para o item não ficar com quatro linhas.
+        Text(
+            formatDuration(track.durationMs),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            modifier = Modifier.padding(start = UiTokens.space1),
+        )
         Box {
             IconButton(onClick = { expanded = true }, modifier = Modifier.size(UiTokens.iconButtonSize)) {
                 Icon(Icons.Rounded.MoreVert, "Opções", modifier = Modifier.size(UiTokens.primaryIconSize))
@@ -2011,8 +2008,8 @@ private fun InfoDialog(track: AudioTrack, onArtist: () -> Unit, onAlbum: () -> U
         title = { Text(track.displayTitle()) },
         text = {
             Column(Modifier.fillMaxWidth()) {
-                InfoRow("Artista", track.artist, onArtist)
                 InfoRow("Álbum", track.album, onAlbum)
+                InfoRow("Artista", track.artist, onArtist)
                 InfoRow("Ano", track.year)
                 InfoRow("Gênero", track.genre)
                 InfoRow("Faixa", track.trackNumber)
