@@ -22,6 +22,10 @@ data class QueuedDownload(
     val total: Int = 0,
     val position: Int = 0,
     val kind: DownloadKind = DownloadKind.SINGLE,
+    /** Música do Spotify: o [url] é só o link dela; o áudio vem de onde a busca achar. */
+    val hint: TrackHint? = null,
+    /** Falso nas faixas de um álbum: elas só viram músicas na biblioteca, sem criar playlist. */
+    val addToPlaylist: Boolean = true,
 )
 
 /** Quantas músicas de uma playlist já baixaram, quantas falharam e quantas foram canceladas. */
@@ -52,9 +56,11 @@ class DownloadQueueStore(private val file: File) {
         total: Int = 0,
         position: Int = 0,
         kind: DownloadKind = if (playlist != null) DownloadKind.PLAYLIST else DownloadKind.SINGLE,
+        hint: TrackHint? = null,
+        addToPlaylist: Boolean = true,
     ): QueuedDownload {
         val dto = read()
-        val item = QueuedDownload(dto.nextId, url, expand, playlist, total, position, kind)
+        val item = QueuedDownload(dto.nextId, url, expand, playlist, total, position, kind, hint, addToPlaylist)
         write(dto.copy(nextId = dto.nextId + 1, items = dto.items + item))
         return item
     }

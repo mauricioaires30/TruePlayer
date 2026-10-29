@@ -357,7 +357,7 @@
     <string name="onb_e_nela_que_ficam_as">Di sinilah lagu (songs) dan playlist (playlists) berada. Berganti ponsel tidak menghilangkan apa pun.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Pilih folder musik</string>
     <string name="onb_nenhuma_pasta_escolhida">Belum ada folder yang dipilih</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">Di YouTube atau SoundCloud, ketuk Bagikan dan pilih TruePlayer. Playlist juga. Tag diperbaiki otomatis.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">Di YouTube, SoundCloud, atau Spotify, ketuk Bagikan lalu pilih TruePlayer. Playlist dan album juga. Tag diperbaiki otomatis.</string>
     <string name="onb_o_app_avisa_quando_sair">Aplikasi memberi tahu saat versi baru keluar. Setiap opsi ada penjelasannya di Pengaturan.</string>
     <string name="onb_proximo">Lanjut</string>
     <string name="onb_pular">Lewati</string>
@@ -494,6 +494,13 @@
     <string name="dl_position">%1$s dari %2$s</string>
     <string name="dl_canceladas">" (%1$s dibatalkan)"</string>
     <string name="dl_download_cancelado">Unduhan dibatalkan</string>
+    <string name="dl_procurando_a_musica">Mencari lagu…</string>
+    <string name="dl_nao_encontrada">%1$s tidak ditemukan di internet.</string>
+    <string name="dl_nao_achadas">" Tidak ditemukan: %1$s"</string>
+    <string name="dl_spotify_limite">" Spotify hanya memberikan 100 lagu pertama dari sebuah playlist."</string>
+    <string name="dl_spotify_nao_li">Tautan Spotify tidak bisa dibaca</string>
+    <string name="dl_spotify_confira">Pastikan itu lagu, album, atau playlist publik.</string>
+    <string name="dl_album_baixado">Album diunduh</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s playlist</item>
     </plurals>

@@ -357,7 +357,7 @@
     <string name="onb_e_nela_que_ficam_as">C\'est là que vivent les morceaux (songs) et les playlists (playlists). Changer de téléphone ne fait rien perdre.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Choisissez le dossier de musique</string>
     <string name="onb_nenhuma_pasta_escolhida">Aucun dossier choisi</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">Sur YouTube ou SoundCloud, touchez Partager et choisissez TruePlayer. Les playlists aussi. Les tags sont corrigés automatiquement.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">Sur YouTube, SoundCloud ou Spotify, touchez Partager et choisissez TruePlayer. Playlists et albums aussi. Les tags sont corrigés automatiquement.</string>
     <string name="onb_o_app_avisa_quando_sair">L\'appli vous prévient quand une nouvelle version sort. Chaque option est expliquée dans les Réglages.</string>
     <string name="onb_proximo">Suivant</string>
     <string name="onb_pular">Passer</string>
@@ -494,6 +494,13 @@
     <string name="dl_position">%1$s sur %2$s</string>
     <string name="dl_canceladas">" (%1$s annulés)"</string>
     <string name="dl_download_cancelado">Téléchargement annulé</string>
+    <string name="dl_procurando_a_musica">Recherche du morceau…</string>
+    <string name="dl_nao_encontrada">Impossible de trouver %1$s en ligne.</string>
+    <string name="dl_nao_achadas">" Introuvables : %1$s"</string>
+    <string name="dl_spotify_limite">" Spotify ne fournit que les 100 premiers morceaux d\'une playlist."</string>
+    <string name="dl_spotify_nao_li">Impossible de lire le lien Spotify</string>
+    <string name="dl_spotify_confira">Vérifiez qu\'il s\'agit d\'un morceau, album ou playlist public.</string>
+    <string name="dl_album_baixado">Album téléchargé</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s playlist</item>
         <item quantity="many">+%1$s playlists</item>

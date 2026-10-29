@@ -357,7 +357,7 @@
     <string name="onb_e_nela_que_ficam_as">歌曲（songs）和播放清單（playlists）都放在這裡。換手機不會遺失任何內容。</string>
     <string name="onb_escolha_a_pasta_das_musicas">選擇音樂資料夾</string>
     <string name="onb_nenhuma_pasta_escolhida">未選擇資料夾</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">在 YouTube 或 SoundCloud 中點一下「分享」，選擇 TruePlayer。播放清單也可以。標籤會自動修正。</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">在 YouTube、SoundCloud 或 Spotify 中點按分享並選擇 TruePlayer，播放清單和專輯也可以。標籤會自動修正。</string>
     <string name="onb_o_app_avisa_quando_sair">有新版本時應用程式會通知你。每個選項在設定中都有說明。</string>
     <string name="onb_proximo">下一步</string>
     <string name="onb_pular">略過</string>
@@ -494,6 +494,13 @@
     <string name="dl_position">第 %1$s 首，共 %2$s 首</string>
     <string name="dl_canceladas">（已取消 %1$s）</string>
     <string name="dl_download_cancelado">下載已取消</string>
+    <string name="dl_procurando_a_musica">正在尋找歌曲…</string>
+    <string name="dl_nao_encontrada">在網路上找不到 %1$s。</string>
+    <string name="dl_nao_achadas">" 找不到：%1$s"</string>
+    <string name="dl_spotify_limite">" Spotify 只提供播放清單的前 100 首歌曲。"</string>
+    <string name="dl_spotify_nao_li">無法讀取 Spotify 連結</string>
+    <string name="dl_spotify_confira">請確認這是公開的歌曲、專輯或播放清單。</string>
+    <string name="dl_album_baixado">專輯已下載</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s個播放清單</item>
     </plurals>

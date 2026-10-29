@@ -357,7 +357,7 @@
     <string name="onb_e_nela_que_ficam_as">Här finns låtarna (songs) och spellistorna (playlists). Att byta telefon förlorar inget.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Välj musikmappen</string>
     <string name="onb_nenhuma_pasta_escolhida">Ingen mapp vald</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">Tryck på Dela i YouTube eller SoundCloud och välj TruePlayer. Spellistor också. Taggarna rättas automatiskt.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">Tryck på Dela i YouTube, SoundCloud eller Spotify och välj TruePlayer. Även spellistor och album. Taggarna fixas automatiskt.</string>
     <string name="onb_o_app_avisa_quando_sair">Appen meddelar när en ny version kommer. Varje alternativ har en förklaring i Inställningar.</string>
     <string name="onb_proximo">Nästa</string>
     <string name="onb_pular">Hoppa över</string>
@@ -494,6 +494,13 @@
     <string name="dl_position">%1$s av %2$s</string>
     <string name="dl_canceladas">" (%1$s avbrutna)"</string>
     <string name="dl_download_cancelado">Nedladdningen avbröts</string>
+    <string name="dl_procurando_a_musica">Söker efter låten…</string>
+    <string name="dl_nao_encontrada">Hittade inte %1$s på nätet.</string>
+    <string name="dl_nao_achadas">" Hittades inte: %1$s"</string>
+    <string name="dl_spotify_limite">" Spotify ger bara de första 100 låtarna i en spellista."</string>
+    <string name="dl_spotify_nao_li">Kunde inte läsa Spotify-länken</string>
+    <string name="dl_spotify_confira">Kontrollera att det är en offentlig låt, ett album eller en spellista.</string>
+    <string name="dl_album_baixado">Albumet laddades ner</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s spellista</item>
         <item quantity="other">+%1$s spellistor</item>

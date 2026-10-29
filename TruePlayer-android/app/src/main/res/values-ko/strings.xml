@@ -357,7 +357,7 @@
     <string name="onb_e_nela_que_ficam_as">곡(songs)과 재생목록(playlists)이 여기에 있습니다. 휴대전화를 바꿔도 잃는 것은 없습니다.</string>
     <string name="onb_escolha_a_pasta_das_musicas">음악 폴더 선택</string>
     <string name="onb_nenhuma_pasta_escolhida">선택한 폴더 없음</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">YouTube나 SoundCloud에서 공유를 누르고 TruePlayer를 선택하세요. 재생목록도 마찬가지입니다. 태그는 자동으로 고쳐집니다.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">YouTube, SoundCloud, Spotify에서 공유를 누르고 TruePlayer를 선택하세요. 재생목록과 앨범도 됩니다. 태그는 자동으로 고쳐집니다.</string>
     <string name="onb_o_app_avisa_quando_sair">새 버전이 나오면 앱이 알려 줍니다. 각 옵션의 설명은 설정에 있습니다.</string>
     <string name="onb_proximo">다음</string>
     <string name="onb_pular">건너뛰기</string>
@@ -494,6 +494,13 @@
     <string name="dl_position">%1$s / %2$s</string>
     <string name="dl_canceladas">" (취소 %1$s)"</string>
     <string name="dl_download_cancelado">다운로드가 취소되었습니다</string>
+    <string name="dl_procurando_a_musica">곡 검색 중…</string>
+    <string name="dl_nao_encontrada">%1$s을(를) 온라인에서 찾지 못했습니다.</string>
+    <string name="dl_nao_achadas">" 찾지 못함: %1$s"</string>
+    <string name="dl_spotify_limite">" Spotify는 재생목록의 처음 100곡만 제공합니다."</string>
+    <string name="dl_spotify_nao_li">Spotify 링크를 읽지 못했습니다</string>
+    <string name="dl_spotify_confira">공개된 곡, 앨범 또는 재생목록인지 확인하세요.</string>
+    <string name="dl_album_baixado">앨범을 다운로드했습니다</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+재생목록 %1$s개</item>
     </plurals>

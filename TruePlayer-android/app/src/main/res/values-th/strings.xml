@@ -357,7 +357,7 @@
     <string name="onb_e_nela_que_ficam_as">เพลง (songs) และเพลย์ลิสต์ (playlists) อยู่ที่นี่ การเปลี่ยนโทรศัพท์ไม่ทำให้อะไรหาย</string>
     <string name="onb_escolha_a_pasta_das_musicas">เลือกโฟลเดอร์เพลง</string>
     <string name="onb_nenhuma_pasta_escolhida">ยังไม่ได้เลือกโฟลเดอร์</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">ใน YouTube หรือ SoundCloud ให้แตะ แชร์ แล้วเลือก TruePlayer เพลย์ลิสต์ก็ได้เช่นกัน แท็กจะถูกแก้ไขอัตโนมัติ</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">ใน YouTube, SoundCloud หรือ Spotify ให้แตะแชร์แล้วเลือก TruePlayer เพลย์ลิสต์และอัลบั้มก็ได้ แท็กจะถูกแก้ให้อัตโนมัติ</string>
     <string name="onb_o_app_avisa_quando_sair">แอปจะแจ้งเมื่อมีเวอร์ชันใหม่ แต่ละตัวเลือกมีคำอธิบายในการตั้งค่า</string>
     <string name="onb_proximo">ถัดไป</string>
     <string name="onb_pular">ข้าม</string>
@@ -494,6 +494,13 @@
     <string name="dl_position">%1$s จาก %2$s</string>
     <string name="dl_canceladas">" (ยกเลิก %1$s)"</string>
     <string name="dl_download_cancelado">ยกเลิกการดาวน์โหลดแล้ว</string>
+    <string name="dl_procurando_a_musica">กำลังค้นหาเพลง…</string>
+    <string name="dl_nao_encontrada">ไม่พบ %1$s บนอินเทอร์เน็ต</string>
+    <string name="dl_nao_achadas">" ไม่พบ: %1$s"</string>
+    <string name="dl_spotify_limite">" Spotify ให้เพลงจากเพลย์ลิสต์เพียง 100 เพลงแรก"</string>
+    <string name="dl_spotify_nao_li">อ่านลิงก์ Spotify ไม่ได้</string>
+    <string name="dl_spotify_confira">ตรวจสอบว่าเป็นเพลง อัลบั้ม หรือเพลย์ลิสต์สาธารณะ</string>
+    <string name="dl_album_baixado">ดาวน์โหลดอัลบั้มแล้ว</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s เพลย์ลิสต์</item>
     </plurals>

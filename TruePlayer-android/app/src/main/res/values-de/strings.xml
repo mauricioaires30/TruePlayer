@@ -357,7 +357,7 @@
     <string name="onb_e_nela_que_ficam_as">Hier liegen die Titel (songs) und die Playlists (playlists). Beim Telefonwechsel geht nichts verloren.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Musikordner wählen</string>
     <string name="onb_nenhuma_pasta_escolhida">Kein Ordner gewählt</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">Tippe bei YouTube oder SoundCloud auf Teilen und wähle TruePlayer. Playlists auch. Die Tags werden automatisch korrigiert.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">Tippe bei YouTube, SoundCloud oder Spotify auf Teilen und wähle TruePlayer. Auch Playlists und Alben. Die Tags werden automatisch korrigiert.</string>
     <string name="onb_o_app_avisa_quando_sair">Die App sagt dir Bescheid, wenn eine neue Version erscheint. Jede Option wird in den Einstellungen erklärt.</string>
     <string name="onb_proximo">Weiter</string>
     <string name="onb_pular">Überspringen</string>
@@ -494,6 +494,13 @@
     <string name="dl_position">%1$s von %2$s</string>
     <string name="dl_canceladas">" (%1$s abgebrochen)"</string>
     <string name="dl_download_cancelado">Download abgebrochen</string>
+    <string name="dl_procurando_a_musica">Titel wird gesucht…</string>
+    <string name="dl_nao_encontrada">%1$s wurde online nicht gefunden.</string>
+    <string name="dl_nao_achadas">" Nicht gefunden: %1$s"</string>
+    <string name="dl_spotify_limite">" Spotify liefert nur die ersten 100 Titel einer Playlist."</string>
+    <string name="dl_spotify_nao_li">Spotify-Link konnte nicht gelesen werden</string>
+    <string name="dl_spotify_confira">Prüfe, ob es ein öffentlicher Titel, ein Album oder eine Playlist ist.</string>
+    <string name="dl_album_baixado">Album heruntergeladen</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s Playlist</item>
         <item quantity="other">+%1$s Playlists</item>

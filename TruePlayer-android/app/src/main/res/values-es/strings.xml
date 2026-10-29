@@ -357,7 +357,7 @@
     <string name="onb_e_nela_que_ficam_as">Aquí viven las canciones (songs) y las playlists (playlists). Cambiar de teléfono no pierde nada.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Elige la carpeta de música</string>
     <string name="onb_nenhuma_pasta_escolhida">Ninguna carpeta elegida</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">En YouTube o SoundCloud, toca Compartir y elige TruePlayer. También las playlists. Las etiquetas se corrigen solas.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">En YouTube, SoundCloud o Spotify, toca Compartir y elige TruePlayer. También listas y álbumes. Las etiquetas se corrigen solas.</string>
     <string name="onb_o_app_avisa_quando_sair">La app te avisa cuando sale una versión nueva. Cada opción tiene una explicación en Ajustes.</string>
     <string name="onb_proximo">Siguiente</string>
     <string name="onb_pular">Omitir</string>
@@ -494,6 +494,13 @@
     <string name="dl_position">%1$s de %2$s</string>
     <string name="dl_canceladas">" (%1$s canceladas)"</string>
     <string name="dl_download_cancelado">Descarga cancelada</string>
+    <string name="dl_procurando_a_musica">Buscando la canción…</string>
+    <string name="dl_nao_encontrada">No encontré %1$s en internet.</string>
+    <string name="dl_nao_achadas">" No encontradas: %1$s"</string>
+    <string name="dl_spotify_limite">" Spotify solo entrega las primeras 100 canciones de una lista."</string>
+    <string name="dl_spotify_nao_li">No pude leer el enlace de Spotify</string>
+    <string name="dl_spotify_confira">Comprueba que sea una canción, álbum o lista pública.</string>
+    <string name="dl_album_baixado">Álbum descargado</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s playlist</item>
         <item quantity="many">+%1$s playlists</item>

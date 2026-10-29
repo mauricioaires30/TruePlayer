@@ -357,7 +357,7 @@
     <string name="onb_e_nela_que_ficam_as">ここに曲(songs)とプレイリスト(playlists)があります。端末を変えても何も失われません。</string>
     <string name="onb_escolha_a_pasta_das_musicas">音楽フォルダを選ぶ</string>
     <string name="onb_nenhuma_pasta_escolhida">フォルダが選ばれていません</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">YouTubeまたはSoundCloudで「共有」をタップし、TruePlayerを選んでください。プレイリストも同様です。タグは自動で修正されます。</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">YouTube、SoundCloud、Spotifyで共有をタップしてTruePlayerを選びます。プレイリストやアルバムも使えます。タグは自動で整います。</string>
     <string name="onb_o_app_avisa_quando_sair">新しいバージョンが出るとアプリがお知らせします。各オプションの説明は設定にあります。</string>
     <string name="onb_proximo">次へ</string>
     <string name="onb_pular">スキップ</string>
@@ -494,6 +494,13 @@
     <string name="dl_position">%1$s / %2$s</string>
     <string name="dl_canceladas">（キャンセル %1$s）</string>
     <string name="dl_download_cancelado">ダウンロードをキャンセルしました</string>
+    <string name="dl_procurando_a_musica">曲を検索中…</string>
+    <string name="dl_nao_encontrada">%1$s はネット上で見つかりませんでした。</string>
+    <string name="dl_nao_achadas">" 見つからなかった曲: %1$s"</string>
+    <string name="dl_spotify_limite">" Spotifyはプレイリストの最初の100曲しか提供しません。"</string>
+    <string name="dl_spotify_nao_li">Spotifyのリンクを読み取れませんでした</string>
+    <string name="dl_spotify_confira">公開されている曲、アルバム、プレイリストか確認してください。</string>
+    <string name="dl_album_baixado">アルバムをダウンロードしました</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s件のプレイリスト</item>
     </plurals>

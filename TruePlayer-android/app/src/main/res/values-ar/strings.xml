@@ -357,7 +357,7 @@
     <string name="onb_e_nela_que_ficam_as">هنا توجد المقاطع (songs) وقوائم التشغيل (playlists). تغيير الهاتف لا يفقدك شيئًا.</string>
     <string name="onb_escolha_a_pasta_das_musicas">اختر مجلد الموسيقى</string>
     <string name="onb_nenhuma_pasta_escolhida">لم يُختر مجلد</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">في YouTube أو SoundCloud اضغط على مشاركة واختر TruePlayer. قوائم التشغيل أيضًا. تُصلَح الوسوم تلقائيًا.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">في YouTube أو SoundCloud أو Spotify اضغط على مشاركة واختر TruePlayer. القوائم والألبومات أيضًا. تُصحَّح الوسوم تلقائيًا.</string>
     <string name="onb_o_app_avisa_quando_sair">يخبرك التطبيق عند صدور إصدار جديد. لكل خيار شرح في الإعدادات.</string>
     <string name="onb_proximo">التالي</string>
     <string name="onb_pular">تخطي</string>
@@ -494,6 +494,13 @@
     <string name="dl_position">%1$s من %2$s</string>
     <string name="dl_canceladas">" (أُلغي منها %1$s)"</string>
     <string name="dl_download_cancelado">تم إلغاء التنزيل</string>
+    <string name="dl_procurando_a_musica">جارٍ البحث عن المقطع…</string>
+    <string name="dl_nao_encontrada">تعذّر العثور على %1$s على الإنترنت.</string>
+    <string name="dl_nao_achadas">" لم يُعثر على: %1$s"</string>
+    <string name="dl_spotify_limite">" يوفّر Spotify أول 100 مقطع فقط من القائمة."</string>
+    <string name="dl_spotify_nao_li">تعذّرت قراءة رابط Spotify</string>
+    <string name="dl_spotify_confira">تأكد من أنه مقطع أو ألبوم أو قائمة عامة.</string>
+    <string name="dl_album_baixado">تم تنزيل الألبوم</string>
     <plurals name="commit_playlists_added">
         <item quantity="zero">لا قوائم تشغيل جديدة</item>
         <item quantity="one">+قائمة تشغيل واحدة</item>

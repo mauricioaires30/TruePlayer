@@ -357,7 +357,7 @@
     <string name="onb_e_nela_que_ficam_as">Tu żyją utwory (songs) i playlisty (playlists). Zmiana telefonu niczego nie traci.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Wybierz folder z muzyką</string>
     <string name="onb_nenhuma_pasta_escolhida">Nie wybrano folderu</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">W YouTube lub SoundCloud dotknij Udostępnij i wybierz TruePlayer. Playlisty też. Tagi poprawiają się same.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">W YouTube, SoundCloud lub Spotify dotknij Udostępnij i wybierz TruePlayer. Playlisty i albumy też. Tagi poprawiają się automatycznie.</string>
     <string name="onb_o_app_avisa_quando_sair">Aplikacja powiadomi, gdy wyjdzie nowa wersja. Każda opcja ma wyjaśnienie w Ustawieniach.</string>
     <string name="onb_proximo">Dalej</string>
     <string name="onb_pular">Pomiń</string>
@@ -494,6 +494,13 @@
     <string name="dl_position">%1$s z %2$s</string>
     <string name="dl_canceladas">" (anulowane: %1$s)"</string>
     <string name="dl_download_cancelado">Pobieranie anulowane</string>
+    <string name="dl_procurando_a_musica">Szukanie utworu…</string>
+    <string name="dl_nao_encontrada">Nie znaleziono w sieci: %1$s.</string>
+    <string name="dl_nao_achadas">" Nie znaleziono: %1$s"</string>
+    <string name="dl_spotify_limite">" Spotify udostępnia tylko pierwsze 100 utworów playlisty."</string>
+    <string name="dl_spotify_nao_li">Nie udało się odczytać linku Spotify</string>
+    <string name="dl_spotify_confira">Sprawdź, czy to publiczny utwór, album lub playlista.</string>
+    <string name="dl_album_baixado">Album pobrany</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s playlista</item>
         <item quantity="few">+%1$s playlisty</item>

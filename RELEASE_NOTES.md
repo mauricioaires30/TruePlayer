@@ -1,85 +1,85 @@
-## TruePlayer 1.12.0
+## TruePlayer 1.13.0
 
 ### English [en]
-- The download notification now shows only the current song, with its own progress and a small "3 of 10" for playlists and albums.
-- New Cancel song and Cancel playlist/album buttons in the download notification.
+- Download from Spotify links: songs, albums and playlists. The song is found on YouTube Music, YouTube or SoundCloud, and the ones not found are listed at the end.
+- Spotify only provides the first 100 songs of a playlist.
 
 ### Português [pt]
-- A notificação de download agora mostra só a música atual, com o progresso dela e um "3 de 10" pequeno em playlists e álbuns.
-- Novos botões Cancelar música e Cancelar playlist/álbum na notificação de download.
+- Download por links do Spotify: músicas, álbuns e playlists. A música é achada no YouTube Music, no YouTube ou no SoundCloud, e as não achadas aparecem no fim.
+- O Spotify só entrega as 100 primeiras músicas de uma playlist.
 
 ### Español [es]
-- La notificación de descarga ahora muestra solo la canción actual, con su progreso y un pequeño "3 de 10" en listas y álbumes.
-- Nuevos botones Cancelar canción y Cancelar lista/álbum en la notificación de descarga.
+- Descarga desde enlaces de Spotify: canciones, álbumes y listas. La canción se busca en YouTube Music, YouTube o SoundCloud, y las que no se encuentran aparecen al final.
+- Spotify solo entrega las primeras 100 canciones de una lista.
 
 ### Français [fr]
-- La notification de téléchargement n'affiche plus que le morceau en cours, avec sa progression et un petit « 3 sur 10 » pour les playlists et albums.
-- Nouveaux boutons Annuler le morceau et Annuler la playlist/l'album dans la notification de téléchargement.
+- Téléchargement depuis des liens Spotify : morceaux, albums et playlists. Le morceau est cherché sur YouTube Music, YouTube ou SoundCloud, et ceux introuvables sont listés à la fin.
+- Spotify ne fournit que les 100 premiers morceaux d'une playlist.
 
 ### Deutsch [de]
-- Die Download-Benachrichtigung zeigt jetzt nur den aktuellen Titel mit seinem Fortschritt und bei Playlists und Alben ein kleines „3 von 10“.
-- Neue Schaltflächen „Titel abbrechen“ und „Playlist/Album abbrechen“ in der Download-Benachrichtigung.
+- Download über Spotify-Links: Titel, Alben und Playlists. Der Titel wird auf YouTube Music, YouTube oder SoundCloud gesucht, nicht gefundene werden am Ende aufgelistet.
+- Spotify liefert nur die ersten 100 Titel einer Playlist.
 
 ### Italiano [it]
-- La notifica di download ora mostra solo il brano corrente, con il suo avanzamento e un piccolo «3 di 10» per playlist e album.
-- Nuovi pulsanti Annulla brano e Annulla playlist/album nella notifica di download.
+- Download da link di Spotify: brani, album e playlist. Il brano viene cercato su YouTube Music, YouTube o SoundCloud e quelli non trovati sono elencati alla fine.
+- Spotify fornisce solo i primi 100 brani di una playlist.
 
 ### Nederlands [nl]
-- De downloadmelding toont nu alleen het huidige nummer, met de voortgang en een klein "3 van 10" bij afspeellijsten en albums.
-- Nieuwe knoppen Nummer annuleren en Afspeellijst/album annuleren in de downloadmelding.
+- Downloaden via Spotify-links: nummers, albums en afspeellijsten. Het nummer wordt gezocht op YouTube Music, YouTube of SoundCloud; wat niet gevonden wordt staat aan het eind.
+- Spotify levert alleen de eerste 100 nummers van een afspeellijst.
 
 ### Svenska [sv]
-- Nedladdningsaviseringen visar nu bara den aktuella låten, med dess förlopp och ett litet "3 av 10" för spellistor och album.
-- Nya knappar Avbryt låt och Avbryt spellista/album i nedladdningsaviseringen.
+- Nedladdning från Spotify-länkar: låtar, album och spellistor. Låten söks på YouTube Music, YouTube eller SoundCloud, och de som inte hittas listas i slutet.
+- Spotify ger bara de första 100 låtarna i en spellista.
 
 ### Polski [pl]
-- Powiadomienie o pobieraniu pokazuje teraz tylko bieżący utwór z jego postępem i małe „3 z 10” przy playlistach i albumach.
-- Nowe przyciski Anuluj utwór i Anuluj playlistę/album w powiadomieniu o pobieraniu.
+- Pobieranie z linków Spotify: utwory, albumy i playlisty. Utwór jest szukany w YouTube Music, YouTube lub SoundCloud, a te, których nie znaleziono, są wypisane na końcu.
+- Spotify udostępnia tylko pierwsze 100 utworów playlisty.
 
 ### Türkçe [tr]
-- İndirme bildirimi artık yalnızca geçerli şarkıyı, kendi ilerlemesiyle ve listelerde ve albümlerde küçük bir "3 / 10" ile gösterir.
-- İndirme bildiriminde yeni Şarkıyı iptal et ve Listeyi/albümü iptal et düğmeleri.
+- Spotify bağlantılarından indirme: şarkılar, albümler ve listeler. Şarkı YouTube Music, YouTube veya SoundCloud'da aranır; bulunamayanlar sonda listelenir.
+- Spotify bir listenin yalnızca ilk 100 şarkısını verir.
 
 ### Русский [ru]
-- Уведомление о загрузке теперь показывает только текущий трек с его прогрессом и маленькое «3 из 10» для плейлистов и альбомов.
-- В уведомлении о загрузке появились кнопки «Отменить трек» и «Отменить плейлист/альбом».
+- Загрузка по ссылкам Spotify: треки, альбомы и плейлисты. Трек ищется на YouTube Music, YouTube или SoundCloud, а ненайденные перечисляются в конце.
+- Spotify отдаёт только первые 100 треков плейлиста.
 
 ### Українська [uk]
-- Сповіщення про завантаження тепер показує лише поточний трек із його прогресом і маленьке «3 з 10» для плейлистів і альбомів.
-- У сповіщенні про завантаження з'явилися кнопки «Скасувати трек» і «Скасувати плейлист/альбом».
+- Завантаження за посиланнями Spotify: треки, альбоми та плейлисти. Трек шукається на YouTube Music, YouTube або SoundCloud, а не знайдені перелічуються в кінці.
+- Spotify віддає лише перші 100 треків плейлиста.
 
 ### العربية [ar]
-- يعرض إشعار التنزيل الآن المقطع الحالي فقط مع تقدّمه، و«3 من 10» صغيرة للقوائم والألبومات.
-- أزرار جديدة في إشعار التنزيل: إلغاء المقطع وإلغاء القائمة/الألبوم.
+- التنزيل من روابط Spotify: مقاطع وألبومات وقوائم. يُبحث عن المقطع في YouTube Music أو YouTube أو SoundCloud، وتُذكر المقاطع التي لم يُعثر عليها في النهاية.
+- يوفّر Spotify أول 100 مقطع فقط من القائمة.
 
 ### हिन्दी [hi]
-- डाउनलोड नोटिफ़िकेशन अब सिर्फ़ मौजूदा गाना दिखाता है, उसकी प्रगति के साथ, और प्लेलिस्ट व एल्बम के लिए छोटा "10 में से 3"।
-- डाउनलोड नोटिफ़िकेशन में नए बटन: गाना रद्द करें और प्लेलिस्ट/एल्बम रद्द करें।
+- Spotify लिंक से डाउनलोड: गाने, एल्बम और प्लेलिस्ट। गाना YouTube Music, YouTube या SoundCloud पर खोजा जाता है, और जो नहीं मिले वे आख़िर में दिखते हैं।
+- Spotify प्लेलिस्ट के सिर्फ़ पहले 100 गाने देता है।
 
 ### Bahasa Indonesia [id]
-- Notifikasi unduhan kini hanya menampilkan lagu saat ini, dengan progresnya dan "3 dari 10" kecil untuk playlist dan album.
-- Tombol baru Batalkan lagu dan Batalkan playlist/album di notifikasi unduhan.
+- Unduh dari tautan Spotify: lagu, album, dan playlist. Lagu dicari di YouTube Music, YouTube, atau SoundCloud, dan yang tidak ditemukan ditampilkan di akhir.
+- Spotify hanya memberikan 100 lagu pertama dari sebuah playlist.
 
 ### Tiếng Việt [vi]
-- Thông báo tải xuống giờ chỉ hiển thị bài hát hiện tại, kèm tiến độ của nó và dòng nhỏ "3 trên 10" cho danh sách phát và album.
-- Thêm nút Hủy bài hát và Hủy danh sách phát/album trong thông báo tải xuống.
+- Tải từ liên kết Spotify: bài hát, album và danh sách phát. Bài hát được tìm trên YouTube Music, YouTube hoặc SoundCloud, và những bài không thấy được liệt kê ở cuối.
+- Spotify chỉ cung cấp 100 bài đầu tiên của một danh sách phát.
 
 ### ไทย [th]
-- การแจ้งเตือนดาวน์โหลดแสดงเฉพาะเพลงปัจจุบัน พร้อมความคืบหน้า และ "3 จาก 10" ตัวเล็กสำหรับเพลย์ลิสต์และอัลบั้ม
-- เพิ่มปุ่มยกเลิกเพลงและยกเลิกเพลย์ลิสต์/อัลบั้มในการแจ้งเตือนดาวน์โหลด
+- ดาวน์โหลดจากลิงก์ Spotify: เพลง อัลบั้ม และเพลย์ลิสต์ โดยค้นหาเพลงบน YouTube Music, YouTube หรือ SoundCloud และแสดงรายการเพลงที่ไม่พบไว้ท้ายสุด
+- Spotify ให้เพลงจากเพลย์ลิสต์เพียง 100 เพลงแรก
 
 ### 日本語 [ja]
-- ダウンロード通知には現在の曲だけが表示され、進行状況と、プレイリストやアルバムでは小さく「3 / 10」と出ます。
-- ダウンロード通知に「曲をキャンセル」と「プレイリスト/アルバムをキャンセル」ボタンを追加しました。
+- Spotifyのリンクからダウンロードできます（曲、アルバム、プレイリスト）。曲はYouTube Music、YouTube、SoundCloudで探し、見つからなかった曲は最後に一覧表示されます。
+- Spotifyはプレイリストの最初の100曲しか提供しません。
 
 ### 한국어 [ko]
-- 다운로드 알림에 현재 곡만 표시되고, 진행률과 재생목록·앨범에서는 작게 "3 / 10"이 나옵니다.
-- 다운로드 알림에 곡 취소, 재생목록/앨범 취소 버튼이 생겼습니다.
+- Spotify 링크로 다운로드할 수 있습니다(곡, 앨범, 재생목록). 곡은 YouTube Music, YouTube, SoundCloud에서 찾고, 찾지 못한 곡은 마지막에 표시됩니다.
+- Spotify는 재생목록의 처음 100곡만 제공합니다.
 
 ### 简体中文 [zh-CN]
-- 下载通知现在只显示当前歌曲及其进度，播放列表和专辑会在角落显示“第 3 首，共 10 首”。
-- 下载通知新增“取消这首歌”和“取消播放列表/专辑”按钮。
+- 支持通过 Spotify 链接下载歌曲、专辑和播放列表。歌曲会在 YouTube Music、YouTube 或 SoundCloud 中查找，未找到的会在最后列出。
+- Spotify 只提供播放列表的前 100 首歌曲。
 
 ### 繁體中文 [zh-TW]
-- 下載通知現在只顯示目前歌曲及其進度，播放清單和專輯會在角落顯示「第 3 首，共 10 首」。
-- 下載通知新增「取消這首歌」和「取消播放清單/專輯」按鈕。
+- 支援透過 Spotify 連結下載歌曲、專輯和播放清單。歌曲會在 YouTube Music、YouTube 或 SoundCloud 中尋找，找不到的會在最後列出。
+- Spotify 只提供播放清單的前 100 首歌曲。

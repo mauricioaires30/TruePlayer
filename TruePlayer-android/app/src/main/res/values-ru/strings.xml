@@ -357,7 +357,7 @@
     <string name="onb_e_nela_que_ficam_as">Здесь хранятся треки (songs) и плейлисты (playlists). При смене телефона ничего не теряется.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Выберите папку с музыкой</string>
     <string name="onb_nenhuma_pasta_escolhida">Папка не выбрана</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">В YouTube или SoundCloud нажмите «Поделиться» и выберите TruePlayer. Плейлисты тоже. Теги исправляются сами.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">В YouTube, SoundCloud или Spotify нажмите «Поделиться» и выберите TruePlayer. Плейлисты и альбомы тоже. Теги исправляются автоматически.</string>
     <string name="onb_o_app_avisa_quando_sair">Приложение сообщит, когда выйдет новая версия. У каждой опции есть пояснение в настройках.</string>
     <string name="onb_proximo">Далее</string>
     <string name="onb_pular">Пропустить</string>
@@ -494,6 +494,13 @@
     <string name="dl_position">%1$s из %2$s</string>
     <string name="dl_canceladas">" (отменено: %1$s)"</string>
     <string name="dl_download_cancelado">Загрузка отменена</string>
+    <string name="dl_procurando_a_musica">Поиск трека…</string>
+    <string name="dl_nao_encontrada">Не удалось найти в сети: %1$s.</string>
+    <string name="dl_nao_achadas">" Не найдены: %1$s"</string>
+    <string name="dl_spotify_limite">" Spotify отдаёт только первые 100 треков плейлиста."</string>
+    <string name="dl_spotify_nao_li">Не удалось прочитать ссылку Spotify</string>
+    <string name="dl_spotify_confira">Проверьте, что это открытый трек, альбом или плейлист.</string>
+    <string name="dl_album_baixado">Альбом загружен</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s плейлист</item>
         <item quantity="few">+%1$s плейлиста</item>

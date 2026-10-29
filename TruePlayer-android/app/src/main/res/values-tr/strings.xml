@@ -357,7 +357,7 @@
     <string name="onb_e_nela_que_ficam_as">Şarkılar (songs) ve çalma listeleri (playlists) burada durur. Telefon değiştirmek hiçbir şeyi kaybettirmez.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Müzik klasörünü seçin</string>
     <string name="onb_nenhuma_pasta_escolhida">Klasör seçilmedi</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">YouTube veya SoundCloud\'da Paylaş\'a dokunun ve TruePlayer\'ı seçin. Çalma listeleri de olur. Etiketler otomatik düzeltilir.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">YouTube, SoundCloud veya Spotify\'da Paylaş\'a dokunun ve TruePlayer\'ı seçin. Listeler ve albümler de olur. Etiketler otomatik düzeltilir.</string>
     <string name="onb_o_app_avisa_quando_sair">Yeni sürüm çıkınca uygulama size haber verir. Her seçeneğin açıklaması Ayarlar\'da.</string>
     <string name="onb_proximo">İleri</string>
     <string name="onb_pular">Atla</string>
@@ -494,6 +494,13 @@
     <string name="dl_position">%1$s / %2$s</string>
     <string name="dl_canceladas">" (%1$s iptal)"</string>
     <string name="dl_download_cancelado">İndirme iptal edildi</string>
+    <string name="dl_procurando_a_musica">Şarkı aranıyor…</string>
+    <string name="dl_nao_encontrada">%1$s internette bulunamadı.</string>
+    <string name="dl_nao_achadas">" Bulunamayanlar: %1$s"</string>
+    <string name="dl_spotify_limite">" Spotify bir listenin yalnızca ilk 100 şarkısını verir."</string>
+    <string name="dl_spotify_nao_li">Spotify bağlantısı okunamadı</string>
+    <string name="dl_spotify_confira">Herkese açık bir şarkı, albüm veya liste olduğundan emin olun.</string>
+    <string name="dl_album_baixado">Albüm indirildi</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s çalma listesi</item>
         <item quantity="other">+%1$s çalma listesi</item>

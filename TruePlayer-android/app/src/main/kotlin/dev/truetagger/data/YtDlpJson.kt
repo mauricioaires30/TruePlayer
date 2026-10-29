@@ -65,6 +65,23 @@ object YtDlpJson {
         return FlatPlaylist(title, items)
     }
 
+    /** Resultados de uma busca (`ytsearch`, `scsearch`, busca do YouTube Music), na ordem em que vieram. */
+    fun parseSearch(text: String): List<SearchHit> {
+        val entries = parseObject(text)?.get("entries") as? JsonArray ?: return emptyList()
+        return entries.mapNotNull { element ->
+            val entry = element as? JsonObject ?: return@mapNotNull null
+            val url = entry["url"].text().ifBlank { entry["webpage_url"].text() }
+            if (url.isBlank()) return@mapNotNull null
+            SearchHit(
+                url = url,
+                title = entry["title"].text(),
+                durationSec = (entry["duration"] as? JsonPrimitive)?.doubleOrNull?.toInt() ?: 0,
+                uploader = entry["uploader"].text().ifBlank { entry["channel"].text() },
+                artist = entry["artist"].text(),
+            )
+        }
+    }
+
     fun parseInfo(text: String): SourceInfo? {
         val obj = parseObject(text) ?: return null
         val duration = (obj["duration"] as? JsonPrimitive)?.doubleOrNull?.toInt() ?: 0

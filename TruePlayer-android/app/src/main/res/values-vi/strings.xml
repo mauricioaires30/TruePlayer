@@ -357,7 +357,7 @@
     <string name="onb_e_nela_que_ficam_as">Đây là nơi chứa bài hát (songs) và danh sách phát (playlists). Đổi điện thoại không mất gì cả.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Chọn thư mục nhạc</string>
     <string name="onb_nenhuma_pasta_escolhida">Chưa chọn thư mục</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">Trên YouTube hoặc SoundCloud, chạm Chia sẻ và chọn TruePlayer. Danh sách phát cũng vậy. Thẻ được tự động sửa.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">Trên YouTube, SoundCloud hoặc Spotify, chạm Chia sẻ và chọn TruePlayer. Cả danh sách phát và album. Thẻ tự động được sửa.</string>
     <string name="onb_o_app_avisa_quando_sair">Ứng dụng báo cho bạn khi có phiên bản mới. Mỗi tùy chọn đều có giải thích trong Cài đặt.</string>
     <string name="onb_proximo">Tiếp</string>
     <string name="onb_pular">Bỏ qua</string>
@@ -494,6 +494,13 @@
     <string name="dl_position">%1$s trên %2$s</string>
     <string name="dl_canceladas">" (đã hủy %1$s)"</string>
     <string name="dl_download_cancelado">Đã hủy tải xuống</string>
+    <string name="dl_procurando_a_musica">Đang tìm bài hát…</string>
+    <string name="dl_nao_encontrada">Không tìm thấy %1$s trên mạng.</string>
+    <string name="dl_nao_achadas">" Không tìm thấy: %1$s"</string>
+    <string name="dl_spotify_limite">" Spotify chỉ cung cấp 100 bài đầu tiên của một danh sách phát."</string>
+    <string name="dl_spotify_nao_li">Không đọc được liên kết Spotify</string>
+    <string name="dl_spotify_confira">Hãy kiểm tra đó là bài hát, album hoặc danh sách phát công khai.</string>
+    <string name="dl_album_baixado">Đã tải album</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s danh sách phát</item>
     </plurals>

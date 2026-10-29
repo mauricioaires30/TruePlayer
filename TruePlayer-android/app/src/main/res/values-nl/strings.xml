@@ -357,7 +357,7 @@
     <string name="onb_e_nela_que_ficam_as">Hier staan de nummers (songs) en de playlists (playlists). Van telefoon wisselen kost niets.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Kies de muziekmap</string>
     <string name="onb_nenhuma_pasta_escolhida">Geen map gekozen</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">Tik in YouTube of SoundCloud op Delen en kies TruePlayer. Playlists ook. De tags worden automatisch gecorrigeerd.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">Tik op YouTube, SoundCloud of Spotify op Delen en kies TruePlayer. Ook afspeellijsten en albums. Tags worden automatisch verbeterd.</string>
     <string name="onb_o_app_avisa_quando_sair">De app laat het weten als er een nieuwe versie uitkomt. Elke optie heeft uitleg in Instellingen.</string>
     <string name="onb_proximo">Volgende</string>
     <string name="onb_pular">Overslaan</string>
@@ -494,6 +494,13 @@
     <string name="dl_position">%1$s van %2$s</string>
     <string name="dl_canceladas">" (%1$s geannuleerd)"</string>
     <string name="dl_download_cancelado">Download geannuleerd</string>
+    <string name="dl_procurando_a_musica">Nummer zoeken…</string>
+    <string name="dl_nao_encontrada">Kon %1$s online niet vinden.</string>
+    <string name="dl_nao_achadas">" Niet gevonden: %1$s"</string>
+    <string name="dl_spotify_limite">" Spotify levert alleen de eerste 100 nummers van een afspeellijst."</string>
+    <string name="dl_spotify_nao_li">Kon de Spotify-link niet lezen</string>
+    <string name="dl_spotify_confira">Controleer of het een openbaar nummer, album of afspeellijst is.</string>
+    <string name="dl_album_baixado">Album gedownload</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s playlist</item>
         <item quantity="other">+%1$s playlists</item>
