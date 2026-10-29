@@ -970,12 +970,15 @@ private fun MiniPlayer(
                 .height(UiTokens.miniPlayerHeight)
                 .clickable(onClick = onOpen),
         ) {
-            // Linha fina de progresso no topo: mostra quanto da música já tocou sem ocupar espaço.
-            LinearProgressIndicator(
-                progress = { if (s.durationMs > 0) (s.positionMs.toFloat() / s.durationMs).coerceIn(0f, 1f) else 0f },
-                modifier = Modifier.fillMaxWidth().height(2.dp),
-                trackColor = Color.Transparent,
-                drawStopIndicator = {},
+            // Linha ondulada de progresso no topo: anda continuamente com a música e acalma ao pausar.
+            val smooth = rememberSmoothFraction(s)
+            WavyProgressBar(
+                progress = { smooth.value },
+                playing = s.playing,
+                modifier = Modifier.fillMaxWidth().height(9.dp).padding(horizontal = UiTokens.space3),
+                amplitude = 1.8.dp,
+                wavelength = 20.dp,
+                stroke = 2.dp,
             )
             Row(
                 modifier = Modifier.fillMaxWidth().weight(1f).padding(start = UiTokens.compactPadding, end = UiTokens.space2),
@@ -1050,6 +1053,7 @@ private val MINI_MAIN_BUTTON = 48.dp
 private val MINI_SIDE_BUTTON = 44.dp
 private val MINI_SMALL_BUTTON = 34.dp
 
+@OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
 private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Unit, onArtist: () -> Unit, onAlbum: () -> Unit) {
     val context = LocalContext.current
@@ -1087,10 +1091,37 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
                     }
                 }
             }
+            // O Slider continua cuidando do toque e da acessibilidade; o trilho e a barrinha são desenhados por nós.
+            // O seek só é enviado ao soltar o dedo (antes ia um comando a cada pixel arrastado).
+            val smooth = rememberSmoothFraction(s)
+            var dragging by remember { mutableStateOf<Float?>(null) }
+            var justSought by remember { mutableStateOf<Float?>(null) }
+            // Depois de soltar, a barra fica no ponto escolhido até o player confirmar a nova posição.
+            LaunchedEffect(justSought) {
+                if (justSought != null) {
+                    kotlinx.coroutines.delay(900)
+                    justSought = null
+                }
+            }
             Slider(
-                value = if (s.durationMs > 0) s.positionMs.toFloat() / s.durationMs else 0f,
-                onValueChange = { f -> MusicPlaybackService.command(context, MusicPlaybackService.ACTION_SEEK, (f * s.durationMs).toLong()) },
-                colors = SliderDefaults.colors(inactiveTrackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)),
+                value = dragging ?: justSought ?: if (s.durationMs > 0) (s.positionMs.toFloat() / s.durationMs).coerceIn(0f, 1f) else 0f,
+                onValueChange = { dragging = it },
+                onValueChangeFinished = {
+                    dragging?.let { f ->
+                        justSought = f
+                        MusicPlaybackService.command(context, MusicPlaybackService.ACTION_SEEK, (f * s.durationMs).toLong())
+                    }
+                    dragging = null
+                },
+                thumb = { Spacer(Modifier.size(2.dp, 32.dp)) },
+                track = {
+                    WavyProgressBar(
+                        progress = { dragging ?: justSought ?: smooth.value },
+                        playing = s.playing && dragging == null,
+                        modifier = Modifier.fillMaxWidth().height(32.dp),
+                        showThumb = true,
+                    )
+                },
                 modifier = Modifier.fillMaxWidth(),
             )
             Row(Modifier.fillMaxWidth().padding(horizontal = UiTokens.space2), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -1898,6 +1929,8 @@ private fun SongItem(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var info by remember { mutableStateOf(false) }
+    // Só a música atual lê o estado de "tocando": animar é só dela, e as outras linhas não recompõem.
+    val nowPlaying = if (isCurrent) PlayerState.playing.collectAsState().value else false
     Row(
         modifier
             .fillMaxWidth()
@@ -1912,6 +1945,8 @@ private fun SongItem(
                 RoundedCornerShape(UiTokens.songItemRadius),
             )
             .background(if (isCurrent) MaterialTheme.colorScheme.primary.copy(alpha = 0.10f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.34f))
+            // Ondas passando atrás das informações da música que está tocando.
+            .then(if (isCurrent && !selectionMode) Modifier.nowPlayingWaves(nowPlaying, MaterialTheme.colorScheme.primary) else Modifier)
             .clickable(onClick = if (selectionMode) onToggleSelect else onPlay)
             .padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.songItemPadding),
         verticalAlignment = Alignment.CenterVertically,
@@ -1951,7 +1986,7 @@ private fun SongItem(
                     Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp)).background(Color.Black.copy(alpha = 0.5f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Rounded.GraphicEq, contentDescription = "Tocando agora", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(UiTokens.primaryIconSize + 2.dp))
+                    EqualizerBars(playing = nowPlaying, color = MaterialTheme.colorScheme.primary)
                 }
             }
         }

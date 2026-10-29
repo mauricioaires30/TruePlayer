@@ -1,54 +1,58 @@
 # TruePlayer
 
-Player de músicas e editor de tags para Android. Toca os arquivos da sua pasta de músicas, mostra estatísticas do que você ouve, baixa músicas de links do YouTube e do SoundCloud (inclusive playlists), acerta as tags sozinho e pode guardar tudo num repositório do GitHub.
+**English** · [Português (Brasil)](README.pt-BR.md)
 
-## O que faz
-- **Biblioteca e player:** músicas, álbuns, artistas, gêneros e playlists, com fila, aleatório, repetir e controle pelo fone, pela tela de bloqueio e pelo botão de mídia do sistema.
-- **Editor de tags:** título, artista, álbum, capa, ano, faixa, gênero e mais.
-- **Downloads por link:** compartilhe um link do YouTube ou do SoundCloud para o TruePlayer. Link de playlist vira uma playlist do app, com as músicas na ordem original, baixadas uma por vez.
-- **Ajuste automático de tags:** depois do download, procura a música no Apple Music, no Deezer e no Genius e preenche título, artista, álbum e capa. Se não achar com certeza, não mexe nas tags.
-- **Estatísticas:** tempo ouvido e vezes tocadas por música, álbum e artista (semana, mês, 6 meses, ano e sempre).
-- **Pasta organizada e portátil:** tudo fica na pasta que você escolher (`songs/` para músicas, `playlists/` para as playlists em `.m3u`, `.trueplayer/` para estatísticas e configurações). Trocar de celular não perde nada.
-- **Git:** guarda a pasta num repositório do GitHub. Os botões Commitar e Enviar ficam separados, o envio roda em segundo plano (com andamento na notificação) e vai em partes, continuando de onde parou se falhar. Junto vão as estatísticas, as configurações e as capas dos álbuns. "Baixar do GitHub" restaura tudo num celular novo.
-- **Atualização automática:** confere as versões novas em [Releases](https://github.com/mauricioaires30/TruePlayer/releases), mostra as novidades e instala depois da sua confirmação.
+A music player and tag editor for Android. It plays the files in your music folder, shows what you listen to, downloads songs from YouTube and SoundCloud links (playlists included), fixes the tags by itself, and can keep everything in a GitHub repository.
 
-## Instalar
-1. Abra a aba [Releases](https://github.com/mauricioaires30/TruePlayer/releases) no celular e baixe o `.apk` mais recente.
-2. Abra o arquivo. O Android vai pedir para permitir "instalar apps desconhecidos" para o app que você usou para abrir (navegador ou gerenciador de arquivos).
-3. Na primeira abertura, escolha a pasta de músicas e conceda as permissões que o app pedir.
+No account, no ads, no tracking. Your library stays on your phone.
 
-Requer Android 8.0 ou mais novo, em celulares de 64 bits (arm64). Depois da primeira instalação, o app se atualiza sozinho.
+## Features
+- **Library and player:** songs, albums, artists, genres and playlists, with queue, shuffle, repeat, and control from headphones, the lock screen and the system media buttons. The song that is playing gets animated waves behind its row and a wavy progress bar.
+- **Tag editor:** title, artist, album, cover art, year, track number, genre and more.
+- **Download by link:** share a YouTube or SoundCloud link to TruePlayer. A playlist link becomes an app playlist with the songs in their original order, downloaded one at a time.
+- **Automatic tag fixing:** after a download it looks the song up on Apple Music, Deezer and Genius and fills in title, artist, album and cover. If it is not sure, it leaves the tags alone.
+- **Statistics:** listening time and play counts per song, album and artist (week, month, 6 months, year and all time).
+- **Organized, portable folder:** everything lives in the folder you pick (`songs/` for music, `playlists/` for `.m3u` playlists, `.trueplayer/` for statistics and settings). Switching phones loses nothing.
+- **Git:** keeps the folder in a GitHub repository. Commit and Send are separate buttons; sending runs in the background (progress in the notification), goes in parts and resumes where it stopped if it fails. Statistics, settings and album covers go along. "Download from GitHub" restores everything on a new phone.
+- **Automatic updates:** checks [Releases](https://github.com/mauricioaires30/TruePlayer/releases) for new versions, shows what changed and installs after you confirm.
 
-## Permissões
-| Permissão | Para que serve |
+## Install
+1. Open the [Releases](https://github.com/mauricioaires30/TruePlayer/releases) tab on your phone and download the latest `.apk`.
+2. Open the file. Android will ask you to allow "install unknown apps" for the app you opened it with (browser or file manager).
+3. On first launch, pick your music folder and grant the permissions the app asks for.
+
+Requires Android 8.0 or newer on a 64-bit (arm64) phone. After the first install the app updates itself.
+
+## Permissions
+| Permission | What it is for |
 |---|---|
-| Arquivos de áudio | Listar e tocar as músicas da pasta |
-| Notificações | Controles do player, progresso dos downloads e aviso de atualização |
-| Internet | Baixar músicas, buscar tags e capas, conferir atualizações e enviar ao GitHub |
-| Instalar apps desconhecidos | Instalar as atualizações baixadas pelo próprio app |
-| Acesso a todos os arquivos | **Só** para o recurso de Git, que precisa trabalhar direto nos arquivos da pasta |
-| Rodar em segundo plano (sem otimização de bateria) | Opcional: downloads, envio ao GitHub e avisos de atualização continuam com o app fechado |
+| Audio files | List and play the songs in the folder |
+| Notifications | Player controls, download progress and update notices |
+| Internet | Download songs, look up tags and covers, check for updates and push to GitHub |
+| Install unknown apps | Install the updates the app downloads itself |
+| All files access | **Only** for the Git feature, which works directly on the folder's files |
+| Run in background (no battery optimization) | Optional: downloads, GitHub sends and update notices keep working with the app closed |
 
-## Privacidade
-Não há conta, cadastro, anúncio nem rastreamento. Sua biblioteca, playlists e estatísticas ficam no seu celular, na pasta que você escolheu. O app só acessa a internet quando você usa um recurso que precisa dela:
+## Privacy
+There is no account, sign-up, ad or tracking. Your library, playlists and statistics stay on your phone, in the folder you chose. The app only goes online when you use a feature that needs it:
 - downloads (YouTube/SoundCloud);
-- busca de tags e capas (Apple Music, Deezer e Genius), que recebe só o nome da música e do artista;
-- conferência de atualizações (GitHub);
-- envio ao GitHub, quando você usa o Git (o token fica cifrado e guardado só no celular).
+- tag and cover lookup (Apple Music, Deezer and Genius), which receives only the song and artist name;
+- update checks (GitHub);
+- sending to GitHub, when you use Git (the token is encrypted and stored only on the phone).
 
-## Estrutura do repositório
+## Repository layout
 ```
-TruePlayer-android/   projeto Android (Kotlin + Jetpack Compose)
-  app/                código do aplicativo
-  gradle/             catálogo de versões das dependências
-LICENSE               licença (GNU GPL v3)
-RELEASE_NOTES.md      novidades da versão (viram o texto da release)
-.github/workflows/    publicação automática das releases
+TruePlayer-android/   Android project (Kotlin + Jetpack Compose)
+  app/                app source code
+  gradle/             dependency version catalog
+LICENSE               license (GNU GPL v3)
+RELEASE_NOTES.md      what changed in the version (becomes the release text)
+.github/workflows/    automatic release publishing
 ```
-O APK de cada versão não fica no repositório: o GitHub Actions compila, assina e publica em Releases a cada push com versão nova.
+Each version's APK is not stored in the repository: GitHub Actions builds, signs and publishes it to Releases on every push with a new version.
 
-## Compilar
-Requer JDK 21 e o Android SDK 36.
+## Build
+Requires JDK 21 and the Android SDK 36.
 
 ```
 cd TruePlayer-android
@@ -56,31 +60,31 @@ gradle :app:assembleDebug
 gradle :app:testDebugUnitTest
 ```
 
-O APK sai em `TruePlayer-android/app/build/outputs/apk/debug/`. Esse APK é assinado com a chave de debug da sua máquina, então **não** atualiza por cima do APK oficial de Releases (a assinatura é diferente).
+The APK ends up in `TruePlayer-android/app/build/outputs/apk/debug/`. It is signed with your machine's debug key, so it will **not** update over the official APK from Releases (the signature differs).
 
-## Direitos e licença
-Copyright © 2026 mauricioaires30. Todos os direitos autorais do código do TruePlayer pertencem ao autor.
+## Rights and license
+Copyright © 2026 mauricioaires30. All copyright in the TruePlayer code belongs to the author.
 
-O TruePlayer é distribuído sob a **GNU General Public License, versão 3** (veja o arquivo [LICENSE](LICENSE)). Na prática:
-- você pode usar, estudar, copiar e modificar o app, inclusive compartilhar suas modificações, **desde que** mantenha o aviso de copyright e distribua o resultado também sob a GPL-3.0, com o código-fonte disponível;
-- não há garantia de nenhum tipo (veja as seções 15 e 16 da licença).
+TruePlayer is distributed under the **GNU General Public License, version 3** (see [LICENSE](LICENSE)). In practice:
+- you may use, study, copy and modify the app, and share your changes, **as long as** you keep the copyright notice and distribute the result under GPL-3.0 as well, with the source code available;
+- there is no warranty of any kind (see sections 15 and 16 of the license).
 
-**Por que GPL-3.0 e não "todos os direitos reservados":** o TruePlayer usa a biblioteca `youtubedl-android` e o FFmpeg que ela traz, que são GPL-3.0. Código que os incorpora e é distribuído precisa seguir a mesma licença. Isso não tira a autoria do código original, mas impede restringir quem recebe o app.
+**Why GPL-3.0 and not "all rights reserved":** TruePlayer uses the `youtubedl-android` library and the FFmpeg it bundles, both GPL-3.0. Code that incorporates them and is distributed must follow the same license. This does not take away the authorship of the original code, but it prevents restricting whoever receives the app.
 
-### Componentes de terceiros
-Cada componente continua sob a licença dele:
+### Third-party components
+Each component stays under its own license:
 
-| Componente | Licença |
+| Component | License |
 |---|---|
-| [youtubedl-android](https://github.com/JunkFood02/youtubedl-android) e FFmpeg (embutido por ela) | GPL-3.0 |
+| [youtubedl-android](https://github.com/JunkFood02/youtubedl-android) and FFmpeg (bundled by it) | GPL-3.0 |
 | [yt-dlp](https://github.com/yt-dlp/yt-dlp) | Unlicense |
 | [jaudiotagger](https://github.com/ijabz/jaudiotagger) | LGPL |
 | [JGit](https://github.com/eclipse-jgit/jgit) | BSD-3-Clause (Eclipse Distribution License) |
-| Kotlin, Jetpack Compose, AndroidX (WorkManager e outros), Ktor, kotlinx.* | Apache-2.0 |
+| Kotlin, Jetpack Compose, AndroidX (WorkManager and others), Ktor, kotlinx.* | Apache-2.0 |
 
-O código-fonte completo está neste repositório, o que também atende a exigência da LGPL de permitir trocar a biblioteca jaudiotagger.
+The complete source code is in this repository, which also satisfies the LGPL requirement to let you replace the jaudiotagger library.
 
-### Aviso sobre conteúdo
-O TruePlayer é uma ferramenta. **Você é o responsável** por baixar apenas conteúdo que tem o direito de baixar e por respeitar os termos de uso dos serviços de onde vem o link e os direitos autorais dos artistas. O projeto não é afiliado, associado nem endossado por YouTube, Google, SoundCloud, Apple, Deezer, Genius ou GitHub. Esses nomes pertencem aos respectivos donos.
+### Content notice
+TruePlayer is a tool. **You are responsible** for downloading only content you have the right to download, and for respecting the terms of the services the link comes from and the artists' copyrights. The project is not affiliated with, associated with or endorsed by YouTube, Google, SoundCloud, Apple, Deezer, Genius or GitHub. Those names belong to their respective owners.
 
-Este texto descreve a intenção do projeto e não é aconselhamento jurídico. Em caso de dúvida sobre licenças, consulte um profissional.
+This text describes the project's intent and is not legal advice. If in doubt about licenses, consult a professional.

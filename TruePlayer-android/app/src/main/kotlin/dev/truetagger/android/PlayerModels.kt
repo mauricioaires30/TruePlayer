@@ -58,9 +58,14 @@ data class PlayerSnapshot(
     val durationMs: Long = 0L,
     val shuffle: Boolean = false,
     val repeat: RepeatMode = RepeatMode.OFF,
+    /** Quando [positionMs] foi medida (relógio do aparelho, `SystemClock.elapsedRealtime`); 0 = desconhecido. */
+    val updatedAtMs: Long = 0L,
 )
 
 object PlayerState {
+    /** Tocando agora (true) ou pausado/parado (false). Só a música atual da lista lê isto, para animar. */
+    val playing = kotlinx.coroutines.flow.MutableStateFlow(false)
+
     @Volatile var snapshot: PlayerSnapshot = PlayerSnapshot()
 
     private val _revision = MutableStateFlow(0L)

@@ -1,3 +1,16 @@
-<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
- <path android:fillColor="#FFFFFFFF" android:pathData="M7,7h10v3l4,-4 -4,-4v3H7c-2.21,0 -4,1.79 -4,4v2h2V9c0,-1.1 0.9,-2 2,-2zM17,17H7v-3l-4,4 4,4v-3h10c2.21,0 4,-1.79 4,-4v-2h-2v2c0,1.1 -0.9,2 -2,2z"/>
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Repetir desligado: as mesmas setas, cortadas por um risco diagonal (sem círculo).
+    As setas e o risco ficam no mesmo caminho com evenOdd: onde o risco cruza as setas sobra um vão,
+    então o risco aparece nítido mesmo com uma cor só.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:fillType="evenOdd"
+        android:pathData="M7,7h10v3l4,-4 -4,-4v3H7c-2.21,0 -4,1.79 -4,4v2h2V9c0,-1.1 0.9,-2 2,-2zM17,17H7v-3l-4,4 4,4v-3h10c2.21,0 4,-1.79 4,-4v-2h-2v2c0,1.1 -0.9,2 -2,2zM2.2,3.8L3.8,2.2L21.8,20.2L20.2,21.8Z" />
 </vector>

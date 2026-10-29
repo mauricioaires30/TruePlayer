@@ -900,6 +900,7 @@ class MusicPlaybackService : Service() {
         abandonAudioFocus()
         session.isActive = false
         PlayerState.snapshot = PlayerSnapshot()
+        PlayerState.playing.value = false
         AppEvents.bump()
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
@@ -991,7 +992,8 @@ class MusicPlaybackService : Service() {
         val safeDuration = runCatching {
             p?.duration?.toLong()?.takeIf { it > 0 } ?: duration
         }.getOrDefault(duration)
-        PlayerState.snapshot = PlayerSnapshot(track, queue.toList(), index, playing, position, safeDuration, shuffle, repeat)
+        PlayerState.snapshot = PlayerSnapshot(track, queue.toList(), index, playing, position, safeDuration, shuffle, repeat, android.os.SystemClock.elapsedRealtime())
+        PlayerState.playing.value = playing
         AppEvents.bump()
         // Tocando, a posição muda todo segundo: gravar a cada 5 s basta (perde no máximo 5 s se o Android matar o app).
         // Pausar, trocar de música ou de modo grava na hora.
