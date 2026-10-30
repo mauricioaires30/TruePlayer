@@ -83,13 +83,11 @@ class DownloadQueueTest {
         assertEquals(listOf("a"), store().load().map { it.url })
     }
 
-    @Test fun kindDefaultsFollowThePlaylistAndOldFilesStillLoad() {
-        val s = store()
-        assertEquals(DownloadKind.SINGLE, s.add("a").kind)
-        assertEquals(DownloadKind.PLAYLIST, s.add("b", playlist = "P", total = 1, position = 1).kind)
-        assertEquals(DownloadKind.ALBUM, s.add("c", playlist = "A", total = 1, position = 1, kind = DownloadKind.ALBUM).kind)
-        File(tmp.root, "old.json").writeText("""{"schemaVersion":1,"nextId":3,"items":[{"id":2,"url":"x","playlist":"P","total":2,"position":1}]}""")
-        assertEquals(DownloadKind.SINGLE, store("old.json").load().single().kind)
+    @Test fun oldFilesWithExtraFieldsStillLoad() {
+        File(tmp.root, "old.json").writeText("""{"schemaVersion":1,"nextId":3,"items":[{"id":2,"url":"x","playlist":"P","total":2,"position":1,"kind":"ALBUM","addToPlaylist":false}]}""")
+        val item = store("old.json").load().single()
+        assertEquals("P", item.playlist)
+        assertEquals(2, item.total)
     }
 
     @Test fun corruptOrMissingFileMeansEmptyQueue() {

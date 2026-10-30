@@ -11,13 +11,10 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import com.yausername.youtubedl_android.YoutubeDL
-import dev.truetagger.data.DownloadKind
+import dev.truetagger.data.DownloadErrors
 import dev.truetagger.data.DownloadQueueStore
 import dev.truetagger.data.PlaylistEntry
 import dev.truetagger.data.QueuedDownload
-import dev.truetagger.data.SpotifyEmbed
-import dev.truetagger.data.SpotifyKind
-import dev.truetagger.data.TrackHint
 import dev.truetagger.data.UrlSupport
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -62,13 +59,6 @@ class YoutubeDownloadService : Service() {
     private val canceledIds = java.util.concurrent.ConcurrentHashMap.newKeySet<Long>()
 
     private fun processIdOf(id: Long) = "TrueTaggerDownload-$id"
-
-    /** Spotify: músicas que não foram achadas em nenhum lugar e playlists que podem ter mais de 100 (limite do Spotify), por lote. */
-    private val notFound = java.util.concurrent.ConcurrentHashMap<String, MutableList<String>>()
-    private val truncated = java.util.concurrent.ConcurrentHashMap.newKeySet<String>()
-
-    /** Música do Spotify que nenhuma das três buscas achou. */
-    private class SongNotFoundException(val label: String) : Exception("not found: $label")
 
     override fun onCreate() {
         super.onCreate()
@@ -185,7 +175,7 @@ class YoutubeDownloadService : Service() {
                 }
             } else if (removed.isNotEmpty()) {
                 // Nada deste lote estava baixando: fecha o resumo aqui.
-                finishPlaylist(name, removed.first().total, removed.first().kind)
+                finishPlaylist(name, removed.first().total)
             }
         }
     }
@@ -250,12 +240,8 @@ class YoutubeDownloadService : Service() {
         }
     }
 
-    /** Lê a playlist, cria a playlist do app (vazia) e põe cada música na fila, na ordem original. */
-    private suspend fun expandPlaylist(task: QueuedDownload, slot: Int) {
-        if (UrlSupport.source(task.url) == UrlSupport.Source.SPOTIFY) {
-            expandSpotify(task, slot)
-            return
-        }
+    /** Mostra "lendo a playlist" e confere a pasta de músicas. Falso se não deu para começar (o erro já foi avisado). */
+    private fun beginExpand(task: QueuedDownload, slot: Int): Boolean {
         runCatching {
             post(
                 slot,
@@ -271,8 +257,14 @@ class YoutubeDownloadService : Service() {
         }.onFailure { error ->
             saveLastError(error)
             finishWithNotification(t(R.string.dl_falha_no_download), error.message ?: t(R.string.dl_nao_foi_possivel_ler_a), failed = true)
-            return
+            return false
         }
+        return true
+    }
+
+    /** Lê a playlist, cria a playlist do app (vazia) e põe cada música na fila, na ordem original. */
+    private suspend fun expandPlaylist(task: QueuedDownload, slot: Int) {
+        if (!beginExpand(task, slot)) return
 
         val playlist = importer.listPlaylist(task.url, processIdOf(task.id)) { }
         // Cancelado enquanto lia: sai sem avisar de erro.
@@ -301,62 +293,10 @@ class YoutubeDownloadService : Service() {
         }
     }
 
-    /** Link do Spotify: lê o nome e as músicas e enfileira cada uma, na ordem original (o áudio é procurado depois). */
-    private suspend fun expandSpotify(task: QueuedDownload, slot: Int) {
-        runCatching {
-            post(
-                slot,
-                buildNotification(
-                    title = t(R.string.dl_lendo_a_playlist),
-                    text = t(R.string.dl_pegando_a_lista_de_musicas),
-                    indeterminate = true,
-                    actions = listOf(cancelItemAction(task, t(R.string.dl_cancelar))),
-                ),
-                force = true,
-            )
-            MusicFolder.treeUri(this) ?: error(t(R.string.dl_libere_a_pasta_de_musicas))
-        }.onFailure { error ->
-            saveLastError(error)
-            finishWithNotification(t(R.string.dl_falha_no_download), error.message ?: t(R.string.dl_nao_foi_possivel_ler_a), failed = true)
-            return
-        }
-
-        val collection = SpotifyClient.load(task.url)
-        if (task.id in canceledIds) return
-        if (collection == null) {
-            finishWithNotification(t(R.string.dl_spotify_nao_li), t(R.string.dl_spotify_confira), failed = true)
-            return
-        }
-
-        fun trackUrl(index: Int) = "https://open.spotify.com/track/${collection.ids.getOrNull(index).orEmpty()}"
-        when (collection.kind) {
-            SpotifyKind.TRACK -> enqueue(queue.add(trackUrl(0), hint = collection.tracks.first()))
-            SpotifyKind.ALBUM -> {
-                // Álbum: as faixas só entram na biblioteca (aparecem em Álbuns), sem criar playlist.
-                val name = collection.name
-                collection.tracks.forEachIndexed { index, hint ->
-                    enqueue(queue.add(trackUrl(index), playlist = name, total = collection.tracks.size, position = index + 1, kind = DownloadKind.ALBUM, hint = hint, addToPlaylist = false))
-                }
-            }
-            SpotifyKind.PLAYLIST -> {
-                val store = PlaylistStore(this)
-                val name = store.uniqueNameFor(collection.name)
-                store.createWithEntries(name, emptyList())
-                PlaylistCovers.setFromUrl(this, name, collection.coverUrl)
-                if (collection.tracks.size >= SpotifyEmbed.PLAYLIST_LIMIT) truncated.add(name)
-                collection.tracks.forEachIndexed { index, hint ->
-                    enqueue(queue.add(trackUrl(index), playlist = name, total = collection.tracks.size, position = index + 1, kind = DownloadKind.PLAYLIST, hint = hint))
-                }
-            }
-        }
-    }
-
     private suspend fun processDownload(task: QueuedDownload, slot: Int) {
         val url = task.url
         val job = task.playlist
-        val hint = task.hint
-        // Música do Spotify: o título já é conhecido desde a busca.
-        var videoTitle = hint?.let { listOf(it.artistLine, it.title).filter { part -> part.isNotBlank() }.joinToString(" - ") }.orEmpty()
+        var videoTitle = ""
         // A notificação é da música. Só a linha pequena diz em que ponto do lote ela está ("3 de 10").
         val position = when {
             job != null -> t(R.string.dl_position, task.position, task.total)
@@ -382,15 +322,8 @@ class YoutubeDownloadService : Service() {
             val tree = MusicFolder.treeUri(this)
                 ?: error(t(R.string.dl_libere_a_pasta_de_musicas))
 
-            // Spotify: acha a música em outro lugar (YouTube Music, YouTube, SoundCloud) e baixa de lá.
-            val found = if (hint != null) {
-                importer.findForHint(hint, processIdOf(task.id)) { status ->
-                    post(slot, buildNotification(title = videoTitle, text = status.message.trimEnd('.', '…'), subText = position, indeterminate = true, actions = actions), step = "find:" + status.message)
-                } ?: throw SongNotFoundException(videoTitle)
-            } else null
-
-            importer.downloadAudio(found?.url ?: url, tree, processIdOf(task.id), hint, found?.infoJson) { status ->
-                if (hint == null && status.mediaTitle.isNotBlank()) videoTitle = status.mediaTitle
+            importer.downloadAudio(url, tree, processIdOf(task.id)) { status ->
+                if (status.mediaTitle.isNotBlank()) videoTitle = status.mediaTitle
                 val progress = status.progress?.coerceIn(0, 100)
                 val waiting = queuedDownloads.get()
                 val step = status.message.ifBlank { t(R.string.dl_processando) }.trimEnd('.', '…')
@@ -423,43 +356,40 @@ class YoutubeDownloadService : Service() {
                     completed = true,
                 )
             } else {
-                if (task.addToPlaylist) {
-                    synchronized(batchLock) {
-                        val done = donePositions.getOrPut(job) { java.util.TreeSet() }
-                        val index = done.headSet(task.position).size
-                        done.add(task.position)
-                        PlaylistStore(this).insertEntries(job, listOf(PlaylistEntry(result.relPath, result.label)), index)
-                    }
+                synchronized(batchLock) {
+                    val done = donePositions.getOrPut(job) { java.util.TreeSet() }
+                    val index = done.headSet(task.position).size
+                    done.add(task.position)
+                    PlaylistStore(this).insertEntries(job, listOf(PlaylistEntry(result.relPath, result.label)), index)
                 }
                 queue.record(job, success = true)
-                if (lastOfJob(job, task)) finishPlaylist(job, task.total, task.kind)
+                if (lastOfJob(job, task)) finishPlaylist(job, task.total)
             }
         }.onFailure { error ->
             if (task.id in canceledIds) {
                 // Cancelado pelo usuário: não é erro. Avulso some sem aviso; de playlist/álbum conta como cancelado.
                 if (job != null) {
                     queue.recordCanceled(job)
-                    if (lastOfJob(job, task)) finishPlaylist(job, task.total, task.kind)
+                    if (lastOfJob(job, task)) finishPlaylist(job, task.total)
                 }
                 return
             }
             if (error is CancellationException) throw error
-            val notFoundError = error as? SongNotFoundException
-            if (notFoundError == null) saveLastError(error)
+            saveLastError(error)
             if (job == null) {
                 finishWithNotification(
                     title = t(R.string.dl_falha_no_download),
-                    text = when {
-                        notFoundError != null -> t(R.string.dl_nao_encontrada, notFoundError.label)
-                        videoTitle.isBlank() -> t(R.string.dl_nao_foi_possivel_baixar_este)
-                        else -> t(R.string.dl_nao_foi_possivel_baixar, videoTitle)
+                    text = when (DownloadErrors.reasonOf(error)) {
+                        DownloadErrors.Reason.NETWORK -> t(R.string.dl_sem_internet)
+                        DownloadErrors.Reason.UNAVAILABLE -> t(R.string.dl_video_indisponivel)
+                        DownloadErrors.Reason.OTHER ->
+                            if (videoTitle.isBlank()) t(R.string.dl_nao_foi_possivel_baixar_este) else t(R.string.dl_nao_foi_possivel_baixar, videoTitle)
                     },
                     failed = true,
                 )
             } else {
-                if (notFoundError != null) notFound.getOrPut(job) { java.util.Collections.synchronizedList(mutableListOf()) }.add(notFoundError.label)
                 queue.record(job, success = false)
-                if (lastOfJob(job, task)) finishPlaylist(job, task.total, task.kind)
+                if (lastOfJob(job, task)) finishPlaylist(job, task.total)
             }
         }
     }
@@ -473,23 +403,18 @@ class YoutubeDownloadService : Service() {
         queue.pendingFor(job, task.id) == 0
     }
 
-    private fun finishPlaylist(name: String, total: Int, kind: DownloadKind = DownloadKind.PLAYLIST) {
+    private fun finishPlaylist(name: String, total: Int) {
         synchronized(batchLock) { donePositions.remove(name) }
         val counts = queue.finishJob(name)
-        val missingNames = notFound.remove(name).orEmpty().toList()
-        val limit = if (truncated.remove(name)) t(R.string.dl_spotify_limite) else ""
         val missing = (if (counts.failed > 0) t(R.string.dl_nao_baixaram, counts.failed) else "") +
             (if (counts.canceled > 0) t(R.string.dl_canceladas, counts.canceled) else "")
-        // Spotify: diz quais músicas não foram achadas (as 3 primeiras) e avisa do limite de 100 por playlist.
-        val notFoundText = if (missingNames.isEmpty()) "" else
-            t(R.string.dl_nao_achadas, missingNames.take(3).joinToString(", ") + if (missingNames.size > 3) "…" else "")
         finishWithNotification(
             title = when {
-                counts.done == total -> t(if (kind == DownloadKind.ALBUM) R.string.dl_album_baixado else R.string.dl_playlist_baixada)
+                counts.done == total -> t(R.string.dl_playlist_baixada)
                 counts.canceled > 0 && counts.failed == 0 -> t(R.string.dl_download_cancelado)
                 else -> t(R.string.dl_playlist_baixada_com_falhas)
             },
-            text = t(R.string.dl_de_musicas, name, counts.done, total, missing) + notFoundText + limit,
+            text = t(R.string.dl_de_musicas, name, counts.done, total, missing),
             completed = counts.done > 0,
             failed = counts.done == 0 && counts.canceled == 0,
         )
@@ -578,8 +503,7 @@ class YoutubeDownloadService : Service() {
         val actions = mutableListOf(cancelItemAction(task, t(R.string.dl_cancelar_musica)))
         val job = task.playlist
         if (job != null) {
-            val title = if (task.kind == DownloadKind.ALBUM) t(R.string.dl_cancelar_album) else t(R.string.dl_cancelar_playlist)
-            actions += serviceAction(title, ShareContract.ACTION_CANCEL_JOB, (task.id.toInt() shl 1) or 1) { putExtra(ShareContract.EXTRA_JOB, job) }
+            actions += serviceAction(t(R.string.dl_cancelar_playlist), ShareContract.ACTION_CANCEL_JOB, (task.id.toInt() shl 1) or 1) { putExtra(ShareContract.EXTRA_JOB, job) }
         }
         return actions
     }

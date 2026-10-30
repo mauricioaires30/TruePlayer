@@ -73,14 +73,12 @@
     <string name="dl_baixando_musica">กำลังดาวน์โหลดเพลง</string>
     <string name="dl_conectando">กำลังเชื่อมต่อ…</string>
     <string name="dl_confira_se_o_link_esta">ตรวจสอบว่าลิงก์ถูกต้องและเพลย์ลิสต์เป็นสาธารณะ</string>
-    <string name="dl_convertendo_para_mp3">กำลังแปลงเป็น MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s จาก %3$s เพลง%4$s</string>
     <string name="dl_download_concluido">ดาวน์โหลดเสร็จแล้ว</string>
     <string name="dl_downloads_do_trueplayer">การดาวน์โหลดของ TruePlayer</string>
     <string name="dl_erro">ข้อผิดพลาด</string>
     <string name="dl_falha_no_download">ดาวน์โหลดไม่สำเร็จ</string>
     <string name="dl_finalizando">กำลังเสร็จสิ้น…</string>
-    <string name="dl_informacoes_encontradas">พบข้อมูลแล้ว</string>
     <string name="dl_lendo_a_playlist">กำลังอ่านเพลย์ลิสต์</string>
     <string name="dl_lendo_a_playlist_2">กำลังอ่านเพลย์ลิสต์…</string>
     <string name="dl_lendo_as_informacoes_do_link">กำลังอ่านข้อมูลของลิงก์…</string>
@@ -357,7 +355,7 @@
     <string name="onb_e_nela_que_ficam_as">เพลง (songs) และเพลย์ลิสต์ (playlists) อยู่ที่นี่ การเปลี่ยนโทรศัพท์ไม่ทำให้อะไรหาย</string>
     <string name="onb_escolha_a_pasta_das_musicas">เลือกโฟลเดอร์เพลง</string>
     <string name="onb_nenhuma_pasta_escolhida">ยังไม่ได้เลือกโฟลเดอร์</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">ใน YouTube, SoundCloud หรือ Spotify ให้แตะแชร์แล้วเลือก TruePlayer เพลย์ลิสต์และอัลบั้มก็ได้ แท็กจะถูกแก้ให้อัตโนมัติ</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">ใน YouTube หรือ SoundCloud ให้แตะแชร์แล้วเลือก TruePlayer เพลย์ลิสต์และอัลบั้มก็ได้ แท็กจะถูกแก้ให้อัตโนมัติ</string>
     <string name="onb_o_app_avisa_quando_sair">แอปจะแจ้งเมื่อมีเวอร์ชันใหม่ แต่ละตัวเลือกมีคำอธิบายในการตั้งค่า</string>
     <string name="onb_proximo">ถัดไป</string>
     <string name="onb_pular">ข้าม</string>
@@ -489,17 +487,9 @@
     <string name="dl_cancelar">ยกเลิก</string>
     <string name="dl_cancelar_musica">ยกเลิกเพลง</string>
     <string name="dl_cancelar_playlist">ยกเลิกเพลย์ลิสต์</string>
-    <string name="dl_cancelar_album">ยกเลิกอัลบั้ม</string>
     <string name="dl_position">%1$s จาก %2$s</string>
     <string name="dl_canceladas">" (ยกเลิก %1$s)"</string>
     <string name="dl_download_cancelado">ยกเลิกการดาวน์โหลดแล้ว</string>
-    <string name="dl_procurando_a_musica">กำลังค้นหาเพลง…</string>
-    <string name="dl_nao_encontrada">ไม่พบ %1$s บนอินเทอร์เน็ต</string>
-    <string name="dl_nao_achadas">" ไม่พบ: %1$s"</string>
-    <string name="dl_spotify_limite">" Spotify ให้เพลงจากเพลย์ลิสต์เพียง 100 เพลงแรก"</string>
-    <string name="dl_spotify_nao_li">อ่านลิงก์ Spotify ไม่ได้</string>
-    <string name="dl_spotify_confira">ตรวจสอบว่าเป็นเพลง อัลบั้ม หรือเพลย์ลิสต์สาธารณะ</string>
-    <string name="dl_album_baixado">ดาวน์โหลดอัลบั้มแล้ว</string>
     <string name="playlist_foto_alterar">เปลี่ยนรูป</string>
     <string name="playlist_foto_remover">ลบรูป</string>
     <string name="playlist_foto_ajustar">ปรับรูป</string>
@@ -565,4 +555,8 @@
     <plurals name="n_selected">
         <item quantity="other">เลือก %1$s รายการ</item>
     </plurals>
+    <string name="dl_spotify_nao_suportado">ดาวน์โหลดลิงก์ Spotify ไม่ได้ ให้แปลงเพลย์ลิสต์เป็น YouTube ก่อน (เช่นด้วย TuneMyMusic) แล้วแชร์ลิงก์ YouTube</string>
+    <string name="dl_link_nao_suportado">ไม่รองรับลิงก์นี้ แชร์ลิงก์ YouTube หรือ SoundCloud</string>
+    <string name="dl_sem_internet">ไม่มีการเชื่อมต่ออินเทอร์เน็ต ตรวจสอบแล้วลองอีกครั้ง</string>
+    <string name="dl_video_indisponivel">วิดีโอนี้ไม่พร้อมใช้งาน เป็นส่วนตัว หรือถูกจำกัด</string>
 </resources>

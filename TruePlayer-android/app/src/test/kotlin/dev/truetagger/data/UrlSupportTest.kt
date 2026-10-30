@@ -46,4 +46,18 @@ class UrlSupportTest {
         assertTrue(UrlSupport.needsListing("https://soundcloud.com/a/sets/b"))
         assertFalse(UrlSupport.needsListing("https://youtu.be/abc"))
     }
+
+    @Test fun spotifyLinksAreNotDownloadableButAreRecognizedForTheWarning() {
+        listOf(
+            "https://open.spotify.com/track/0VjIjW4GlUZAMYd2vXMi3b", "https://open.spotify.com/playlist/37i9dQZF1DX4UtSsGT1Sbe?si=x",
+            "https://spotify.link/abc", "https://open.spotify.com/intl-pt/album/4yP0hdKOZPNshxUOjY0cZj",
+        ).forEach {
+            assertFalse(it, UrlSupport.isSupported(it))
+            assertTrue(it, UrlSupport.isSpotify(it))
+            assertNull(it, UrlSupport.source(it))
+            assertFalse(it, UrlSupport.needsListing(it))
+        }
+        assertFalse(UrlSupport.isSpotify("https://www.youtube.com/watch?v=abc"))
+        assertFalse(UrlSupport.isSpotify("não é link"))
+    }
 }

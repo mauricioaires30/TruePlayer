@@ -7,7 +7,7 @@ A music player and tag editor for Android. No account, no ads, no tracking.
 ## Features
 - **Player:** library, albums, artists, genres, playlists and queue.
 - **Tag editor:** title, artist, album, cover, year, track and genre.
-- **Download by link:** YouTube, SoundCloud and Spotify (song, album or playlist).
+- **Download by link:** YouTube and SoundCloud (song or playlist). For Spotify, convert the playlist to YouTube first (for example with TuneMyMusic).
 - **Automatic tags:** fills in tags and cover after a download.
 - **Statistics:** most played songs, albums and artists.
 - **Portable folder:** everything lives in the folder you pick.

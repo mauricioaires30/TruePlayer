@@ -5,10 +5,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import java.io.File
 
-/** De onde vem o item: música solta, faixa de playlist ou faixa de álbum (muda só o texto do botão de cancelar). */
-@Serializable
-enum class DownloadKind { SINGLE, PLAYLIST, ALBUM }
-
 /**
  * Um item da fila de downloads. [expand] é um link de playlist ainda não lido; os demais são músicas
  * soltas ou faixas de uma playlist ([playlist] guarda o nome da playlist do app e [position] a ordem original).
@@ -21,11 +17,6 @@ data class QueuedDownload(
     val playlist: String? = null,
     val total: Int = 0,
     val position: Int = 0,
-    val kind: DownloadKind = DownloadKind.SINGLE,
-    /** Música do Spotify: o [url] é só o link dela; o áudio vem de onde a busca achar. */
-    val hint: TrackHint? = null,
-    /** Falso nas faixas de um álbum: elas só viram músicas na biblioteca, sem criar playlist. */
-    val addToPlaylist: Boolean = true,
 )
 
 /** Quantas músicas de uma playlist já baixaram, quantas falharam e quantas foram canceladas. */
@@ -55,12 +46,9 @@ class DownloadQueueStore(private val file: File) {
         playlist: String? = null,
         total: Int = 0,
         position: Int = 0,
-        kind: DownloadKind = if (playlist != null) DownloadKind.PLAYLIST else DownloadKind.SINGLE,
-        hint: TrackHint? = null,
-        addToPlaylist: Boolean = true,
     ): QueuedDownload {
         val dto = read()
-        val item = QueuedDownload(dto.nextId, url, expand, playlist, total, position, kind, hint, addToPlaylist)
+        val item = QueuedDownload(dto.nextId, url, expand, playlist, total, position)
         write(dto.copy(nextId = dto.nextId + 1, items = dto.items + item))
         return item
     }

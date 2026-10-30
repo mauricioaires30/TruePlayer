@@ -11,10 +11,6 @@ import com.yausername.ffmpeg.FFmpeg
 import com.yausername.youtubedl_android.YoutubeDL
 import com.yausername.youtubedl_android.YoutubeDLRequest
 import dev.truetagger.data.FlatPlaylist
-import dev.truetagger.data.MatchSource
-import dev.truetagger.data.SearchHit
-import dev.truetagger.data.TrackHint
-import dev.truetagger.data.TrackMatcher
 import dev.truetagger.data.MigrationPlanner
 import dev.truetagger.data.SourceInfo
 import dev.truetagger.data.YtDlpJson
@@ -28,17 +24,12 @@ import org.jaudiotagger.audio.AudioFileIO
 import org.jaudiotagger.tag.FieldKey
 import org.jaudiotagger.tag.images.ArtworkFactory
 import java.io.File
+import java.net.HttpURLConnection
 import java.net.URL
 import java.util.Locale
 
 /** Resultado de um download: nome salvo em songs/, caminho relativo e se as tags precisam de revisão. */
 data class ImportResult(val fileName: String, val relPath: String, val label: String)
-
-/**
- * Onde a música do Spotify foi achada. [infoJson] (quando veio da busca detalhada do YouTube Music) já traz os
- * formatos de áudio: o download começa direto dele, sem o yt-dlp abrir a página da música outra vez.
- */
-data class FoundTrack(val url: String, val source: MatchSource, val infoJson: String? = null)
 
 class YoutubeImportManager(private val context: Context) {
     private val prefs get() = context.getSharedPreferences(ShareContract.PREFS, Context.MODE_PRIVATE)
@@ -87,26 +78,23 @@ class YoutubeImportManager(private val context: Context) {
         url: String,
         destinationTree: Uri,
         processId: String,
-        hint: TrackHint? = null,
-        infoJson: String? = null,
         onStatus: (ImportStatus) -> Unit,
     ): ImportResult = withContext(Dispatchers.IO) {
-        onStatus(ImportStatus(url, t(R.string.dl_preparando_download_2), 0, mediaTitle = hint?.title.orEmpty()))
+        onStatus(ImportStatus(url, t(R.string.dl_preparando_download_2), 0))
         initEngines()
         updateEngineIfNeeded(url, onStatus)
 
         val firstAttempt = runCatching {
-            executeDownload(url, destinationTree, processId, onStatus, retry = false, hint = hint, infoJson = infoJson)
+            executeDownload(url, destinationTree, processId, onStatus, retry = false)
         }
         if (firstAttempt.isSuccess) return@withContext firstAttempt.getOrThrow()
         // Cancelado pelo usuário: não atualiza o baixador nem tenta de novo.
         currentCoroutineContext().ensureActive()
 
-        // O YouTube muda e o yt-dlp antigo para de funcionar: atualiza (no máximo uma vez a cada 6 h) e tenta de novo,
-        // agora lendo a página da música (os endereços guardados da busca podem ter sido o problema).
+        // O YouTube muda e o yt-dlp antigo para de funcionar: atualiza (no máximo uma vez a cada 6 h) e tenta de novo.
         val recentlyUpdated = System.currentTimeMillis() - prefs.getLong(PREF_ENGINE_UPDATE, 0L) < RETRY_UPDATE_INTERVAL_MS
         if (!recentlyUpdated) {
-            onStatus(ImportStatus(url, t(R.string.dl_atualizando_o_baixador), 0, mediaTitle = hint?.title.orEmpty()))
+            onStatus(ImportStatus(url, t(R.string.dl_atualizando_o_baixador), 0))
             synchronized(ENGINE_LOCK) {
                 runCatching {
                     YoutubeDL.getInstance().updateYoutubeDL(context, YoutubeDL.UpdateChannel._NIGHTLY)
@@ -114,12 +102,12 @@ class YoutubeImportManager(private val context: Context) {
                 }
             }
         }
-        executeDownload(url, destinationTree, processId, onStatus, retry = true, hint = hint, infoJson = null)
+        executeDownload(url, destinationTree, processId, onStatus, retry = true)
     }
 
     /**
-     * Baixa e salva a música com uma única execução do yt-dlp: ele lê a página (ou usa [infoJson] pronto), imprime as
-     * informações (`-j`) e baixa na sequência. O áudio vem como está no site (M4A/AAC do YouTube, MP3 do SoundCloud),
+     * Baixa e salva a música com uma única execução do yt-dlp: ele lê a página, imprime as informações (`-j`) e
+     * baixa na sequência. O áudio vem como está no site (M4A/AAC do YouTube, MP3 do SoundCloud),
      * sem converter: a conversão para MP3 no celular era a parte mais lenta e ainda perdia qualidade. Só um formato
      * diferente desses dois (raro) é convertido para M4A.
      */
@@ -129,8 +117,6 @@ class YoutubeImportManager(private val context: Context) {
         processId: String,
         onStatus: (ImportStatus) -> Unit,
         retry: Boolean,
-        hint: TrackHint? = null,
-        infoJson: String? = null,
     ): ImportResult {
         // Uma pasta por download: vários correm ao mesmo tempo.
         val workDir = File(context.cacheDir, "dl-" + processId.replace(Regex("[^A-Za-z0-9_-]"), "_") + if (retry) "-retry" else "").apply {
@@ -138,13 +124,10 @@ class YoutubeImportManager(private val context: Context) {
             mkdirs()
         }
         var liveInfo: SourceInfo? = null
-        var mediaTitle = cleanFeaturingText(hint?.title.orEmpty())
+        var mediaTitle = ""
 
-        val savedInfo = infoJson?.takeIf { YtDlpJson.hasFormats(it) }?.let { json ->
-            File(workDir, "info.json").apply { writeText(json) }
-        }
-        val request = (if (savedInfo != null) YoutubeDLRequest(emptyList<String>()) else YoutubeDLRequest(url)).apply {
-            if (savedInfo != null) addOption("--load-info-json", savedInfo.absolutePath)
+
+        val request = YoutubeDLRequest(url).apply {
             useCache()
             addOption("--no-playlist")
             addOption("--no-mtime")
@@ -171,7 +154,7 @@ class YoutubeImportManager(private val context: Context) {
                 // A linha de informações chega antes do download: já dá o nome da música para a notificação.
                 YtDlpJson.parseInfo(line)?.let { found ->
                     liveInfo = found
-                    if (hint == null && found.title.isNotBlank()) mediaTitle = cleanFeaturingText(found.title)
+                    if (found.title.isNotBlank()) mediaTitle = cleanFeaturingText(found.title)
                 }
                 onStatus(ImportStatus(url, t(R.string.dl_preparando_audio), 0, mediaTitle = mediaTitle))
                 return@execute
@@ -181,7 +164,7 @@ class YoutubeImportManager(private val context: Context) {
         }
 
         currentCoroutineContext().ensureActive()
-        val info = mergeHint(YtDlpJson.parseInfo(response.out) ?: liveInfo, hint)
+        val info = YtDlpJson.parseInfo(response.out) ?: liveInfo
         if (mediaTitle.isBlank()) mediaTitle = cleanFeaturingText(info?.title.orEmpty())
         val output = workDir.listFiles()
             ?.filter { it.isFile && it.extension.lowercase(Locale.ROOT) in AUDIO_EXTENSIONS }
@@ -193,21 +176,17 @@ class YoutubeImportManager(private val context: Context) {
         val autoTag = prefs.getBoolean(ShareContract.PREF_AUTO_TAG, true)
         val embedThumbnail = prefs.getBoolean(ShareContract.PREF_EMBED_YOUTUBE_THUMBNAIL, true)
 
-        if (autoTag || hint != null) {
+        if (autoTag) {
             onStatus(ImportStatus(url, t(R.string.dl_procurando_as_tags), 100, mediaTitle = mediaTitle))
-            val outcome = if (autoTag) {
-                AutoTagger().resolve(
-                    info = info,
-                    fallbackTitle = mediaTitle.ifBlank { output.nameWithoutExtension },
-                )
-            } else null
+            val outcome = AutoTagger().resolve(
+                info = info,
+                fallbackTitle = mediaTitle.ifBlank { output.nameWithoutExtension },
+            )
             // Sem uma correspondência confiável o arquivo fica exatamente como o yt-dlp entregou.
             var tags = outcome?.tags
             if (outcome != null && outcome.useThumbnail && embedThumbnail) {
                 downloadThumbnail(info?.thumbnail.orEmpty())?.let { tags = tags?.copy(artworkBytes = it) }
             }
-            // Música do Spotify: já sabemos o nome certo; se a busca de tags não achou, usa o que o Spotify disse.
-            if (hint != null) tags = tagsFromHint(tags, hint, if (embedThumbnail) info?.thumbnail.orEmpty() else "")
             tags?.let { found ->
                 runCatching { FileTagWriter.write(context, output, found) }
                 label = listOf(found.artist, found.title).filter { it.isNotBlank() }.joinToString(" - ").ifBlank { mediaTitle }
@@ -227,97 +206,20 @@ class YoutubeImportManager(private val context: Context) {
         return ImportResult(savedName, relPath, label.ifBlank { savedName })
     }
 
-    /** Dados do Spotify por cima do que o yt-dlp e a busca de tags acharam: nome, artistas e, em álbuns, álbum e faixa. */
-    private fun tagsFromHint(found: EditableTags?, hint: TrackHint, thumbnailUrl: String): EditableTags {
-        val base = found ?: EditableTags(
-            title = hint.title,
-            artist = hint.artistLine,
-            album = "",
-            albumArtist = "",
-            trackNumber = "",
-            trackTotal = "",
-            discNumber = "",
-            discTotal = "",
-            year = hint.year,
-            genre = "",
-            isrc = "",
-            artworkBytes = downloadThumbnail(thumbnailUrl),
-        )
-        if (hint.album.isBlank()) return base
-        return base.copy(
-            album = hint.album,
-            albumArtist = hint.albumArtist.ifBlank { base.albumArtist },
-            trackNumber = hint.trackNumber?.toString().orEmpty(),
-            trackTotal = hint.trackTotal?.toString().orEmpty(),
-        )
-    }
-
-    /** O que o Spotify sabe da música passa a ser o "metadado real" que a busca de tags usa. */
-    private fun mergeHint(info: SourceInfo?, hint: TrackHint?): SourceInfo? {
-        if (hint == null) return info
-        val source = info ?: SourceInfo()
-        return source.copy(
-            title = hint.title,
-            artist = hint.mainArtist,
-            track = hint.title,
-            album = hint.album,
-            durationSec = hint.durationSec.takeIf { it > 0 } ?: source.durationSec,
-            releaseYear = hint.year.ifBlank { source.releaseYear },
-            extractor = "spotify",
-        )
-    }
-
-    /**
-     * Procura a música do Spotify (o áudio de lá tem DRM) em três lugares, nesta ordem: catálogo do YouTube Music,
-     * YouTube e SoundCloud. Só aceita resultado com nome, artista e duração compatíveis ([TrackMatcher]).
-     */
-    suspend fun findForHint(hint: TrackHint, processId: String, onStatus: (ImportStatus) -> Unit): FoundTrack? = withContext(Dispatchers.IO) {
-        initEngines()
-        val query = TrackMatcher.query(hint)
-        val url = "spotify:${hint.title}"
-        onStatus(ImportStatus(url, t(R.string.dl_procurando_a_musica), 0))
-
-        // 1) YouTube Music: a API do site já traz título, artistas e duração numa requisição só, sem abrir o yt-dlp.
-        val direct = YtMusicClient.search(query)
-        if (direct != null) {
-            TrackMatcher.best(hint, direct, MatchSource.YT_MUSIC)?.let { return@withContext FoundTrack(it.url, MatchSource.YT_MUSIC) }
-        } else {
-            // A API não respondeu (rede ou formato novo): o yt-dlp lê os 3 primeiros resultados, mais devagar.
-            val musicSearch = "https://music.youtube.com/search?q=${java.net.URLEncoder.encode(query, "UTF-8")}#songs"
-            val detailed = searchWithInfo(musicSearch, processId, limit = 3, detailed = true)
-            TrackMatcher.best(hint, detailed.map { it.first }, MatchSource.YT_MUSIC)?.let { best ->
-                val json = detailed.firstOrNull { it.first == best }?.second
-                return@withContext FoundTrack(best.url, MatchSource.YT_MUSIC, json)
-            }
-        }
-        // 2) YouTube e 3) SoundCloud: a busca rápida já traz duração e canal.
-        for ((prefix, source) in listOf("ytsearch6:" to MatchSource.YOUTUBE, "scsearch6:" to MatchSource.SOUNDCLOUD)) {
-            currentCoroutineContext().ensureActive()
-            TrackMatcher.best(hint, search(prefix + query, processId, limit = 6), source)
-                ?.let { return@withContext FoundTrack(it.url, source) }
-        }
-        null
-    }
-
-    private fun search(target: String, processId: String, limit: Int): List<SearchHit> =
-        searchWithInfo(target, processId, limit, detailed = false).map { it.first }
-
-    private fun searchWithInfo(target: String, processId: String, limit: Int, detailed: Boolean): List<Pair<SearchHit, String>> = runCatching {
-        val request = YoutubeDLRequest(target).apply {
-            addOption("-J")
-            if (!detailed) addOption("--flat-playlist")
-            addOption("--no-warnings")
-            addOption("--playlist-end", limit.toString())
-            useCache()
-        }
-        YtDlpJson.parseSearchWithInfo(YoutubeDL.getInstance().execute(request, processId).out)
-    }.getOrDefault(emptyList())
-
     /** Baixa a imagem do vídeo e devolve em JPEG, ou null se não der. */
     private fun downloadThumbnail(url: String): ByteArray? {
         if (url.isBlank()) return null
         return runCatching {
-            val bytes = URL(url).openStream().use { it.readBytes() }
+            // Sem limite de tempo uma capa que não responde travava o download inteiro.
+            val connection = (URL(url).openConnection() as HttpURLConnection).apply {
+                connectTimeout = 10_000
+                readTimeout = 15_000
+            }
+            val bytes = try {
+                connection.inputStream.use { it.readBytes() }
+            } finally {
+                connection.disconnect()
+            }
             val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
             try {
                 java.io.ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, 92, it) }.toByteArray()
@@ -415,9 +317,9 @@ class YoutubeImportManager(private val context: Context) {
         val destinationId = tree.create(parentDocId, mime, source.name)
             ?: error(t(R.string.dl_nao_consegui_salvar_o_arquivo))
         resolver.openOutputStream(tree.docUri(destinationId), "w")!!.use { output ->
-            source.inputStream().use { input -> input.copyTo(output) }
+            source.inputStream().use { input -> input.copyTo(output, COPY_BUFFER_BYTES) }
         }
-        return tree.children(parentDocId).firstOrNull { it.docId == destinationId }?.name ?: source.name
+        return tree.displayName(destinationId) ?: source.name
     }
 
     private fun scanPrimaryTreeFile(treeUri: Uri, fileName: String) {
@@ -435,6 +337,7 @@ class YoutubeImportManager(private val context: Context) {
         private const val PREF_ENGINE_UPDATE = "yt_dlp_last_update"
         private const val ENGINE_UPDATE_INTERVAL_MS = 24L * 60L * 60L * 1000L
         private const val RETRY_UPDATE_INTERVAL_MS = 6L * 60L * 60L * 1000L
+        private const val COPY_BUFFER_BYTES = 256 * 1024
         private val ENGINE_LOCK = Any()
         private val AUDIO_EXTENSIONS = setOf("m4a", "mp3", "aac", "opus", "ogg", "flac", "wav")
     }

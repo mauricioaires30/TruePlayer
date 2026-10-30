@@ -4,6 +4,7 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import dev.truetagger.data.UrlSupport
 
@@ -13,6 +14,9 @@ class ShareReceiverActivity : ComponentActivity() {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         val url = extractUrl(intent)
         if (url == null || !UrlSupport.isSupported(url)) {
+            // Esta tela recebe qualquer texto compartilhado: sem aviso o usuário não saberia por que nada aconteceu.
+            val message = if (url != null && UrlSupport.isSpotify(url)) R.string.dl_spotify_nao_suportado else R.string.dl_link_nao_suportado
+            Toast.makeText(this, t(message), Toast.LENGTH_LONG).show()
             finish()
             return
         }
@@ -22,6 +26,7 @@ class ShareReceiverActivity : ComponentActivity() {
 
         if (hasDownloadFolder) {
             YoutubeDownloadService.start(this, url)
+            Toast.makeText(this, t(R.string.download_iniciado_em_segundo_plano), Toast.LENGTH_SHORT).show()
             finish()
             return
         }

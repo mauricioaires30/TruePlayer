@@ -29,6 +29,13 @@ class SafTree(context: Context, val treeUri: Uri) {
 
     fun docUri(docId: String): Uri = DocumentsContract.buildDocumentUriUsingTree(treeUri, docId)
 
+    /** Nome de um documento. Uma consulta só: listar a pasta para achar um nome custa uma linha por arquivo dela. */
+    fun displayName(docId: String): String? = runCatching {
+        resolver.query(docUri(docId), arrayOf(DocumentsContract.Document.COLUMN_DISPLAY_NAME), null, null, null)?.use { c ->
+            if (c.moveToFirst()) c.getString(0) else null
+        }
+    }.getOrNull()
+
     fun children(parentDocId: String): List<Node> {
         val uri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri, parentDocId)
         val projection = arrayOf(

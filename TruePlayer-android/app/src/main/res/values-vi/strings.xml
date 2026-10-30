@@ -73,14 +73,12 @@
     <string name="dl_baixando_musica">Đang tải bài hát</string>
     <string name="dl_conectando">Đang kết nối…</string>
     <string name="dl_confira_se_o_link_esta">Hãy kiểm tra liên kết đúng chưa và danh sách phát có công khai không.</string>
-    <string name="dl_convertendo_para_mp3">Đang chuyển sang MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s/%3$s bài hát%4$s</string>
     <string name="dl_download_concluido">Tải xuống xong</string>
     <string name="dl_downloads_do_trueplayer">Tải xuống của TruePlayer</string>
     <string name="dl_erro">Lỗi</string>
     <string name="dl_falha_no_download">Tải xuống thất bại</string>
     <string name="dl_finalizando">Đang hoàn tất…</string>
-    <string name="dl_informacoes_encontradas">Đã tìm thấy thông tin.</string>
     <string name="dl_lendo_a_playlist">Đang đọc danh sách phát</string>
     <string name="dl_lendo_a_playlist_2">Đang đọc danh sách phát…</string>
     <string name="dl_lendo_as_informacoes_do_link">Đang đọc thông tin liên kết…</string>
@@ -357,7 +355,7 @@
     <string name="onb_e_nela_que_ficam_as">Đây là nơi chứa bài hát (songs) và danh sách phát (playlists). Đổi điện thoại không mất gì cả.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Chọn thư mục nhạc</string>
     <string name="onb_nenhuma_pasta_escolhida">Chưa chọn thư mục</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">Trên YouTube, SoundCloud hoặc Spotify, chạm Chia sẻ và chọn TruePlayer. Cả danh sách phát và album. Thẻ tự động được sửa.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">Trên YouTube hoặc SoundCloud, chạm Chia sẻ và chọn TruePlayer. Cả danh sách phát và album. Thẻ tự động được sửa.</string>
     <string name="onb_o_app_avisa_quando_sair">Ứng dụng báo cho bạn khi có phiên bản mới. Mỗi tùy chọn đều có giải thích trong Cài đặt.</string>
     <string name="onb_proximo">Tiếp</string>
     <string name="onb_pular">Bỏ qua</string>
@@ -489,17 +487,9 @@
     <string name="dl_cancelar">Hủy</string>
     <string name="dl_cancelar_musica">Hủy bài hát</string>
     <string name="dl_cancelar_playlist">Hủy danh sách phát</string>
-    <string name="dl_cancelar_album">Hủy album</string>
     <string name="dl_position">%1$s trên %2$s</string>
     <string name="dl_canceladas">" (đã hủy %1$s)"</string>
     <string name="dl_download_cancelado">Đã hủy tải xuống</string>
-    <string name="dl_procurando_a_musica">Đang tìm bài hát…</string>
-    <string name="dl_nao_encontrada">Không tìm thấy %1$s trên mạng.</string>
-    <string name="dl_nao_achadas">" Không tìm thấy: %1$s"</string>
-    <string name="dl_spotify_limite">" Spotify chỉ cung cấp 100 bài đầu tiên của một danh sách phát."</string>
-    <string name="dl_spotify_nao_li">Không đọc được liên kết Spotify</string>
-    <string name="dl_spotify_confira">Hãy kiểm tra đó là bài hát, album hoặc danh sách phát công khai.</string>
-    <string name="dl_album_baixado">Đã tải album</string>
     <string name="playlist_foto_alterar">Đổi ảnh</string>
     <string name="playlist_foto_remover">Xóa ảnh</string>
     <string name="playlist_foto_ajustar">Chỉnh ảnh</string>
@@ -565,4 +555,8 @@
     <plurals name="n_selected">
         <item quantity="other">Đã chọn %1$s</item>
     </plurals>
+    <string name="dl_spotify_nao_suportado">Không thể tải liên kết Spotify. Hãy chuyển playlist sang YouTube trước (ví dụ bằng TuneMyMusic) rồi chia sẻ liên kết YouTube.</string>
+    <string name="dl_link_nao_suportado">Liên kết không được hỗ trợ. Hãy chia sẻ liên kết YouTube hoặc SoundCloud.</string>
+    <string name="dl_sem_internet">Không có kết nối internet. Hãy kiểm tra rồi thử lại.</string>
+    <string name="dl_video_indisponivel">Video này không khả dụng, ở chế độ riêng tư hoặc bị hạn chế.</string>
 </resources>

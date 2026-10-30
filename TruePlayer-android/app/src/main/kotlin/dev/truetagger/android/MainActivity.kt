@@ -10,6 +10,7 @@ import android.database.ContentObserver
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import android.os.Handler
 import android.os.Looper
 import android.provider.DocumentsContract
@@ -372,7 +373,11 @@ class MainActivity : ComponentActivity() {
             ShareContract.ACTION_OPEN_APP, Intent.ACTION_MAIN, null -> Unit
             Intent.ACTION_SEND -> {
                 val url = intent.getStringExtra(Intent.EXTRA_TEXT).orEmpty()
-                if (UrlSupport.isSupported(url) && MusicFolder.treeUri(this) != null) YoutubeDownloadService.start(this, url)
+                if (UrlSupport.isSupported(url)) {
+                    if (MusicFolder.treeUri(this) != null) YoutubeDownloadService.start(this, url)
+                } else if (UrlSupport.isSpotify(url)) {
+                    Toast.makeText(this, t(R.string.dl_spotify_nao_suportado), Toast.LENGTH_LONG).show()
+                }
             }
         }
     }

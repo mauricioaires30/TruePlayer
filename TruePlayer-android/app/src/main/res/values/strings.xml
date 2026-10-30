@@ -74,14 +74,12 @@
     <string name="dl_baixando_musica">Downloading song</string>
     <string name="dl_conectando">Connecting…</string>
     <string name="dl_confira_se_o_link_esta">Check that the link is right and the playlist is public.</string>
-    <string name="dl_convertendo_para_mp3">Converting to MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s of %3$s songs%4$s</string>
     <string name="dl_download_concluido">Download finished</string>
     <string name="dl_downloads_do_trueplayer">TruePlayer downloads</string>
     <string name="dl_erro">Error</string>
     <string name="dl_falha_no_download">Download failed</string>
     <string name="dl_finalizando">Finishing…</string>
-    <string name="dl_informacoes_encontradas">Info found.</string>
     <string name="dl_lendo_a_playlist">Reading the playlist</string>
     <string name="dl_lendo_a_playlist_2">Reading the playlist…</string>
     <string name="dl_lendo_as_informacoes_do_link">Reading the link\'s info…</string>
@@ -358,7 +356,7 @@
     <string name="onb_e_nela_que_ficam_as">This is where songs (songs) and playlists (playlists) live. Switching phones loses nothing.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Choose the music folder</string>
     <string name="onb_nenhuma_pasta_escolhida">No folder chosen</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">On YouTube, SoundCloud or Spotify, tap Share and choose TruePlayer. Playlists and albums too. Tags are fixed automatically.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">On YouTube or SoundCloud, tap Share and choose TruePlayer. Playlists and albums too. Tags are fixed automatically.</string>
     <string name="onb_o_app_avisa_quando_sair">The app tells you when a new version comes out. Each option has an explanation in Settings.</string>
     <string name="onb_proximo">Next</string>
     <string name="onb_pular">Skip</string>
@@ -490,17 +488,9 @@
     <string name="dl_cancelar">Cancel</string>
     <string name="dl_cancelar_musica">Cancel song</string>
     <string name="dl_cancelar_playlist">Cancel playlist</string>
-    <string name="dl_cancelar_album">Cancel album</string>
     <string name="dl_position">%1$s of %2$s</string>
     <string name="dl_canceladas">" (%1$s canceled)"</string>
     <string name="dl_download_cancelado">Download canceled</string>
-    <string name="dl_procurando_a_musica">Looking for the song…</string>
-    <string name="dl_nao_encontrada">Couldn\'t find %1$s online.</string>
-    <string name="dl_nao_achadas">" Not found: %1$s"</string>
-    <string name="dl_spotify_limite">" Spotify only provides the first 100 songs of a playlist."</string>
-    <string name="dl_spotify_nao_li">Couldn\'t read the Spotify link</string>
-    <string name="dl_spotify_confira">Check that it\'s a public song, album or playlist.</string>
-    <string name="dl_album_baixado">Album downloaded</string>
     <string name="playlist_foto_alterar">Change photo</string>
     <string name="playlist_foto_remover">Remove photo</string>
     <string name="playlist_foto_ajustar">Adjust photo</string>
@@ -586,4 +576,8 @@
         <item quantity="one">%1$s selected</item>
         <item quantity="other">%1$s selected</item>
     </plurals>
+    <string name="dl_spotify_nao_suportado">Spotify links can\'t be downloaded. Convert the playlist to YouTube first (for example with TuneMyMusic) and share the YouTube link.</string>
+    <string name="dl_link_nao_suportado">Link not supported. Share a YouTube or SoundCloud link.</string>
+    <string name="dl_sem_internet">No internet connection. Check it and try again.</string>
+    <string name="dl_video_indisponivel">This video is unavailable, private or restricted.</string>
 </resources>

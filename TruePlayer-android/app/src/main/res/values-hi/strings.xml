@@ -73,14 +73,12 @@
     <string name="dl_baixando_musica">गाना डाउनलोड हो रहा है</string>
     <string name="dl_conectando">कनेक्ट हो रहा है…</string>
     <string name="dl_confira_se_o_link_esta">जाँचें कि लिंक सही है और प्लेलिस्ट सार्वजनिक है।</string>
-    <string name="dl_convertendo_para_mp3">MP3 में बदला जा रहा है…</string>
     <string name="dl_de_musicas">%1$s: %3$s में से %2$s गाने%4$s</string>
     <string name="dl_download_concluido">डाउनलोड पूरा हुआ</string>
     <string name="dl_downloads_do_trueplayer">TruePlayer डाउनलोड</string>
     <string name="dl_erro">त्रुटि</string>
     <string name="dl_falha_no_download">डाउनलोड विफल रहा</string>
     <string name="dl_finalizando">पूरा किया जा रहा है…</string>
-    <string name="dl_informacoes_encontradas">जानकारी मिल गई।</string>
     <string name="dl_lendo_a_playlist">प्लेलिस्ट पढ़ी जा रही है</string>
     <string name="dl_lendo_a_playlist_2">प्लेलिस्ट पढ़ी जा रही है…</string>
     <string name="dl_lendo_as_informacoes_do_link">लिंक की जानकारी पढ़ी जा रही है…</string>
@@ -357,7 +355,7 @@
     <string name="onb_e_nela_que_ficam_as">गाने (songs) और प्लेलिस्ट (playlists) यहीं रहती हैं। फ़ोन बदलने पर कुछ नहीं खोता।</string>
     <string name="onb_escolha_a_pasta_das_musicas">संगीत फ़ोल्डर चुनें</string>
     <string name="onb_nenhuma_pasta_escolhida">कोई फ़ोल्डर नहीं चुना</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">YouTube, SoundCloud या Spotify में शेयर पर टैप करें और TruePlayer चुनें। प्लेलिस्ट और एल्बम भी। टैग अपने-आप ठीक हो जाते हैं।</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">YouTube या SoundCloud में शेयर पर टैप करें और TruePlayer चुनें। प्लेलिस्ट और एल्बम भी। टैग अपने-आप ठीक हो जाते हैं।</string>
     <string name="onb_o_app_avisa_quando_sair">नया संस्करण आने पर ऐप आपको बताता है। हर विकल्प की व्याख्या सेटिंग में है।</string>
     <string name="onb_proximo">आगे</string>
     <string name="onb_pular">छोड़ें</string>
@@ -489,17 +487,9 @@
     <string name="dl_cancelar">रद्द करें</string>
     <string name="dl_cancelar_musica">गाना रद्द करें</string>
     <string name="dl_cancelar_playlist">प्लेलिस्ट रद्द करें</string>
-    <string name="dl_cancelar_album">एल्बम रद्द करें</string>
     <string name="dl_position">%2$s में से %1$s</string>
     <string name="dl_canceladas">" (%1$s रद्द)"</string>
     <string name="dl_download_cancelado">डाउनलोड रद्द किया गया</string>
-    <string name="dl_procurando_a_musica">गाना खोजा जा रहा है…</string>
-    <string name="dl_nao_encontrada">%1$s इंटरनेट पर नहीं मिला।</string>
-    <string name="dl_nao_achadas">" नहीं मिले: %1$s"</string>
-    <string name="dl_spotify_limite">" Spotify प्लेलिस्ट के सिर्फ़ पहले 100 गाने देता है।"</string>
-    <string name="dl_spotify_nao_li">Spotify लिंक नहीं पढ़ा जा सका</string>
-    <string name="dl_spotify_confira">जाँचें कि यह सार्वजनिक गाना, एल्बम या प्लेलिस्ट है।</string>
-    <string name="dl_album_baixado">एल्बम डाउनलोड हो गया</string>
     <string name="playlist_foto_alterar">फ़ोटो बदलें</string>
     <string name="playlist_foto_remover">फ़ोटो हटाएँ</string>
     <string name="playlist_foto_ajustar">फ़ोटो एडजस्ट करें</string>
@@ -585,4 +575,8 @@
         <item quantity="one">%1$s चयनित</item>
         <item quantity="other">%1$s चयनित</item>
     </plurals>
+    <string name="dl_spotify_nao_suportado">Spotify लिंक डाउनलोड नहीं हो सकते। पहले प्लेलिस्ट को YouTube में बदलें (जैसे TuneMyMusic से) और YouTube लिंक शेयर करें।</string>
+    <string name="dl_link_nao_suportado">लिंक समर्थित नहीं है। YouTube या SoundCloud का लिंक शेयर करें।</string>
+    <string name="dl_sem_internet">इंटरनेट कनेक्शन नहीं है। जाँचकर फिर कोशिश करें।</string>
+    <string name="dl_video_indisponivel">यह वीडियो उपलब्ध नहीं है, निजी है या प्रतिबंधित है।</string>
 </resources>

@@ -73,14 +73,12 @@
     <string name="dl_baixando_musica">Mengunduh lagu</string>
     <string name="dl_conectando">Menghubungkan…</string>
     <string name="dl_confira_se_o_link_esta">Periksa apakah tautannya benar dan playlist-nya publik.</string>
-    <string name="dl_convertendo_para_mp3">Mengonversi ke MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s dari %3$s lagu%4$s</string>
     <string name="dl_download_concluido">Unduhan selesai</string>
     <string name="dl_downloads_do_trueplayer">Unduhan TruePlayer</string>
     <string name="dl_erro">Kesalahan</string>
     <string name="dl_falha_no_download">Unduhan gagal</string>
     <string name="dl_finalizando">Menyelesaikan…</string>
-    <string name="dl_informacoes_encontradas">Info ditemukan.</string>
     <string name="dl_lendo_a_playlist">Membaca playlist</string>
     <string name="dl_lendo_a_playlist_2">Membaca playlist…</string>
     <string name="dl_lendo_as_informacoes_do_link">Membaca info tautan…</string>
@@ -357,7 +355,7 @@
     <string name="onb_e_nela_que_ficam_as">Di sinilah lagu (songs) dan playlist (playlists) berada. Berganti ponsel tidak menghilangkan apa pun.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Pilih folder musik</string>
     <string name="onb_nenhuma_pasta_escolhida">Belum ada folder yang dipilih</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">Di YouTube, SoundCloud, atau Spotify, ketuk Bagikan lalu pilih TruePlayer. Playlist dan album juga. Tag diperbaiki otomatis.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">Di YouTube atau SoundCloud, ketuk Bagikan lalu pilih TruePlayer. Playlist dan album juga. Tag diperbaiki otomatis.</string>
     <string name="onb_o_app_avisa_quando_sair">Aplikasi memberi tahu saat versi baru keluar. Setiap opsi ada penjelasannya di Pengaturan.</string>
     <string name="onb_proximo">Lanjut</string>
     <string name="onb_pular">Lewati</string>
@@ -489,17 +487,9 @@
     <string name="dl_cancelar">Batal</string>
     <string name="dl_cancelar_musica">Batalkan lagu</string>
     <string name="dl_cancelar_playlist">Batalkan playlist</string>
-    <string name="dl_cancelar_album">Batalkan album</string>
     <string name="dl_position">%1$s dari %2$s</string>
     <string name="dl_canceladas">" (%1$s dibatalkan)"</string>
     <string name="dl_download_cancelado">Unduhan dibatalkan</string>
-    <string name="dl_procurando_a_musica">Mencari lagu…</string>
-    <string name="dl_nao_encontrada">%1$s tidak ditemukan di internet.</string>
-    <string name="dl_nao_achadas">" Tidak ditemukan: %1$s"</string>
-    <string name="dl_spotify_limite">" Spotify hanya memberikan 100 lagu pertama dari sebuah playlist."</string>
-    <string name="dl_spotify_nao_li">Tautan Spotify tidak bisa dibaca</string>
-    <string name="dl_spotify_confira">Pastikan itu lagu, album, atau playlist publik.</string>
-    <string name="dl_album_baixado">Album diunduh</string>
     <string name="playlist_foto_alterar">Ganti foto</string>
     <string name="playlist_foto_remover">Hapus foto</string>
     <string name="playlist_foto_ajustar">Atur foto</string>
@@ -565,4 +555,8 @@
     <plurals name="n_selected">
         <item quantity="other">%1$s dipilih</item>
     </plurals>
+    <string name="dl_spotify_nao_suportado">Tautan Spotify tidak bisa diunduh. Ubah dulu playlist ke YouTube (misalnya dengan TuneMyMusic) lalu bagikan tautan YouTube.</string>
+    <string name="dl_link_nao_suportado">Tautan tidak didukung. Bagikan tautan YouTube atau SoundCloud.</string>
+    <string name="dl_sem_internet">Tidak ada koneksi internet. Periksa lalu coba lagi.</string>
+    <string name="dl_video_indisponivel">Video ini tidak tersedia, privat, atau dibatasi.</string>
 </resources>

@@ -73,14 +73,12 @@
     <string name="dl_baixando_musica">Baixando música</string>
     <string name="dl_conectando">Conectando…</string>
     <string name="dl_confira_se_o_link_esta">Confira se o link está certo e se a playlist é pública.</string>
-    <string name="dl_convertendo_para_mp3">Convertendo para MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s de %3$s músicas%4$s</string>
     <string name="dl_download_concluido">Download concluído</string>
     <string name="dl_downloads_do_trueplayer">Downloads do TruePlayer</string>
     <string name="dl_erro">Erro</string>
     <string name="dl_falha_no_download">Falha no download</string>
     <string name="dl_finalizando">Finalizando…</string>
-    <string name="dl_informacoes_encontradas">Informações encontradas.</string>
     <string name="dl_lendo_a_playlist">Lendo a playlist</string>
     <string name="dl_lendo_a_playlist_2">Lendo a playlist…</string>
     <string name="dl_lendo_as_informacoes_do_link">Lendo as informações do link…</string>
@@ -357,7 +355,7 @@
     <string name="onb_e_nela_que_ficam_as">É nela que ficam as músicas (songs) e as playlists (playlists). Trocar de celular não perde nada.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Escolha a pasta das músicas</string>
     <string name="onb_nenhuma_pasta_escolhida">Nenhuma pasta escolhida</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">No YouTube, SoundCloud ou Spotify, toque em Compartilhar e escolha o TruePlayer. Playlists e álbuns também. As tags são acertadas sozinhas.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">No YouTube ou SoundCloud, toque em Compartilhar e escolha o TruePlayer. Playlists e álbuns também. As tags são acertadas sozinhas.</string>
     <string name="onb_o_app_avisa_quando_sair">O app avisa quando sair versão nova. Cada opção tem uma explicação em Configurações.</string>
     <string name="onb_proximo">Próximo</string>
     <string name="onb_pular">Pular</string>
@@ -489,17 +487,9 @@
     <string name="dl_cancelar">Cancelar</string>
     <string name="dl_cancelar_musica">Cancelar música</string>
     <string name="dl_cancelar_playlist">Cancelar playlist</string>
-    <string name="dl_cancelar_album">Cancelar álbum</string>
     <string name="dl_position">%1$s de %2$s</string>
     <string name="dl_canceladas">" (%1$s canceladas)"</string>
     <string name="dl_download_cancelado">Download cancelado</string>
-    <string name="dl_procurando_a_musica">Procurando a música…</string>
-    <string name="dl_nao_encontrada">Não achei %1$s na internet.</string>
-    <string name="dl_nao_achadas">" Não achadas: %1$s"</string>
-    <string name="dl_spotify_limite">" O Spotify só entrega as 100 primeiras músicas de uma playlist."</string>
-    <string name="dl_spotify_nao_li">Não consegui ler o link do Spotify</string>
-    <string name="dl_spotify_confira">Confira se é uma música, álbum ou playlist pública.</string>
-    <string name="dl_album_baixado">Álbum baixado</string>
     <string name="playlist_foto_alterar">Alterar foto</string>
     <string name="playlist_foto_remover">Remover foto</string>
     <string name="playlist_foto_ajustar">Ajustar foto</string>
@@ -605,4 +595,8 @@
         <item quantity="many">%1$s selecionadas</item>
         <item quantity="other">%1$s selecionadas</item>
     </plurals>
+    <string name="dl_spotify_nao_suportado">Links do Spotify não podem ser baixados. Converta a playlist para o YouTube antes (por exemplo, com o TuneMyMusic) e compartilhe o link do YouTube.</string>
+    <string name="dl_link_nao_suportado">Link não suportado. Compartilhe um link do YouTube ou do SoundCloud.</string>
+    <string name="dl_sem_internet">Sem conexão com a internet. Confira e tente de novo.</string>
+    <string name="dl_video_indisponivel">Este vídeo está indisponível, privado ou restrito.</string>
 </resources>

@@ -73,14 +73,12 @@
     <string name="dl_baixando_musica">正在下載歌曲</string>
     <string name="dl_conectando">連線中…</string>
     <string name="dl_confira_se_o_link_esta">請檢查連結是否正確，播放清單是否公開。</string>
-    <string name="dl_convertendo_para_mp3">正在轉換為 MP3…</string>
     <string name="dl_de_musicas">%1$s：共%3$s首，已完成%2$s首%4$s</string>
     <string name="dl_download_concluido">下載完成</string>
     <string name="dl_downloads_do_trueplayer">TruePlayer 下載</string>
     <string name="dl_erro">錯誤</string>
     <string name="dl_falha_no_download">下載失敗</string>
     <string name="dl_finalizando">正在完成…</string>
-    <string name="dl_informacoes_encontradas">已找到資訊。</string>
     <string name="dl_lendo_a_playlist">正在讀取播放清單</string>
     <string name="dl_lendo_a_playlist_2">正在讀取播放清單…</string>
     <string name="dl_lendo_as_informacoes_do_link">正在讀取連結資訊…</string>
@@ -357,7 +355,7 @@
     <string name="onb_e_nela_que_ficam_as">歌曲（songs）和播放清單（playlists）都放在這裡。換手機不會遺失任何內容。</string>
     <string name="onb_escolha_a_pasta_das_musicas">選擇音樂資料夾</string>
     <string name="onb_nenhuma_pasta_escolhida">未選擇資料夾</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">在 YouTube、SoundCloud 或 Spotify 中點按分享並選擇 TruePlayer，播放清單和專輯也可以。標籤會自動修正。</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">在 YouTube 或 SoundCloud 中點按分享並選擇 TruePlayer，播放清單和專輯也可以。標籤會自動修正。</string>
     <string name="onb_o_app_avisa_quando_sair">有新版本時應用程式會通知你。每個選項在設定中都有說明。</string>
     <string name="onb_proximo">下一步</string>
     <string name="onb_pular">略過</string>
@@ -489,17 +487,9 @@
     <string name="dl_cancelar">取消</string>
     <string name="dl_cancelar_musica">取消這首歌</string>
     <string name="dl_cancelar_playlist">取消播放清單</string>
-    <string name="dl_cancelar_album">取消專輯</string>
     <string name="dl_position">第 %1$s 首，共 %2$s 首</string>
     <string name="dl_canceladas">（已取消 %1$s）</string>
     <string name="dl_download_cancelado">下載已取消</string>
-    <string name="dl_procurando_a_musica">正在尋找歌曲…</string>
-    <string name="dl_nao_encontrada">在網路上找不到 %1$s。</string>
-    <string name="dl_nao_achadas">" 找不到：%1$s"</string>
-    <string name="dl_spotify_limite">" Spotify 只提供播放清單的前 100 首歌曲。"</string>
-    <string name="dl_spotify_nao_li">無法讀取 Spotify 連結</string>
-    <string name="dl_spotify_confira">請確認這是公開的歌曲、專輯或播放清單。</string>
-    <string name="dl_album_baixado">專輯已下載</string>
     <string name="playlist_foto_alterar">更換照片</string>
     <string name="playlist_foto_remover">移除照片</string>
     <string name="playlist_foto_ajustar">調整照片</string>
@@ -565,4 +555,8 @@
     <plurals name="n_selected">
         <item quantity="other">已選取%1$s項</item>
     </plurals>
+    <string name="dl_spotify_nao_suportado">無法下載 Spotify 連結。請先把播放清單轉換到 YouTube（例如用 TuneMyMusic），再分享 YouTube 連結。</string>
+    <string name="dl_link_nao_suportado">不支援此連結。請分享 YouTube 或 SoundCloud 連結。</string>
+    <string name="dl_sem_internet">沒有網路連線。請檢查後重試。</string>
+    <string name="dl_video_indisponivel">此影片無法使用、為私人或受限。</string>
 </resources>

@@ -73,14 +73,12 @@
     <string name="dl_baixando_musica">正在下载歌曲</string>
     <string name="dl_conectando">正在连接…</string>
     <string name="dl_confira_se_o_link_esta">请检查链接是否正确，播放列表是否公开。</string>
-    <string name="dl_convertendo_para_mp3">正在转换为 MP3…</string>
     <string name="dl_de_musicas">%1$s：共%3$s首，已完成%2$s首%4$s</string>
     <string name="dl_download_concluido">下载完成</string>
     <string name="dl_downloads_do_trueplayer">TruePlayer 下载</string>
     <string name="dl_erro">错误</string>
     <string name="dl_falha_no_download">下载失败</string>
     <string name="dl_finalizando">正在完成…</string>
-    <string name="dl_informacoes_encontradas">已找到信息。</string>
     <string name="dl_lendo_a_playlist">正在读取播放列表</string>
     <string name="dl_lendo_a_playlist_2">正在读取播放列表…</string>
     <string name="dl_lendo_as_informacoes_do_link">正在读取链接信息…</string>
@@ -357,7 +355,7 @@
     <string name="onb_e_nela_que_ficam_as">歌曲（songs）和播放列表（playlists）都放在这里。换手机不会丢失任何内容。</string>
     <string name="onb_escolha_a_pasta_das_musicas">选择音乐文件夹</string>
     <string name="onb_nenhuma_pasta_escolhida">未选择文件夹</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">在 YouTube、SoundCloud 或 Spotify 中点按分享并选择 TruePlayer，播放列表和专辑也可以。标签会自动修正。</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">在 YouTube 或 SoundCloud 中点按分享并选择 TruePlayer，播放列表和专辑也可以。标签会自动修正。</string>
     <string name="onb_o_app_avisa_quando_sair">有新版本时应用会通知你。每个选项在设置中都有说明。</string>
     <string name="onb_proximo">下一步</string>
     <string name="onb_pular">跳过</string>
@@ -489,17 +487,9 @@
     <string name="dl_cancelar">取消</string>
     <string name="dl_cancelar_musica">取消这首歌</string>
     <string name="dl_cancelar_playlist">取消播放列表</string>
-    <string name="dl_cancelar_album">取消专辑</string>
     <string name="dl_position">第 %1$s 首，共 %2$s 首</string>
     <string name="dl_canceladas">（已取消 %1$s）</string>
     <string name="dl_download_cancelado">下载已取消</string>
-    <string name="dl_procurando_a_musica">正在查找歌曲…</string>
-    <string name="dl_nao_encontrada">在网上没有找到 %1$s。</string>
-    <string name="dl_nao_achadas">" 未找到：%1$s"</string>
-    <string name="dl_spotify_limite">" Spotify 只提供播放列表的前 100 首歌曲。"</string>
-    <string name="dl_spotify_nao_li">无法读取 Spotify 链接</string>
-    <string name="dl_spotify_confira">请确认这是公开的歌曲、专辑或播放列表。</string>
-    <string name="dl_album_baixado">专辑已下载</string>
     <string name="playlist_foto_alterar">更换照片</string>
     <string name="playlist_foto_remover">移除照片</string>
     <string name="playlist_foto_ajustar">调整照片</string>
@@ -565,4 +555,8 @@
     <plurals name="n_selected">
         <item quantity="other">已选择%1$s项</item>
     </plurals>
+    <string name="dl_spotify_nao_suportado">无法下载 Spotify 链接。请先把播放列表转换到 YouTube（例如用 TuneMyMusic），再分享 YouTube 链接。</string>
+    <string name="dl_link_nao_suportado">不支持此链接。请分享 YouTube 或 SoundCloud 链接。</string>
+    <string name="dl_sem_internet">没有网络连接。请检查后重试。</string>
+    <string name="dl_video_indisponivel">此视频不可用、为私享或受限。</string>
 </resources>

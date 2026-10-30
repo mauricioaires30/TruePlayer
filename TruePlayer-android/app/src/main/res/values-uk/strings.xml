@@ -73,14 +73,12 @@
     <string name="dl_baixando_musica">Завантаження треку</string>
     <string name="dl_conectando">З’єднання…</string>
     <string name="dl_confira_se_o_link_esta">Перевірте, що посилання правильне, а плейлист публічний.</string>
-    <string name="dl_convertendo_para_mp3">Конвертація в MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s з %3$s треків%4$s</string>
     <string name="dl_download_concluido">Завантаження завершено</string>
     <string name="dl_downloads_do_trueplayer">Завантаження TruePlayer</string>
     <string name="dl_erro">Помилка</string>
     <string name="dl_falha_no_download">Не вдалося завантажити</string>
     <string name="dl_finalizando">Завершення…</string>
-    <string name="dl_informacoes_encontradas">Дані знайдено.</string>
     <string name="dl_lendo_a_playlist">Читання плейлиста</string>
     <string name="dl_lendo_a_playlist_2">Читання плейлиста…</string>
     <string name="dl_lendo_as_informacoes_do_link">Читання даних посилання…</string>
@@ -357,7 +355,7 @@
     <string name="onb_e_nela_que_ficam_as">Тут зберігаються треки (songs) і плейлисти (playlists). Зміна телефона нічого не втрачає.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Виберіть теку з музикою</string>
     <string name="onb_nenhuma_pasta_escolhida">Теку не вибрано</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">У YouTube, SoundCloud або Spotify натисніть «Поділитися» і виберіть TruePlayer. Плейлисти й альбоми теж. Теги виправляються автоматично.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">У YouTube або SoundCloud натисніть «Поділитися» і виберіть TruePlayer. Плейлисти й альбоми теж. Теги виправляються автоматично.</string>
     <string name="onb_o_app_avisa_quando_sair">Застосунок повідомить, коли вийде нова версія. Кожна опція має пояснення в налаштуваннях.</string>
     <string name="onb_proximo">Далі</string>
     <string name="onb_pular">Пропустити</string>
@@ -489,17 +487,9 @@
     <string name="dl_cancelar">Скасувати</string>
     <string name="dl_cancelar_musica">Скасувати трек</string>
     <string name="dl_cancelar_playlist">Скасувати плейлист</string>
-    <string name="dl_cancelar_album">Скасувати альбом</string>
     <string name="dl_position">%1$s з %2$s</string>
     <string name="dl_canceladas">" (скасовано: %1$s)"</string>
     <string name="dl_download_cancelado">Завантаження скасовано</string>
-    <string name="dl_procurando_a_musica">Пошук треку…</string>
-    <string name="dl_nao_encontrada">Не вдалося знайти в мережі: %1$s.</string>
-    <string name="dl_nao_achadas">" Не знайдено: %1$s"</string>
-    <string name="dl_spotify_limite">" Spotify віддає лише перші 100 треків плейлиста."</string>
-    <string name="dl_spotify_nao_li">Не вдалося прочитати посилання Spotify</string>
-    <string name="dl_spotify_confira">Переконайтеся, що це відкритий трек, альбом або плейлист.</string>
-    <string name="dl_album_baixado">Альбом завантажено</string>
     <string name="playlist_foto_alterar">Змінити фото</string>
     <string name="playlist_foto_remover">Видалити фото</string>
     <string name="playlist_foto_ajustar">Налаштувати фото</string>
@@ -625,4 +615,8 @@
         <item quantity="many">%1$s вибрано</item>
         <item quantity="other">%1$s вибрано</item>
     </plurals>
+    <string name="dl_spotify_nao_suportado">Посилання Spotify завантажити не можна. Спочатку конвертуйте плейлист у YouTube (наприклад, через TuneMyMusic) і поділіться посиланням на YouTube.</string>
+    <string name="dl_link_nao_suportado">Посилання не підтримується. Поділіться посиланням на YouTube або SoundCloud.</string>
+    <string name="dl_sem_internet">Немає підключення до інтернету. Перевірте його й повторіть спробу.</string>
+    <string name="dl_video_indisponivel">Це відео недоступне, приватне або з обмеженнями.</string>
 </resources>

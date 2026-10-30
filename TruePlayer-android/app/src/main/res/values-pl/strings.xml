@@ -73,14 +73,12 @@
     <string name="dl_baixando_musica">Pobieranie utworu</string>
     <string name="dl_conectando">Łączenie…</string>
     <string name="dl_confira_se_o_link_esta">Sprawdź, czy link jest poprawny, a playlista publiczna.</string>
-    <string name="dl_convertendo_para_mp3">Konwersja do MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s z %3$s utworów%4$s</string>
     <string name="dl_download_concluido">Pobieranie zakończone</string>
     <string name="dl_downloads_do_trueplayer">Pobrane z TruePlayer</string>
     <string name="dl_erro">Błąd</string>
     <string name="dl_falha_no_download">Pobieranie nie powiodło się</string>
     <string name="dl_finalizando">Kończenie…</string>
-    <string name="dl_informacoes_encontradas">Znaleziono dane.</string>
     <string name="dl_lendo_a_playlist">Odczyt playlisty</string>
     <string name="dl_lendo_a_playlist_2">Odczyt playlisty…</string>
     <string name="dl_lendo_as_informacoes_do_link">Odczyt danych linku…</string>
@@ -357,7 +355,7 @@
     <string name="onb_e_nela_que_ficam_as">Tu żyją utwory (songs) i playlisty (playlists). Zmiana telefonu niczego nie traci.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Wybierz folder z muzyką</string>
     <string name="onb_nenhuma_pasta_escolhida">Nie wybrano folderu</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">W YouTube, SoundCloud lub Spotify dotknij Udostępnij i wybierz TruePlayer. Playlisty i albumy też. Tagi poprawiają się automatycznie.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">W YouTube lub SoundCloud dotknij Udostępnij i wybierz TruePlayer. Playlisty i albumy też. Tagi poprawiają się automatycznie.</string>
     <string name="onb_o_app_avisa_quando_sair">Aplikacja powiadomi, gdy wyjdzie nowa wersja. Każda opcja ma wyjaśnienie w Ustawieniach.</string>
     <string name="onb_proximo">Dalej</string>
     <string name="onb_pular">Pomiń</string>
@@ -489,17 +487,9 @@
     <string name="dl_cancelar">Anuluj</string>
     <string name="dl_cancelar_musica">Anuluj utwór</string>
     <string name="dl_cancelar_playlist">Anuluj playlistę</string>
-    <string name="dl_cancelar_album">Anuluj album</string>
     <string name="dl_position">%1$s z %2$s</string>
     <string name="dl_canceladas">" (anulowane: %1$s)"</string>
     <string name="dl_download_cancelado">Pobieranie anulowane</string>
-    <string name="dl_procurando_a_musica">Szukanie utworu…</string>
-    <string name="dl_nao_encontrada">Nie znaleziono w sieci: %1$s.</string>
-    <string name="dl_nao_achadas">" Nie znaleziono: %1$s"</string>
-    <string name="dl_spotify_limite">" Spotify udostępnia tylko pierwsze 100 utworów playlisty."</string>
-    <string name="dl_spotify_nao_li">Nie udało się odczytać linku Spotify</string>
-    <string name="dl_spotify_confira">Sprawdź, czy to publiczny utwór, album lub playlista.</string>
-    <string name="dl_album_baixado">Album pobrany</string>
     <string name="playlist_foto_alterar">Zmień zdjęcie</string>
     <string name="playlist_foto_remover">Usuń zdjęcie</string>
     <string name="playlist_foto_ajustar">Dopasuj zdjęcie</string>
@@ -625,4 +615,8 @@
         <item quantity="many">%1$s zaznaczonych</item>
         <item quantity="other">%1$s zaznaczonego</item>
     </plurals>
+    <string name="dl_spotify_nao_suportado">Linków ze Spotify nie można pobrać. Najpierw przekonwertuj playlistę na YouTube (na przykład w TuneMyMusic) i udostępnij link do YouTube.</string>
+    <string name="dl_link_nao_suportado">Link nieobsługiwany. Udostępnij link do YouTube lub SoundCloud.</string>
+    <string name="dl_sem_internet">Brak połączenia z internetem. Sprawdź je i spróbuj ponownie.</string>
+    <string name="dl_video_indisponivel">Ten film jest niedostępny, prywatny lub ograniczony.</string>
 </resources>

@@ -73,14 +73,12 @@
     <string name="dl_baixando_musica">Nummer downloaden</string>
     <string name="dl_conectando">Verbinden…</string>
     <string name="dl_confira_se_o_link_esta">Controleer of de link klopt en de playlist openbaar is.</string>
-    <string name="dl_convertendo_para_mp3">Converteren naar MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s van %3$s nummers%4$s</string>
     <string name="dl_download_concluido">Download voltooid</string>
     <string name="dl_downloads_do_trueplayer">TruePlayer-downloads</string>
     <string name="dl_erro">Fout</string>
     <string name="dl_falha_no_download">Download mislukt</string>
     <string name="dl_finalizando">Afronden…</string>
-    <string name="dl_informacoes_encontradas">Info gevonden.</string>
     <string name="dl_lendo_a_playlist">Playlist lezen</string>
     <string name="dl_lendo_a_playlist_2">Playlist lezen…</string>
     <string name="dl_lendo_as_informacoes_do_link">Link-info lezen…</string>
@@ -357,7 +355,7 @@
     <string name="onb_e_nela_que_ficam_as">Hier staan de nummers (songs) en de playlists (playlists). Van telefoon wisselen kost niets.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Kies de muziekmap</string>
     <string name="onb_nenhuma_pasta_escolhida">Geen map gekozen</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">Tik op YouTube, SoundCloud of Spotify op Delen en kies TruePlayer. Ook afspeellijsten en albums. Tags worden automatisch verbeterd.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">Tik op YouTube of SoundCloud op Delen en kies TruePlayer. Ook afspeellijsten en albums. Tags worden automatisch verbeterd.</string>
     <string name="onb_o_app_avisa_quando_sair">De app laat het weten als er een nieuwe versie uitkomt. Elke optie heeft uitleg in Instellingen.</string>
     <string name="onb_proximo">Volgende</string>
     <string name="onb_pular">Overslaan</string>
@@ -489,17 +487,9 @@
     <string name="dl_cancelar">Annuleren</string>
     <string name="dl_cancelar_musica">Nummer annuleren</string>
     <string name="dl_cancelar_playlist">Afspeellijst annuleren</string>
-    <string name="dl_cancelar_album">Album annuleren</string>
     <string name="dl_position">%1$s van %2$s</string>
     <string name="dl_canceladas">" (%1$s geannuleerd)"</string>
     <string name="dl_download_cancelado">Download geannuleerd</string>
-    <string name="dl_procurando_a_musica">Nummer zoeken…</string>
-    <string name="dl_nao_encontrada">Kon %1$s online niet vinden.</string>
-    <string name="dl_nao_achadas">" Niet gevonden: %1$s"</string>
-    <string name="dl_spotify_limite">" Spotify levert alleen de eerste 100 nummers van een afspeellijst."</string>
-    <string name="dl_spotify_nao_li">Kon de Spotify-link niet lezen</string>
-    <string name="dl_spotify_confira">Controleer of het een openbaar nummer, album of afspeellijst is.</string>
-    <string name="dl_album_baixado">Album gedownload</string>
     <string name="playlist_foto_alterar">Foto wijzigen</string>
     <string name="playlist_foto_remover">Foto verwijderen</string>
     <string name="playlist_foto_ajustar">Foto aanpassen</string>
@@ -585,4 +575,8 @@
         <item quantity="one">%1$s geselecteerd</item>
         <item quantity="other">%1$s geselecteerd</item>
     </plurals>
+    <string name="dl_spotify_nao_suportado">Spotify-links kunnen niet worden gedownload. Zet de playlist eerst om naar YouTube (bijvoorbeeld met TuneMyMusic) en deel de YouTube-link.</string>
+    <string name="dl_link_nao_suportado">Link niet ondersteund. Deel een YouTube- of SoundCloud-link.</string>
+    <string name="dl_sem_internet">Geen internetverbinding. Controleer die en probeer het opnieuw.</string>
+    <string name="dl_video_indisponivel">Deze video is niet beschikbaar, privé of beperkt.</string>
 </resources>

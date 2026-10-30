@@ -73,14 +73,12 @@
     <string name="dl_baixando_musica">جارٍ تنزيل المقطع</string>
     <string name="dl_conectando">جارٍ الاتصال…</string>
     <string name="dl_confira_se_o_link_esta">تحقق من صحة الرابط ومن أن قائمة التشغيل عامة.</string>
-    <string name="dl_convertendo_para_mp3">جارٍ التحويل إلى MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s من %3$s مقطعًا%4$s</string>
     <string name="dl_download_concluido">اكتمل التنزيل</string>
     <string name="dl_downloads_do_trueplayer">تنزيلات TruePlayer</string>
     <string name="dl_erro">خطأ</string>
     <string name="dl_falha_no_download">فشل التنزيل</string>
     <string name="dl_finalizando">جارٍ الإنهاء…</string>
-    <string name="dl_informacoes_encontradas">تم العثور على المعلومات.</string>
     <string name="dl_lendo_a_playlist">جارٍ قراءة قائمة التشغيل</string>
     <string name="dl_lendo_a_playlist_2">جارٍ قراءة قائمة التشغيل…</string>
     <string name="dl_lendo_as_informacoes_do_link">جارٍ قراءة معلومات الرابط…</string>
@@ -357,7 +355,7 @@
     <string name="onb_e_nela_que_ficam_as">هنا توجد المقاطع (songs) وقوائم التشغيل (playlists). تغيير الهاتف لا يفقدك شيئًا.</string>
     <string name="onb_escolha_a_pasta_das_musicas">اختر مجلد الموسيقى</string>
     <string name="onb_nenhuma_pasta_escolhida">لم يُختر مجلد</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">في YouTube أو SoundCloud أو Spotify اضغط على مشاركة واختر TruePlayer. القوائم والألبومات أيضًا. تُصحَّح الوسوم تلقائيًا.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">في YouTube أو SoundCloud اضغط على مشاركة واختر TruePlayer. القوائم والألبومات أيضًا. تُصحَّح الوسوم تلقائيًا.</string>
     <string name="onb_o_app_avisa_quando_sair">يخبرك التطبيق عند صدور إصدار جديد. لكل خيار شرح في الإعدادات.</string>
     <string name="onb_proximo">التالي</string>
     <string name="onb_pular">تخطي</string>
@@ -489,17 +487,9 @@
     <string name="dl_cancelar">إلغاء</string>
     <string name="dl_cancelar_musica">إلغاء المقطع</string>
     <string name="dl_cancelar_playlist">إلغاء القائمة</string>
-    <string name="dl_cancelar_album">إلغاء الألبوم</string>
     <string name="dl_position">%1$s من %2$s</string>
     <string name="dl_canceladas">" (أُلغي منها %1$s)"</string>
     <string name="dl_download_cancelado">تم إلغاء التنزيل</string>
-    <string name="dl_procurando_a_musica">جارٍ البحث عن المقطع…</string>
-    <string name="dl_nao_encontrada">تعذّر العثور على %1$s على الإنترنت.</string>
-    <string name="dl_nao_achadas">" لم يُعثر على: %1$s"</string>
-    <string name="dl_spotify_limite">" يوفّر Spotify أول 100 مقطع فقط من القائمة."</string>
-    <string name="dl_spotify_nao_li">تعذّرت قراءة رابط Spotify</string>
-    <string name="dl_spotify_confira">تأكد من أنه مقطع أو ألبوم أو قائمة عامة.</string>
-    <string name="dl_album_baixado">تم تنزيل الألبوم</string>
     <string name="playlist_foto_alterar">تغيير الصورة</string>
     <string name="playlist_foto_remover">إزالة الصورة</string>
     <string name="playlist_foto_ajustar">ضبط الصورة</string>
@@ -665,4 +655,8 @@
         <item quantity="many">حُدِّد %1$s عنصرًا</item>
         <item quantity="other">حُدِّد %1$s عنصر</item>
     </plurals>
+    <string name="dl_spotify_nao_suportado">لا يمكن تنزيل روابط Spotify. حوّل قائمة التشغيل إلى YouTube أولًا (مثلًا عبر TuneMyMusic) ثم شارك رابط YouTube.</string>
+    <string name="dl_link_nao_suportado">الرابط غير مدعوم. شارك رابط YouTube أو SoundCloud.</string>
+    <string name="dl_sem_internet">لا يوجد اتصال بالإنترنت. تحقق منه وحاول مرة أخرى.</string>
+    <string name="dl_video_indisponivel">هذا الفيديو غير متاح أو خاص أو مقيّد.</string>
 </resources>

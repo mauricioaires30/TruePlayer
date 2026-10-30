@@ -73,14 +73,12 @@
     <string name="dl_baixando_musica">Laddar ned låt</string>
     <string name="dl_conectando">Ansluter…</string>
     <string name="dl_confira_se_o_link_esta">Kontrollera att länken stämmer och att spellistan är offentlig.</string>
-    <string name="dl_convertendo_para_mp3">Konverterar till MP3…</string>
     <string name="dl_de_musicas">%1$s: %2$s av %3$s låtar%4$s</string>
     <string name="dl_download_concluido">Nedladdningen är klar</string>
     <string name="dl_downloads_do_trueplayer">TruePlayer-nedladdningar</string>
     <string name="dl_erro">Fel</string>
     <string name="dl_falha_no_download">Nedladdningen misslyckades</string>
     <string name="dl_finalizando">Avslutar…</string>
-    <string name="dl_informacoes_encontradas">Info hittades.</string>
     <string name="dl_lendo_a_playlist">Läser spellistan</string>
     <string name="dl_lendo_a_playlist_2">Läser spellistan…</string>
     <string name="dl_lendo_as_informacoes_do_link">Läser länkens info…</string>
@@ -357,7 +355,7 @@
     <string name="onb_e_nela_que_ficam_as">Här finns låtarna (songs) och spellistorna (playlists). Att byta telefon förlorar inget.</string>
     <string name="onb_escolha_a_pasta_das_musicas">Välj musikmappen</string>
     <string name="onb_nenhuma_pasta_escolhida">Ingen mapp vald</string>
-    <string name="onb_no_youtube_ou_no_soundcloud">Tryck på Dela i YouTube, SoundCloud eller Spotify och välj TruePlayer. Även spellistor och album. Taggarna fixas automatiskt.</string>
+    <string name="onb_no_youtube_ou_no_soundcloud">Tryck på Dela i YouTube eller SoundCloud och välj TruePlayer. Även spellistor och album. Taggarna fixas automatiskt.</string>
     <string name="onb_o_app_avisa_quando_sair">Appen meddelar när en ny version kommer. Varje alternativ har en förklaring i Inställningar.</string>
     <string name="onb_proximo">Nästa</string>
     <string name="onb_pular">Hoppa över</string>
@@ -489,17 +487,9 @@
     <string name="dl_cancelar">Avbryt</string>
     <string name="dl_cancelar_musica">Avbryt låt</string>
     <string name="dl_cancelar_playlist">Avbryt spellista</string>
-    <string name="dl_cancelar_album">Avbryt album</string>
     <string name="dl_position">%1$s av %2$s</string>
     <string name="dl_canceladas">" (%1$s avbrutna)"</string>
     <string name="dl_download_cancelado">Nedladdningen avbröts</string>
-    <string name="dl_procurando_a_musica">Söker efter låten…</string>
-    <string name="dl_nao_encontrada">Hittade inte %1$s på nätet.</string>
-    <string name="dl_nao_achadas">" Hittades inte: %1$s"</string>
-    <string name="dl_spotify_limite">" Spotify ger bara de första 100 låtarna i en spellista."</string>
-    <string name="dl_spotify_nao_li">Kunde inte läsa Spotify-länken</string>
-    <string name="dl_spotify_confira">Kontrollera att det är en offentlig låt, ett album eller en spellista.</string>
-    <string name="dl_album_baixado">Albumet laddades ner</string>
     <string name="playlist_foto_alterar">Ändra foto</string>
     <string name="playlist_foto_remover">Ta bort foto</string>
     <string name="playlist_foto_ajustar">Justera foto</string>
@@ -585,4 +575,8 @@
         <item quantity="one">%1$s markerad</item>
         <item quantity="other">%1$s markerade</item>
     </plurals>
+    <string name="dl_spotify_nao_suportado">Spotify-länkar kan inte laddas ner. Konvertera spellistan till YouTube först (till exempel med TuneMyMusic) och dela YouTube-länken.</string>
+    <string name="dl_link_nao_suportado">Länken stöds inte. Dela en YouTube- eller SoundCloud-länk.</string>
+    <string name="dl_sem_internet">Ingen internetanslutning. Kontrollera den och försök igen.</string>
+    <string name="dl_video_indisponivel">Videon är inte tillgänglig, är privat eller begränsad.</string>
 </resources>
