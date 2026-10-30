@@ -89,8 +89,8 @@ internal fun Modifier.nowPlayingWaves(playing: Boolean, color: Color): Modifier 
         // Três camadas: comprimentos, velocidades e sentidos diferentes dão o efeito de ondas se cruzando.
         val layers = listOf(
             Layer(0.62f, 0.14f * height, 140.dp.toPx(), 1f, 0.00f, 0.10f),
-            Layer(0.72f, 0.11f * height, 96.dp.toPx(), -1.6f, 0.30f, 0.08f),
-            Layer(0.82f, 0.09f * height, 70.dp.toPx(), 2.3f, 0.60f, 0.06f),
+            Layer(0.72f, 0.11f * height, 96.dp.toPx(), -2f, 0.30f, 0.08f),
+            Layer(0.82f, 0.09f * height, 70.dp.toPx(), 3f, 0.60f, 0.06f),
         )
         onDrawBehind {
         val a = amount.value

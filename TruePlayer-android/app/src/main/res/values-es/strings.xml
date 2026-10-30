@@ -8,7 +8,7 @@
     <string name="adicionar_a_playlist_2">Añadir %1$s a la playlist</string>
     <string name="ainda_nao_conferiu_sozinho">aún no ha comprobado por sí sola</string>
     <string name="album">Álbum</string>
-    <string name="albuns">ÁLBUMES</string>
+    <string name="albuns">Álbumes</string>
     <string name="albuns_2">Álbumes</string>
     <string name="aleatorio">Aleatorio</string>
     <string name="alteracao_cancelada">Cambio cancelado.</string>
@@ -25,7 +25,7 @@
     <string name="artista_desconhecido">Artista desconocido</string>
     <string name="artista_do_album">Artista del álbum</string>
     <string name="artistas">Artistas</string>
-    <string name="artistas_caps">ARTISTAS</string>
+    <string name="artistas_caps">Artistas</string>
     <string name="as_musicas_que_voce_mais">Las canciones que más escuchas aparecen aquí.</string>
     <string name="atual">Actual</string>
     <string name="atualizacoes">Actualizaciones</string>
@@ -284,7 +284,7 @@
     <string name="liberar_pasta">Liberar carpeta</string>
     <string name="limpar_pasta">Limpiar carpeta</string>
     <string name="mais_ouvidas">Más escuchadas</string>
-    <string name="mais_ouvidas_2">MÁS ESCUCHADAS</string>
+    <string name="mais_ouvidas_2">Más escuchadas</string>
     <string name="mantem_os_downloads_funcionando">Mantiene las descargas funcionando</string>
     <string name="mig_agora_nao">Ahora no</string>
     <string name="mig_de">"%1$s de %2$s "</string>
@@ -319,7 +319,7 @@
     <string name="mig_preparando">Preparando…</string>
     <string name="mig_registro_salvo_em_trueplayer">Registro guardado en .trueplayer/%1$s</string>
     <string name="move_o_que_nao_e">Mueve lo que no es música a _lixeira</string>
-    <string name="musicas">CANCIONES</string>
+    <string name="musicas">Canciones</string>
     <string name="musicas_do_celular">Canciones del teléfono</string>
     <string name="musicas_ja_estao_em_songs">Canciones: %1$s (%2$s ya están en songs)\n</string>
     <string name="n_min">%1$s min</string>

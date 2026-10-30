@@ -8,7 +8,7 @@
     <string name="adicionar_a_playlist_2">%1$s toevoegen aan playlist</string>
     <string name="ainda_nao_conferiu_sozinho">heeft nog niet zelf gecontroleerd</string>
     <string name="album">Album</string>
-    <string name="albuns">ALBUMS</string>
+    <string name="albuns">Albums</string>
     <string name="albuns_2">Albums</string>
     <string name="aleatorio">Willekeurig</string>
     <string name="alteracao_cancelada">Wijziging geannuleerd.</string>
@@ -25,7 +25,7 @@
     <string name="artista_desconhecido">Onbekende artiest</string>
     <string name="artista_do_album">Albumartiest</string>
     <string name="artistas">Artiesten</string>
-    <string name="artistas_caps">ARTIESTEN</string>
+    <string name="artistas_caps">Artiesten</string>
     <string name="as_musicas_que_voce_mais">De nummers die je het meest beluistert verschijnen hier.</string>
     <string name="atual">Huidig</string>
     <string name="atualizacoes">Updates</string>
@@ -284,7 +284,7 @@
     <string name="liberar_pasta">Map vrijgeven</string>
     <string name="limpar_pasta">Map opschonen</string>
     <string name="mais_ouvidas">Meest afgespeeld</string>
-    <string name="mais_ouvidas_2">MEEST AFGESPEELD</string>
+    <string name="mais_ouvidas_2">Meest afgespeeld</string>
     <string name="mantem_os_downloads_funcionando">Houdt downloads werkend</string>
     <string name="mig_agora_nao">Niet nu</string>
     <string name="mig_de">"%1$s van %2$s "</string>
@@ -319,7 +319,7 @@
     <string name="mig_preparando">Voorbereiden…</string>
     <string name="mig_registro_salvo_em_trueplayer">Logboek opgeslagen in .trueplayer/%1$s</string>
     <string name="move_o_que_nao_e">Verplaatst wat geen muziek is naar _lixeira</string>
-    <string name="musicas">NUMMERS</string>
+    <string name="musicas">Nummers</string>
     <string name="musicas_do_celular">Nummers op de telefoon</string>
     <string name="musicas_ja_estao_em_songs">Nummers: %1$s (%2$s al in songs)\n</string>
     <string name="n_min">%1$s min</string>

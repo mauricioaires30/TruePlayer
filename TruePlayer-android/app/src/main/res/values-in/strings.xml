@@ -8,7 +8,7 @@
     <string name="adicionar_a_playlist_2">Tambahkan %1$s ke playlist</string>
     <string name="ainda_nao_conferiu_sozinho">belum memeriksa sendiri</string>
     <string name="album">Album</string>
-    <string name="albuns">ALBUM</string>
+    <string name="albuns">Album</string>
     <string name="albuns_2">Album</string>
     <string name="aleatorio">Acak</string>
     <string name="alteracao_cancelada">Perubahan dibatalkan.</string>
@@ -25,7 +25,7 @@
     <string name="artista_desconhecido">Artis tidak dikenal</string>
     <string name="artista_do_album">Artis album</string>
     <string name="artistas">Artis</string>
-    <string name="artistas_caps">ARTIS</string>
+    <string name="artistas_caps">Artis</string>
     <string name="as_musicas_que_voce_mais">Lagu yang paling sering Anda dengarkan muncul di sini.</string>
     <string name="atual">Saat ini</string>
     <string name="atualizacoes">Pembaruan</string>
@@ -284,7 +284,7 @@
     <string name="liberar_pasta">Lepaskan folder</string>
     <string name="limpar_pasta">Bersihkan folder</string>
     <string name="mais_ouvidas">Paling sering diputar</string>
-    <string name="mais_ouvidas_2">PALING SERING DIPUTAR</string>
+    <string name="mais_ouvidas_2">Paling sering diputar</string>
     <string name="mantem_os_downloads_funcionando">Menjaga unduhan tetap berfungsi</string>
     <string name="mig_agora_nao">Nanti saja</string>
     <string name="mig_de">"%1$s dari %2$s "</string>
@@ -319,7 +319,7 @@
     <string name="mig_preparando">Menyiapkan…</string>
     <string name="mig_registro_salvo_em_trueplayer">Log disimpan di .trueplayer/%1$s</string>
     <string name="move_o_que_nao_e">Memindahkan yang bukan musik ke _lixeira</string>
-    <string name="musicas">LAGU</string>
+    <string name="musicas">Lagu</string>
     <string name="musicas_do_celular">Lagu di ponsel</string>
     <string name="musicas_ja_estao_em_songs">Lagu: %1$s (%2$s sudah ada di songs)\n</string>
     <string name="n_min">%1$s mnt</string>

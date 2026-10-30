@@ -8,7 +8,7 @@
     <string name="adicionar_a_playlist_2">Thêm %1$s vào danh sách phát</string>
     <string name="ainda_nao_conferiu_sozinho">chưa tự kiểm tra</string>
     <string name="album">Album</string>
-    <string name="albuns">ALBUM</string>
+    <string name="albuns">Album</string>
     <string name="albuns_2">Album</string>
     <string name="aleatorio">Phát ngẫu nhiên</string>
     <string name="alteracao_cancelada">Đã hủy thay đổi.</string>
@@ -25,7 +25,7 @@
     <string name="artista_desconhecido">Nghệ sĩ không rõ</string>
     <string name="artista_do_album">Nghệ sĩ của album</string>
     <string name="artistas">Nghệ sĩ</string>
-    <string name="artistas_caps">NGHỆ SĨ</string>
+    <string name="artistas_caps">Nghệ sĩ</string>
     <string name="as_musicas_que_voce_mais">Những bài bạn nghe nhiều nhất sẽ hiện ở đây.</string>
     <string name="atual">Hiện tại</string>
     <string name="atualizacoes">Cập nhật</string>
@@ -284,7 +284,7 @@
     <string name="liberar_pasta">Giải phóng thư mục</string>
     <string name="limpar_pasta">Dọn thư mục</string>
     <string name="mais_ouvidas">Phát nhiều nhất</string>
-    <string name="mais_ouvidas_2">PHÁT NHIỀU NHẤT</string>
+    <string name="mais_ouvidas_2">Phát nhiều nhất</string>
     <string name="mantem_os_downloads_funcionando">Giữ cho việc tải xuống hoạt động</string>
     <string name="mig_agora_nao">Để sau</string>
     <string name="mig_de">"%1$s/%2$s "</string>
@@ -319,7 +319,7 @@
     <string name="mig_preparando">Đang chuẩn bị…</string>
     <string name="mig_registro_salvo_em_trueplayer">Đã lưu nhật ký vào .trueplayer/%1$s</string>
     <string name="move_o_que_nao_e">Chuyển những gì không phải nhạc vào _lixeira</string>
-    <string name="musicas">BÀI HÁT</string>
+    <string name="musicas">Bài hát</string>
     <string name="musicas_do_celular">Bài hát trên điện thoại</string>
     <string name="musicas_ja_estao_em_songs">Bài hát: %1$s (%2$s đã ở trong songs)\n</string>
     <string name="n_min">%1$s phút</string>

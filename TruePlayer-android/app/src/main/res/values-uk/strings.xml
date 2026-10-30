@@ -8,7 +8,7 @@
     <string name="adicionar_a_playlist_2">Додати %1$s до плейлиста</string>
     <string name="ainda_nao_conferiu_sozinho">ще не перевіряло саме</string>
     <string name="album">Альбом</string>
-    <string name="albuns">АЛЬБОМИ</string>
+    <string name="albuns">Альбоми</string>
     <string name="albuns_2">Альбоми</string>
     <string name="aleatorio">Вперемішку</string>
     <string name="alteracao_cancelada">Зміну скасовано.</string>
@@ -25,7 +25,7 @@
     <string name="artista_desconhecido">Невідомий виконавець</string>
     <string name="artista_do_album">Виконавець альбому</string>
     <string name="artistas">Виконавці</string>
-    <string name="artistas_caps">ВИКОНАВЦІ</string>
+    <string name="artistas_caps">Виконавці</string>
     <string name="as_musicas_que_voce_mais">Тут з’являться треки, які ви слухаєте найчастіше.</string>
     <string name="atual">Поточний</string>
     <string name="atualizacoes">Оновлення</string>
@@ -284,7 +284,7 @@
     <string name="liberar_pasta">Звільнити теку</string>
     <string name="limpar_pasta">Очистити теку</string>
     <string name="mais_ouvidas">Найчастіше слухаєте</string>
-    <string name="mais_ouvidas_2">НАЙЧАСТІШЕ СЛУХАЄТЕ</string>
+    <string name="mais_ouvidas_2">Найчастіше слухаєте</string>
     <string name="mantem_os_downloads_funcionando">Підтримує роботу завантажень</string>
     <string name="mig_agora_nao">Не зараз</string>
     <string name="mig_de">"%1$s з %2$s "</string>
@@ -319,7 +319,7 @@
     <string name="mig_preparando">Підготовка…</string>
     <string name="mig_registro_salvo_em_trueplayer">Журнал збережено в .trueplayer/%1$s</string>
     <string name="move_o_que_nao_e">Переносить усе, що не музика, у _lixeira</string>
-    <string name="musicas">ТРЕКИ</string>
+    <string name="musicas">Треки</string>
     <string name="musicas_do_celular">Треки на телефоні</string>
     <string name="musicas_ja_estao_em_songs">Треків: %1$s (%2$s уже в songs)\n</string>
     <string name="n_min">%1$s хв</string>

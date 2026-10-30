@@ -8,7 +8,7 @@
     <string name="adicionar_a_playlist_2">Dodaj %1$s do playlisty</string>
     <string name="ainda_nao_conferiu_sozinho">jeszcze nie sprawdziło samo</string>
     <string name="album">Album</string>
-    <string name="albuns">ALBUMY</string>
+    <string name="albuns">Albumy</string>
     <string name="albuns_2">Albumy</string>
     <string name="aleatorio">Losowo</string>
     <string name="alteracao_cancelada">Zmiana anulowana.</string>
@@ -25,7 +25,7 @@
     <string name="artista_desconhecido">Nieznany wykonawca</string>
     <string name="artista_do_album">Wykonawca albumu</string>
     <string name="artistas">Wykonawcy</string>
-    <string name="artistas_caps">WYKONAWCY</string>
+    <string name="artistas_caps">Wykonawcy</string>
     <string name="as_musicas_que_voce_mais">Tu pojawią się utwory, których słuchasz najczęściej.</string>
     <string name="atual">Bieżący</string>
     <string name="atualizacoes">Aktualizacje</string>
@@ -284,7 +284,7 @@
     <string name="liberar_pasta">Zwolnij folder</string>
     <string name="limpar_pasta">Wyczyść folder</string>
     <string name="mais_ouvidas">Najczęściej słuchane</string>
-    <string name="mais_ouvidas_2">NAJCZĘŚCIEJ SŁUCHANE</string>
+    <string name="mais_ouvidas_2">Najczęściej słuchane</string>
     <string name="mantem_os_downloads_funcionando">Utrzymuje pobieranie w działaniu</string>
     <string name="mig_agora_nao">Nie teraz</string>
     <string name="mig_de">"%1$s z %2$s "</string>
@@ -319,7 +319,7 @@
     <string name="mig_preparando">Przygotowanie…</string>
     <string name="mig_registro_salvo_em_trueplayer">Dziennik zapisany w .trueplayer/%1$s</string>
     <string name="move_o_que_nao_e">Przenosi to, co nie jest muzyką, do _lixeira</string>
-    <string name="musicas">UTWORY</string>
+    <string name="musicas">Utwory</string>
     <string name="musicas_do_celular">Utwory na telefonie</string>
     <string name="musicas_ja_estao_em_songs">Utwory: %1$s (%2$s już w songs)\n</string>
     <string name="n_min">%1$s min</string>

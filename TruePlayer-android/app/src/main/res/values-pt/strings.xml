@@ -8,7 +8,7 @@
     <string name="adicionar_a_playlist_2">Adicionar %1$s à playlist</string>
     <string name="ainda_nao_conferiu_sozinho">ainda não conferiu sozinho</string>
     <string name="album">Álbum</string>
-    <string name="albuns">ÁLBUNS</string>
+    <string name="albuns">Álbuns</string>
     <string name="albuns_2">Álbuns</string>
     <string name="aleatorio">Aleatório</string>
     <string name="alteracao_cancelada">Alteração cancelada.</string>
@@ -25,7 +25,7 @@
     <string name="artista_desconhecido">Artista desconhecido</string>
     <string name="artista_do_album">Artista do álbum</string>
     <string name="artistas">Artistas</string>
-    <string name="artistas_caps">ARTISTAS</string>
+    <string name="artistas_caps">Artistas</string>
     <string name="as_musicas_que_voce_mais">As músicas que você mais ouve aparecem aqui.</string>
     <string name="atual">Atual</string>
     <string name="atualizacoes">Atualizações</string>
@@ -284,7 +284,7 @@
     <string name="liberar_pasta">Liberar pasta</string>
     <string name="limpar_pasta">Limpar pasta</string>
     <string name="mais_ouvidas">Mais ouvidas</string>
-    <string name="mais_ouvidas_2">MAIS OUVIDAS</string>
+    <string name="mais_ouvidas_2">Mais ouvidas</string>
     <string name="mantem_os_downloads_funcionando">Mantém os downloads funcionando</string>
     <string name="mig_agora_nao">Agora não</string>
     <string name="mig_de">"%1$s de %2$s "</string>
@@ -319,7 +319,7 @@
     <string name="mig_preparando">Preparando…</string>
     <string name="mig_registro_salvo_em_trueplayer">Registro salvo em .trueplayer/%1$s</string>
     <string name="move_o_que_nao_e">Move o que não é música para a _lixeira</string>
-    <string name="musicas">MÚSICAS</string>
+    <string name="musicas">Músicas</string>
     <string name="musicas_do_celular">Músicas do celular</string>
     <string name="musicas_ja_estao_em_songs">Músicas: %1$s (%2$s já estão em songs)\n</string>
     <string name="n_min">%1$s min</string>

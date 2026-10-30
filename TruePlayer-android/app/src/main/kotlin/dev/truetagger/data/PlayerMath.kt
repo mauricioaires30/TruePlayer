@@ -23,6 +23,15 @@ fun extrapolatedPosition(positionMs: Long, snapshotAtMs: Long, nowMs: Long, play
 
 const val MAX_EXTRAPOLATION_MS = 2_000L
 
+/**
+ * Posição (0 a 1) de um toque em [x] numa barra de [width] px cuja bolinha anda só entre [inset] e `width - inset`
+ * (a bolinha não sai do desenho nas pontas). Fora desse trecho vale o começo ou o fim.
+ */
+fun seekFraction(x: Float, width: Float, inset: Float): Float {
+    val track = width - 2f * inset
+    return if (track <= 0f) 0f else ((x - inset) / track).coerceIn(0f, 1f)
+}
+
 /** Tempo da música como "3:07", ou "1:02:09" a partir de uma hora. Negativo vira zero. */
 fun formatDuration(ms: Long): String {
     val seconds = (ms / 1000).coerceAtLeast(0L)

@@ -230,7 +230,7 @@ internal fun ScreenTitle(
     modifier: Modifier = Modifier,
 ) {
     // Título longo (nome de álbum, playlist, artista...) rola em loop em vez de ser cortado.
-    ScrollingText(title, modifier = modifier, style = MaterialTheme.typography.headlineSmall)
+    ScrollingText(title, modifier = modifier, style = MaterialTheme.typography.headlineMedium)
 }
 
 /**
@@ -498,13 +498,21 @@ internal fun EditableField(
     modifier: Modifier = Modifier,
     onValueChange: (String) -> Unit,
 ) {
-    OutlinedTextField(
+    TextField(
         value = value,
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
         singleLine = true,
         shape = RoundedCornerShape(UiTokens.fieldRadius),
         label = { Text(label) },
+        colors = TextFieldDefaults.colors(
+            focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+            focusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+            unfocusedIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+            disabledIndicatorColor = androidx.compose.ui.graphics.Color.Transparent,
+        ),
     )
 }
 

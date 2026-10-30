@@ -8,7 +8,7 @@
     <string name="adicionar_a_playlist_2">%1$s zur Playlist hinzufügen</string>
     <string name="ainda_nao_conferiu_sozinho">hat noch nicht selbst geprüft</string>
     <string name="album">Album</string>
-    <string name="albuns">ALBEN</string>
+    <string name="albuns">Alben</string>
     <string name="albuns_2">Alben</string>
     <string name="aleatorio">Zufall</string>
     <string name="alteracao_cancelada">Änderung abgebrochen.</string>
@@ -25,7 +25,7 @@
     <string name="artista_desconhecido">Unbekannter Interpret</string>
     <string name="artista_do_album">Albuminterpret</string>
     <string name="artistas">Interpreten</string>
-    <string name="artistas_caps">INTERPRETEN</string>
+    <string name="artistas_caps">Interpreten</string>
     <string name="as_musicas_que_voce_mais">Die Titel, die du am meisten hörst, erscheinen hier.</string>
     <string name="atual">Aktuell</string>
     <string name="atualizacoes">Updates</string>
@@ -284,7 +284,7 @@
     <string name="liberar_pasta">Ordner freigeben</string>
     <string name="limpar_pasta">Ordner aufräumen</string>
     <string name="mais_ouvidas">Am meisten gespielt</string>
-    <string name="mais_ouvidas_2">AM MEISTEN GESPIELT</string>
+    <string name="mais_ouvidas_2">Am meisten gespielt</string>
     <string name="mantem_os_downloads_funcionando">Hält die Downloads funktionsfähig</string>
     <string name="mig_agora_nao">Nicht jetzt</string>
     <string name="mig_de">"%1$s von %2$s "</string>
@@ -319,7 +319,7 @@
     <string name="mig_preparando">Wird vorbereitet…</string>
     <string name="mig_registro_salvo_em_trueplayer">Protokoll gespeichert in .trueplayer/%1$s</string>
     <string name="move_o_que_nao_e">Verschiebt alles, was keine Musik ist, nach _lixeira</string>
-    <string name="musicas">TITEL</string>
+    <string name="musicas">Titel</string>
     <string name="musicas_do_celular">Titel auf dem Telefon</string>
     <string name="musicas_ja_estao_em_songs">Titel: %1$s (%2$s schon in songs)\n</string>
     <string name="n_min">%1$s Min.</string>

@@ -8,7 +8,7 @@
     <string name="adicionar_a_playlist_2">%1$s çalma listesine ekle</string>
     <string name="ainda_nao_conferiu_sozinho">henüz kendi kendine denetlemedi</string>
     <string name="album">Albüm</string>
-    <string name="albuns">ALBÜMLER</string>
+    <string name="albuns">Albümler</string>
     <string name="albuns_2">Albümler</string>
     <string name="aleatorio">Karışık</string>
     <string name="alteracao_cancelada">Değişiklik iptal edildi.</string>
@@ -25,7 +25,7 @@
     <string name="artista_desconhecido">Bilinmeyen sanatçı</string>
     <string name="artista_do_album">Albüm sanatçısı</string>
     <string name="artistas">Sanatçılar</string>
-    <string name="artistas_caps">SANATÇILAR</string>
+    <string name="artistas_caps">Sanatçılar</string>
     <string name="as_musicas_que_voce_mais">En çok dinlediğiniz şarkılar burada görünür.</string>
     <string name="atual">Geçerli</string>
     <string name="atualizacoes">Güncellemeler</string>
@@ -284,7 +284,7 @@
     <string name="liberar_pasta">Klasörü serbest bırak</string>
     <string name="limpar_pasta">Klasörü temizle</string>
     <string name="mais_ouvidas">En çok çalınanlar</string>
-    <string name="mais_ouvidas_2">EN ÇOK ÇALINANLAR</string>
+    <string name="mais_ouvidas_2">En çok çalınanlar</string>
     <string name="mantem_os_downloads_funcionando">İndirmelerin çalışmasını sürdürür</string>
     <string name="mig_agora_nao">Şimdi değil</string>
     <string name="mig_de">"%1$s / %2$s "</string>
@@ -319,7 +319,7 @@
     <string name="mig_preparando">Hazırlanıyor…</string>
     <string name="mig_registro_salvo_em_trueplayer">Kayıt .trueplayer/%1$s içine kaydedildi</string>
     <string name="move_o_que_nao_e">Müzik olmayanları _lixeira\'ya taşır</string>
-    <string name="musicas">ŞARKILAR</string>
+    <string name="musicas">Şarkılar</string>
     <string name="musicas_do_celular">Telefondaki şarkılar</string>
     <string name="musicas_ja_estao_em_songs">Şarkılar: %1$s (%2$s zaten songs içinde)\n</string>
     <string name="n_min">%1$s dk</string>

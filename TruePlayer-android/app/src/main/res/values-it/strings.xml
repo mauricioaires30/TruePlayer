@@ -8,7 +8,7 @@
     <string name="adicionar_a_playlist_2">Aggiungi %1$s alla playlist</string>
     <string name="ainda_nao_conferiu_sozinho">non ha ancora controllato da solo</string>
     <string name="album">Album</string>
-    <string name="albuns">ALBUM</string>
+    <string name="albuns">Album</string>
     <string name="albuns_2">Album</string>
     <string name="aleatorio">Casuale</string>
     <string name="alteracao_cancelada">Modifica annullata.</string>
@@ -25,7 +25,7 @@
     <string name="artista_desconhecido">Artista sconosciuto</string>
     <string name="artista_do_album">Artista dell\'album</string>
     <string name="artistas">Artisti</string>
-    <string name="artistas_caps">ARTISTI</string>
+    <string name="artistas_caps">Artisti</string>
     <string name="as_musicas_que_voce_mais">I brani che ascolti di più compaiono qui.</string>
     <string name="atual">Attuale</string>
     <string name="atualizacoes">Aggiornamenti</string>
@@ -284,7 +284,7 @@
     <string name="liberar_pasta">Rilascia cartella</string>
     <string name="limpar_pasta">Pulisci cartella</string>
     <string name="mais_ouvidas">Più ascoltati</string>
-    <string name="mais_ouvidas_2">PIÙ ASCOLTATI</string>
+    <string name="mais_ouvidas_2">Più ascoltati</string>
     <string name="mantem_os_downloads_funcionando">Mantiene i download funzionanti</string>
     <string name="mig_agora_nao">Non ora</string>
     <string name="mig_de">"%1$s di %2$s "</string>
@@ -319,7 +319,7 @@
     <string name="mig_preparando">Preparazione…</string>
     <string name="mig_registro_salvo_em_trueplayer">Registro salvato in .trueplayer/%1$s</string>
     <string name="move_o_que_nao_e">Sposta in _lixeira ciò che non è musica</string>
-    <string name="musicas">BRANI</string>
+    <string name="musicas">Brani</string>
     <string name="musicas_do_celular">Brani del telefono</string>
     <string name="musicas_ja_estao_em_songs">Brani: %1$s (%2$s già in songs)\n</string>
     <string name="n_min">%1$s min</string>

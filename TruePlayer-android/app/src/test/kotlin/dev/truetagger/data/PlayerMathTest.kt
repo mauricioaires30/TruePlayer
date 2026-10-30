@@ -41,6 +41,15 @@ class PlayerMathTest {
         assertTrue(extrapolatedPosition(10_000L, 1_000L, 1_100L, playing = true, durationMs = 0L) > 10_000L)
     }
 
+    @Test fun touchesMapToTheTrackBetweenTheDotLimits() {
+        assertEquals(0f, seekFraction(2f, 200f, 10f), 0f)
+        assertEquals(0f, seekFraction(10f, 200f, 10f), 0f)
+        assertEquals(0.5f, seekFraction(100f, 200f, 10f), 0.001f)
+        assertEquals(1f, seekFraction(190f, 200f, 10f), 0f)
+        assertEquals(1f, seekFraction(400f, 200f, 10f), 0f)
+        assertEquals(0f, seekFraction(5f, 10f, 10f), 0f)
+    }
+
     @Test fun durationsUseMinutesAndSecondsAndHoursWhenNeeded() {
         assertEquals("0:00", formatDuration(0L))
         assertEquals("0:08", formatDuration(8_900L))

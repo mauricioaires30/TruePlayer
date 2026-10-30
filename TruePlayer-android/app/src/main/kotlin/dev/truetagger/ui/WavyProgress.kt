@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import dev.truetagger.android.PlayerSnapshot
 import dev.truetagger.data.extrapolatedPosition
 import dev.truetagger.data.formatDuration
+import dev.truetagger.data.seekFraction
 import dev.truetagger.data.waveY
 import kotlin.math.min
 
@@ -81,10 +82,20 @@ internal fun rememberSmoothFraction(s: PlayerSnapshot): State<Float> {
     return fraction
 }
 
+/** Uma camada de onda da barra: tamanho, velocidade (sempre inteira, para a onda não dar salto quando o relógio recomeça), traço e fase. */
+private class BarWave(val amplitude: Float, val length: Float, val speed: Int, val stroke: Float, val alpha: Float, val phase: Float)
+
+private val BarWaves = listOf(
+    BarWave(0.85f, 1.45f, 1, 0.55f, 0.32f, 0.66f),
+    BarWave(0.70f, 0.70f, -3, 0.65f, 0.50f, 0.33f),
+    BarWave(1.00f, 1.00f, 2, 1.00f, 1.00f, 0.00f),
+)
+
 /**
- * Barra de progresso ondulada (como a do Samsung): o trecho já tocado é uma onda que corre enquanto a música
- * toca e vai se achatando ao pausar; o resto é uma linha reta. [progress] é lido só no desenho.
- * Com [showThumb] desenha também uma barrinha vertical na posição atual.
+ * Barra de progresso: o trecho já tocado são várias ondas em camadas (comprimentos, velocidades e sentidos
+ * diferentes, como as ondas atrás da música que toca) que correm enquanto a música toca, se achatam ao pausar e
+ * morrem na bolinha da posição atual; o resto é uma linha reta. [progress] é lido só no desenho.
+ * Com [showThumb] desenha a bolinha na posição atual.
  */
 @Composable
 internal fun WavyProgressBar(
@@ -97,47 +108,46 @@ internal fun WavyProgressBar(
     wavelength: Dp = 26.dp,
     stroke: Dp = 3.dp,
     showThumb: Boolean = false,
-    thumbWidth: Dp = 4.dp,
+    thumbRadius: Dp = 6.dp,
 ) {
     // Amplitude suave: some ao pausar e volta ao tocar. Só anima quadros enquanto for preciso.
     val amount = animateFloatAsState(if (playing) 1f else 0f, tween(450), label = "waveAmount")
-    val clock = rememberWaveClock(running = playing || amount.value > 0.01f)
+    val clock = rememberWaveClock(running = playing || amount.value > 0.01f, cycleMs = 3200)
     val path = remember { Path() }
     Canvas(modifier) {
         val width = size.width
         val centerY = size.height / 2f
         val strokePx = stroke.toPx()
-        val thumbWidth = thumbWidth.toPx()
-        val x = progress().coerceIn(0f, 1f) * width
-        val amplitudePx = amplitude.toPx() * amount.value
-        val wavelengthPx = wavelength.toPx()
+        // A bolinha anda entre as duas pontas sem ser cortada.
+        val inset = if (showThumb) thumbRadius.toPx() else strokePx / 2f
+        val x = inset + progress().coerceIn(0f, 1f) * (width - 2f * inset).coerceAtLeast(0f)
+        val step = 3.dp.toPx()
 
         // Resto da música: linha reta.
-        drawLine(inactiveColor, Offset(x, centerY), Offset(width, centerY), strokePx, StrokeCap.Round)
+        drawLine(inactiveColor, Offset(x, centerY), Offset(width - inset, centerY), strokePx, StrokeCap.Round)
 
-        // Trecho tocado: onda. Perto do começo a onda cresce aos poucos, para a ponta esquerda não ficar tremendo.
-        path.rewind()
-        path.moveTo(0f, centerY)
-        val step = 3.dp.toPx()
-        var px = 0f
-        while (px < x) {
-            val envelope = min(1f, px / wavelengthPx)
-            path.lineTo(px, centerY + waveY(px, -clock.value, amplitudePx, wavelengthPx) * envelope)
-            px += step
-        }
-        path.lineTo(x, centerY + waveY(x, -clock.value, amplitudePx, wavelengthPx))
-        drawPath(path, activeColor, style = Stroke(width = strokePx, cap = StrokeCap.Round, join = StrokeJoin.Round))
-
-        if (showThumb) {
-            val thumbX = x.coerceIn(thumbWidth / 2f, width - thumbWidth / 2f)
-            val thumbHeight = size.height * 0.8f
-            drawRoundRect(
-                activeColor,
-                topLeft = Offset(thumbX - thumbWidth / 2f, centerY - thumbHeight / 2f),
-                size = Size(thumbWidth, thumbHeight),
-                cornerRadius = CornerRadius(thumbWidth / 2f),
+        // Trecho tocado: camadas de onda, da mais apagada para a mais forte. As ondas crescem depois do começo e
+        // morrem ao chegar na bolinha, então as pontas ficam sempre na linha do meio.
+        for (layer in BarWaves) {
+            val length = wavelength.toPx() * layer.length
+            val amplitudePx = amplitude.toPx() * layer.amplitude * amount.value
+            path.rewind()
+            path.moveTo(inset, centerY)
+            var px = inset
+            while (px < x) {
+                val envelope = min(min(1f, (px - inset) / length), min(1f, (x - px) / length))
+                path.lineTo(px, centerY + waveY(px, -clock.value * layer.speed + layer.phase, amplitudePx, length) * envelope)
+                px += step
+            }
+            path.lineTo(x, centerY)
+            drawPath(
+                path,
+                activeColor.copy(alpha = layer.alpha),
+                style = Stroke(width = strokePx * layer.stroke, cap = StrokeCap.Round, join = StrokeJoin.Round),
             )
         }
+
+        if (showThumb) drawCircle(activeColor, radius = thumbRadius.toPx(), center = Offset(x, centerY))
     }
 }
 
@@ -155,6 +165,7 @@ internal fun SeekableWavyBar(
     amplitude: Dp = 1.8.dp,
     wavelength: Dp = 20.dp,
     stroke: Dp = 2.dp,
+    thumbRadius: Dp = 5.dp,
 ) {
     val smooth = rememberSmoothFraction(s)
     var dragging by remember { mutableStateOf<Float?>(null) }
@@ -185,7 +196,7 @@ internal fun SeekableWavyBar(
                 progress = { picked ?: smooth.value },
                 playing = s.playing && dragging == null,
                 showThumb = enabled,
-                thumbWidth = 3.dp,
+                thumbRadius = thumbRadius,
                 amplitude = amplitude,
                 wavelength = wavelength,
                 stroke = stroke,
@@ -196,7 +207,7 @@ internal fun SeekableWavyBar(
                     .pointerInput(enabled) {
                         if (!enabled) return@pointerInput
                         detectTapGestures { offset ->
-                            val f = (offset.x / size.width).coerceIn(0f, 1f)
+                            val f = seekFraction(offset.x, size.width.toFloat(), thumbRadius.toPx())
                             justSought = f
                             seek(f)
                         }
@@ -204,10 +215,10 @@ internal fun SeekableWavyBar(
                     .pointerInput(enabled) {
                         if (!enabled) return@pointerInput
                         detectHorizontalDragGestures(
-                            onDragStart = { offset -> dragging = (offset.x / size.width).coerceIn(0f, 1f) },
+                            onDragStart = { offset -> dragging = seekFraction(offset.x, size.width.toFloat(), thumbRadius.toPx()) },
                             onHorizontalDrag = { change, _ ->
                                 change.consume()
-                                dragging = (change.position.x / size.width).coerceIn(0f, 1f)
+                                dragging = seekFraction(change.position.x, size.width.toFloat(), thumbRadius.toPx())
                             },
                             onDragEnd = {
                                 dragging?.let { f ->

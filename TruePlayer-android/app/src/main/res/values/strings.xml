@@ -9,7 +9,7 @@
     <string name="adicionar_a_playlist_2">Add %1$s to playlist</string>
     <string name="ainda_nao_conferiu_sozinho">hasn\'t checked by itself yet</string>
     <string name="album">Album</string>
-    <string name="albuns">ALBUMS</string>
+    <string name="albuns">Albums</string>
     <string name="albuns_2">Albums</string>
     <string name="aleatorio">Shuffle</string>
     <string name="alteracao_cancelada">Change cancelled.</string>
@@ -26,7 +26,7 @@
     <string name="artista_desconhecido">Unknown artist</string>
     <string name="artista_do_album">Album artist</string>
     <string name="artistas">Artists</string>
-    <string name="artistas_caps">ARTISTS</string>
+    <string name="artistas_caps">Artists</string>
     <string name="as_musicas_que_voce_mais">The songs you listen to most show up here.</string>
     <string name="atual">Current</string>
     <string name="atualizacoes">Updates</string>
@@ -285,7 +285,7 @@
     <string name="liberar_pasta">Release folder</string>
     <string name="limpar_pasta">Clean folder</string>
     <string name="mais_ouvidas">Most played</string>
-    <string name="mais_ouvidas_2">MOST PLAYED</string>
+    <string name="mais_ouvidas_2">Most played</string>
     <string name="mantem_os_downloads_funcionando">Keeps downloads working</string>
     <string name="mig_agora_nao">Not now</string>
     <string name="mig_de">"%1$s of %2$s "</string>
@@ -320,7 +320,7 @@
     <string name="mig_preparando">Preparing…</string>
     <string name="mig_registro_salvo_em_trueplayer">Log saved in .trueplayer/%1$s</string>
     <string name="move_o_que_nao_e">Moves what isn\'t music to _lixeira</string>
-    <string name="musicas">SONGS</string>
+    <string name="musicas">Songs</string>
     <string name="musicas_do_celular">Songs on the phone</string>
     <string name="musicas_ja_estao_em_songs">Songs: %1$s (%2$s already in songs)\n</string>
     <string name="n_min">%1$s min</string>

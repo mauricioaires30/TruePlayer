@@ -77,6 +77,12 @@ import androidx.compose.ui.zIndex
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -995,90 +1001,107 @@ private fun MiniPlayer(
     onRepeat: () -> Unit,
     /** Abre a fila. Só o mini player da tela principal mostra o botão; na própria tela da fila fica sem. */
     onQueue: (() -> Unit)? = null,
-    /** Fora do Scaffold (fila): o fundo do mini player cobre também o espaço da barra de navegação do Android. */
+    /** Fora do Scaffold (fila): deixa o espaço da barra de navegação do Android embaixo do cartão. */
     extendBehindNavBar: Boolean = false,
 ) {
-    val accent = MaterialTheme.colorScheme.primary
     val context = LocalContext.current
-    Surface(
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        shape = RoundedCornerShape(topStart = UiTokens.space4, topEnd = UiTokens.space4),
-    ) {
-        Column(
-            modifier = Modifier
+    val tint = rememberCoverTint(s.current?.artworkBytes, s.current?.id)
+    val card by animateColorAsState(tint?.let { lerp(it, Color.Black, 0.42f) } ?: TruePlayerDarkScheme.surfaceVariant, label = "miniTint")
+    // Cartão flutuante na cor da capa, como no Spotify. Por dentro é sempre escuro, com texto claro.
+    TruePlayerTheme(ThemeMode.DARK) {
+        val accent = MaterialTheme.colorScheme.primary
+        Box(
+            Modifier
                 .fillMaxWidth()
                 .then(if (extendBehindNavBar) Modifier.navigationBarsPadding() else Modifier)
-                .height(UiTokens.miniPlayerHeight)
-                .clickable(onClick = onOpen),
+                .padding(horizontal = UiTokens.space2, vertical = UiTokens.space1),
         ) {
-            // Linha ondulada de progresso no topo, com os tempos nas pontas: anda com a música, acalma ao pausar
-            // e dá para tocar ou arrastar nela para mudar o ponto da música sem abrir o player grande.
-            SeekableWavyBar(
-                s = s,
-                onSeek = { f -> MusicPlaybackService.command(context, MusicPlaybackService.ACTION_SEEK, (f * s.durationMs).toLong()) },
-                modifier = Modifier.fillMaxWidth().height(20.dp).padding(horizontal = UiTokens.space3),
-            )
-            Row(
-                modifier = Modifier.fillMaxWidth().weight(1f).padding(start = UiTokens.compactPadding, end = UiTokens.space2),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                // Esquerda: capa e informações da música (nome grande rola em loop).
-                key(s.current?.id) {
-                    PlayerArtworkBox(
-                        s.current?.artworkBytes,
-                        Modifier.size(UiTokens.miniPlayerArtworkSize),
-                        s.current?.id,
-                        maxDimension = 256,
-                    )
-                }
+            Surface(color = card, shape = RoundedCornerShape(UiTokens.space3), modifier = Modifier.fillMaxWidth()) {
                 Column(
-                    modifier = Modifier.weight(1f).padding(horizontal = UiTokens.compactPadding),
-                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(UiTokens.miniPlayerHeight)
+                        .clickable(onClick = onOpen),
                 ) {
-                    ScrollingText(
-                        s.current?.displayTitle().orEmpty(),
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.SemiBold,
+                    // Linha de progresso no topo, com os tempos nas pontas: anda com a música e dá para tocar ou
+                    // arrastar nela para mudar o ponto da música sem abrir o player grande.
+                    SeekableWavyBar(
+                        s = s,
+                        onSeek = { f -> MusicPlaybackService.command(context, MusicPlaybackService.ACTION_SEEK, (f * s.durationMs).toLong()) },
+                        modifier = Modifier.fillMaxWidth().height(20.dp).padding(horizontal = UiTokens.space3),
                     )
-                    // Álbum em cima, artista embaixo; cada linha rola sozinha se o nome for grande.
-                    subtitleLines(s.current?.album, s.current?.artist).forEach { line ->
-                        ScrollingText(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    }
-                }
-                // Direita, em duas linhas: [anterior] [tocar/pausar] [próxima] em cima; embaixo, na mesma ordem,
-                // [aleatório] [fila] [repetir].
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = onPrevious, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_MAIN_BUTTON)) {
-                            Icon(Icons.Rounded.SkipPrevious, t(R.string.anterior), Modifier.size(28.dp))
-                        }
-                        FilledIconButton(onClick = onToggle, modifier = Modifier.size(MINI_MAIN_BUTTON)) {
-                            Icon(if (s.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (s.playing) t(R.string.pausar) else t(R.string.reproduzir), Modifier.size(30.dp))
-                        }
-                        IconButton(onClick = onNext, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_MAIN_BUTTON)) {
-                            Icon(Icons.Rounded.SkipNext, t(R.string.proxima), Modifier.size(28.dp))
-                        }
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = onShuffle, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_SMALL_BUTTON)) {
-                            Icon(
-                                painterResource(if (s.shuffle) R.drawable.truetagger_shuffle_on else R.drawable.truetagger_shuffle_off),
-                                t(R.string.aleatorio), modifier = Modifier.size(22.dp), tint = if (s.shuffle) accent else LocalContentColor.current,
+                    Row(
+                        modifier = Modifier.fillMaxWidth().weight(1f).padding(start = UiTokens.space3, end = UiTokens.space2),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // Esquerda: capa e informações da música (nome grande rola em loop).
+                        key(s.current?.id) {
+                            PlayerArtworkBox(
+                                s.current?.artworkBytes,
+                                Modifier.size(UiTokens.miniPlayerArtworkSize),
+                                s.current?.id,
+                                maxDimension = 256,
+                                corner = 4.dp,
                             )
                         }
-                        // No meio, o botão da fila (debaixo do tocar/pausar); sem ele, o espaço fica vazio.
-                        if (onQueue != null) {
-                            IconButton(onClick = onQueue, modifier = Modifier.size(MINI_MAIN_BUTTON, MINI_SMALL_BUTTON)) {
-                                Icon(Icons.AutoMirrored.Rounded.QueueMusic, t(R.string.ver_fila), modifier = Modifier.size(22.dp))
+                        Column(
+                            modifier = Modifier.weight(1f).padding(horizontal = UiTokens.compactPadding),
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                        ) {
+                            ScrollingText(
+                                s.current?.displayTitle().orEmpty(),
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                            // Álbum em cima, artista embaixo; cada linha rola sozinha se o nome for grande.
+                            subtitleLines(s.current?.album, s.current?.artist).forEach { line ->
+                                ScrollingText(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.72f))
                             }
-                        } else {
-                            Spacer(Modifier.width(MINI_MAIN_BUTTON))
                         }
-                        IconButton(onClick = onRepeat, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_SMALL_BUTTON)) {
-                            Icon(
-                                painterResource(if (s.repeat == RepeatMode.ONE) R.drawable.truetagger_repeat_on else R.drawable.truetagger_repeat_off),
-                                t(R.string.repeticao), modifier = Modifier.size(22.dp), tint = if (s.repeat != RepeatMode.OFF) accent else LocalContentColor.current,
-                            )
+                        // Direita, em duas linhas: [anterior] [tocar/pausar] [próxima] em cima; embaixo, na mesma ordem,
+                        // [aleatório] [fila] [repetir].
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = onPrevious, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_MAIN_BUTTON)) {
+                                    Icon(Icons.Rounded.SkipPrevious, t(R.string.anterior), Modifier.size(28.dp))
+                                }
+                                FilledIconButton(
+                                    onClick = onToggle,
+                                    modifier = Modifier.size(MINI_MAIN_BUTTON),
+                                    colors = IconButtonDefaults.filledIconButtonColors(
+                                        containerColor = MaterialTheme.colorScheme.onSurface,
+                                        contentColor = MaterialTheme.colorScheme.background,
+                                    ),
+                                ) {
+                                    Icon(if (s.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (s.playing) t(R.string.pausar) else t(R.string.reproduzir), Modifier.size(30.dp))
+                                }
+                                IconButton(onClick = onNext, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_MAIN_BUTTON)) {
+                                    Icon(Icons.Rounded.SkipNext, t(R.string.proxima), Modifier.size(28.dp))
+                                }
+                            }
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(onClick = onShuffle, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_SMALL_BUTTON)) {
+                                    Icon(
+                                        painterResource(if (s.shuffle) R.drawable.truetagger_shuffle_on else R.drawable.truetagger_shuffle_off),
+                                        t(R.string.aleatorio), modifier = Modifier.size(22.dp), tint = if (s.shuffle) accent else LocalContentColor.current,
+                                    )
+                                }
+                                // No meio, o botão da fila (debaixo do tocar/pausar); sem ele, o espaço fica vazio.
+                                if (onQueue != null) {
+                                    IconButton(onClick = onQueue, modifier = Modifier.size(MINI_MAIN_BUTTON, MINI_SMALL_BUTTON)) {
+                                        Icon(Icons.AutoMirrored.Rounded.QueueMusic, t(R.string.ver_fila), modifier = Modifier.size(22.dp))
+                                    }
+                                } else {
+                                    Spacer(Modifier.width(MINI_MAIN_BUTTON))
+                                }
+                                IconButton(onClick = onRepeat, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_SMALL_BUTTON)) {
+                                    Icon(
+                                        painterResource(if (s.repeat == RepeatMode.ONE) R.drawable.truetagger_repeat_on else R.drawable.truetagger_repeat_off),
+                                        t(R.string.repeticao), modifier = Modifier.size(22.dp), tint = if (s.repeat != RepeatMode.OFF) accent else LocalContentColor.current,
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -1095,86 +1118,107 @@ private val MINI_SMALL_BUTTON = 34.dp
 @Composable
 private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Unit, onArtist: () -> Unit, onAlbum: () -> Unit) {
     val context = LocalContext.current
-    Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
-        Column(Modifier.fillMaxSize().padding(horizontal = UiTokens.screenHorizontalPadding, vertical = UiTokens.screenVerticalPadding), horizontalAlignment = Alignment.CenterHorizontally) {
-            ScreenHeaderRow(title = t(R.string.reproduzindo), onBack = onClose)
-            // Capa, nomes, barra e botões ficam juntos no meio do espaço que sobra (antes a sobra ia toda para baixo).
-            Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally) {
-            key(s.current?.id) {
-                PlayerArtworkBox(
-                    s.current?.artworkBytes,
-                    Modifier.fillMaxWidth().weight(1f, fill = false).aspectRatio(1f),
-                    s.current?.id,
-                    maxDimension = 1024,
-                )
-            }
-            Spacer(Modifier.height(UiTokens.sectionSpacing))
-            ScrollingText(
-                s.current?.displayTitle().orEmpty(),
-                style = MaterialTheme.typography.headlineSmall,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            // Álbum e artista logo abaixo do título, cada um tocável (abre a tela dele) e com rolagem se for grande.
-            // Sem TextButton: a altura mínima dele (40 dp) deixava as linhas muito separadas.
-            val album = s.current?.album.orEmpty()
-            val artist = s.current?.artist.orEmpty()
-            if (album.isNotBlank()) {
-                PlayerInfoLink(album, MaterialTheme.colorScheme.primary, onAlbum, Modifier.padding(top = 2.dp))
-            }
-            if (artist.isNotBlank()) {
-                PlayerInfoLink(artist, MaterialTheme.colorScheme.primary, onArtist)
-            }
-            Spacer(Modifier.height(UiTokens.space2))
-            // O Slider continua cuidando do toque e da acessibilidade; o trilho e a barrinha são desenhados por nós.
-            // O seek só é enviado ao soltar o dedo (antes ia um comando a cada pixel arrastado).
-            val smooth = rememberSmoothFraction(s)
-            var dragging by remember { mutableStateOf<Float?>(null) }
-            var justSought by remember { mutableStateOf<Float?>(null) }
-            // Depois de soltar, a barra fica no ponto escolhido até o player confirmar a nova posição.
-            LaunchedEffect(justSought) {
-                if (justSought != null) {
-                    kotlinx.coroutines.delay(900)
-                    justSought = null
-                }
-            }
-            LtrContent {
-            Slider(
-                value = dragging ?: justSought ?: if (s.durationMs > 0) (s.positionMs.toFloat() / s.durationMs).coerceIn(0f, 1f) else 0f,
-                onValueChange = { dragging = it },
-                onValueChangeFinished = {
-                    dragging?.let { f ->
-                        justSought = f
-                        MusicPlaybackService.command(context, MusicPlaybackService.ACTION_SEEK, (f * s.durationMs).toLong())
+    val tint = rememberCoverTint(s.current?.artworkBytes, s.current?.id)
+    val top by animateColorAsState(tint?.let { lerp(it, Color.Black, 0.30f) } ?: TruePlayerDarkScheme.surfaceVariant, label = "playerTint")
+    // Como o "Tocando agora" do Spotify: fundo que sai da cor da capa e escurece para baixo, sempre com texto claro.
+    TruePlayerTheme(ThemeMode.DARK) {
+        val bg = MaterialTheme.colorScheme.background
+        Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to top, 0.7f to bg, 1f to bg))) {
+            Column(Modifier.fillMaxSize().padding(horizontal = UiTokens.space5, vertical = UiTokens.screenVerticalPadding)) {
+                Row(Modifier.fillMaxWidth().height(48.dp), verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onClose, modifier = Modifier.size(UiTokens.iconButtonSize)) {
+                        Icon(Icons.Rounded.KeyboardArrowDown, t(R.string.voltar), Modifier.size(30.dp))
                     }
-                    dragging = null
-                },
-                thumb = { Spacer(Modifier.size(2.dp, 32.dp)) },
-                track = {
-                    WavyProgressBar(
-                        progress = { dragging ?: justSought ?: smooth.value },
-                        playing = s.playing && dragging == null,
-                        modifier = Modifier.fillMaxWidth().height(32.dp),
-                        showThumb = true,
+                    Text(
+                        t(R.string.reproduzindo),
+                        style = MaterialTheme.typography.labelLarge,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f),
                     )
-                },
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Row(Modifier.fillMaxWidth().padding(horizontal = UiTokens.space2), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(formatDuration(s.positionMs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(formatDuration(s.durationMs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly, modifier = Modifier.fillMaxWidth().padding(vertical = UiTokens.space2)) {
-                IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_SHUFFLE) }, modifier = Modifier.size(UiTokens.iconButtonSize)) { Icon(painterResource(if (s.shuffle) dev.truetagger.android.R.drawable.truetagger_shuffle_on else dev.truetagger.android.R.drawable.truetagger_shuffle_off), t(R.string.aleatorio), modifier = Modifier.size(UiTokens.primaryIconSize), tint = if (s.shuffle) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
-                IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_PREVIOUS) }, modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.SkipPrevious, t(R.string.anterior), Modifier.size(40.dp)) }
-                FilledIconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_TOGGLE) }, modifier = Modifier.size(68.dp)) { Icon(if (s.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (s.playing) t(R.string.pausar) else t(R.string.reproduzir), Modifier.size(36.dp)) }
-                IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_NEXT) }, modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.SkipNext, t(R.string.proxima), Modifier.size(40.dp)) }
-                IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_REPEAT) }, modifier = Modifier.size(UiTokens.iconButtonSize)) { Icon(painterResource(if (s.repeat == RepeatMode.ONE) dev.truetagger.android.R.drawable.truetagger_repeat_on else dev.truetagger.android.R.drawable.truetagger_repeat_off), t(R.string.repeticao), modifier = Modifier.size(UiTokens.primaryIconSize), tint = if (s.repeat != RepeatMode.OFF) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
-            }
-            ActionButtonRow {
-                ActionButton(t(R.string.abrir_fila), Icons.AutoMirrored.Rounded.QueueMusic, onQueue, Modifier.weight(1f))
-            }
+                    Spacer(Modifier.size(UiTokens.iconButtonSize))
+                }
+                // Capa, nomes, barra e botões ficam juntos no meio do espaço que sobra.
+                Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.Center) {
+                    key(s.current?.id) {
+                        PlayerArtworkBox(
+                            s.current?.artworkBytes,
+                            Modifier.fillMaxWidth().weight(1f, fill = false).aspectRatio(1f).shadow(24.dp, RoundedCornerShape(8.dp)),
+                            s.current?.id,
+                            maxDimension = 1024,
+                            corner = 8.dp,
+                        )
+                    }
+                    Spacer(Modifier.height(UiTokens.space6))
+                    ScrollingText(
+                        s.current?.displayTitle().orEmpty(),
+                        style = MaterialTheme.typography.headlineSmall,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    // Álbum e artista logo abaixo do título, cada um tocável (abre a tela dele) e com rolagem se for grande.
+                    val album = s.current?.album.orEmpty()
+                    val artist = s.current?.artist.orEmpty()
+                    if (album.isNotBlank()) PlayerInfoLink(album, MaterialTheme.colorScheme.primary, onAlbum, Modifier.padding(top = 2.dp))
+                    if (artist.isNotBlank()) PlayerInfoLink(artist, MaterialTheme.colorScheme.primary, onArtist)
+                    Spacer(Modifier.height(UiTokens.space3))
+                    // O Slider cuida do toque e da acessibilidade; o trilho e a bolinha são desenhados por nós.
+                    // O seek só é enviado ao soltar o dedo (antes ia um comando a cada pixel arrastado).
+                    val smooth = rememberSmoothFraction(s)
+                    var dragging by remember { mutableStateOf<Float?>(null) }
+                    var justSought by remember { mutableStateOf<Float?>(null) }
+                    // Depois de soltar, a barra fica no ponto escolhido até o player confirmar a nova posição.
+                    LaunchedEffect(justSought) {
+                        if (justSought != null) {
+                            kotlinx.coroutines.delay(900)
+                            justSought = null
+                        }
+                    }
+                    LtrContent {
+                        Slider(
+                            value = dragging ?: justSought ?: if (s.durationMs > 0) (s.positionMs.toFloat() / s.durationMs).coerceIn(0f, 1f) else 0f,
+                            onValueChange = { dragging = it },
+                            onValueChangeFinished = {
+                                dragging?.let { f ->
+                                    justSought = f
+                                    MusicPlaybackService.command(context, MusicPlaybackService.ACTION_SEEK, (f * s.durationMs).toLong())
+                                }
+                                dragging = null
+                            },
+                            thumb = { Spacer(Modifier.size(12.dp, 32.dp)) },
+                            track = {
+                                WavyProgressBar(
+                                    progress = { dragging ?: justSought ?: smooth.value },
+                                    playing = s.playing && dragging == null,
+                                    modifier = Modifier.fillMaxWidth().height(32.dp),
+                                    showThumb = true,
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Row(Modifier.fillMaxWidth().padding(horizontal = UiTokens.space1), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(formatDuration(s.positionMs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(formatDuration(s.durationMs), style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth().padding(vertical = UiTokens.space2)) {
+                        IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_SHUFFLE) }, modifier = Modifier.size(UiTokens.iconButtonSize)) { Icon(painterResource(if (s.shuffle) dev.truetagger.android.R.drawable.truetagger_shuffle_on else dev.truetagger.android.R.drawable.truetagger_shuffle_off), t(R.string.aleatorio), modifier = Modifier.size(UiTokens.primaryIconSize + 4.dp), tint = if (s.shuffle) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
+                        IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_PREVIOUS) }, modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.SkipPrevious, t(R.string.anterior), Modifier.size(40.dp)) }
+                        FilledIconButton(
+                            onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_TOGGLE) },
+                            modifier = Modifier.size(72.dp),
+                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.onSurface, contentColor = MaterialTheme.colorScheme.background),
+                        ) { Icon(if (s.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (s.playing) t(R.string.pausar) else t(R.string.reproduzir), Modifier.size(40.dp)) }
+                        IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_NEXT) }, modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.SkipNext, t(R.string.proxima), Modifier.size(40.dp)) }
+                        IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_REPEAT) }, modifier = Modifier.size(UiTokens.iconButtonSize)) { Icon(painterResource(if (s.repeat == RepeatMode.ONE) dev.truetagger.android.R.drawable.truetagger_repeat_on else dev.truetagger.android.R.drawable.truetagger_repeat_off), t(R.string.repeticao), modifier = Modifier.size(UiTokens.primaryIconSize + 4.dp), tint = if (s.repeat != RepeatMode.OFF) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
+                    }
+                }
+                // Fila embaixo, à direita, como no Spotify.
+                Row(Modifier.fillMaxWidth().height(48.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onQueue) {
+                        Icon(Icons.AutoMirrored.Rounded.QueueMusic, null, Modifier.size(UiTokens.primaryIconSize + 2.dp))
+                        Spacer(Modifier.width(UiTokens.space2))
+                        Text(t(R.string.abrir_fila))
+                    }
+                }
             }
         }
     }
@@ -1187,12 +1231,11 @@ private fun PlayerInfoLink(text: String, color: Color, onClick: () -> Unit, modi
         text,
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(UiTokens.space2))
+            .clip(RoundedCornerShape(UiTokens.space1))
             .clickable(role = androidx.compose.ui.semantics.Role.Button, onClick = onClick)
-            .padding(horizontal = 4.dp, vertical = 3.dp),
+            .padding(vertical = 3.dp),
         style = MaterialTheme.typography.bodyLarge,
         color = color,
-        textAlign = TextAlign.Center,
     )
 }
 
@@ -1532,17 +1575,14 @@ private fun LibraryListContent(
                 ActionButton(t(R.string.playlist), Icons.AutoMirrored.Rounded.PlaylistAdd, onPlaylistClick, Modifier.weight(1f), enabled = selectedIds.isNotEmpty())
             }
         } else {
-            ActionButtonRow(Modifier.padding(top = UiTokens.sectionSpacing, bottom = UiTokens.space1)) {
-                ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, onPlayAll, Modifier.weight(1f), enabled = shown.isNotEmpty(), emphasized = true)
-                ActionButton(t(R.string.aleatorio), Icons.Rounded.Shuffle, onPlayRandom, Modifier.weight(1f), enabled = shown.isNotEmpty())
-            }
-            if (shown.isNotEmpty()) {
+            Row(Modifier.fillMaxWidth().padding(top = UiTokens.space1), verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    tp(R.plurals.n_musicas, shown.size),
+                    if (shown.isNotEmpty()) tp(R.plurals.n_musicas, shown.size) else "",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = UiTokens.space1, top = UiTokens.space1, bottom = UiTokens.space2),
+                    modifier = Modifier.weight(1f).padding(start = UiTokens.space1),
                 )
+                PlayControls(shown.isNotEmpty(), onPlayRandom, onPlayAll)
             }
         }
         if (shown.isEmpty()) {
@@ -1698,7 +1738,8 @@ private fun CombinedMostPlayedPlaylistHost(
                                 items(playlists, key = { it.name }) { playlist ->
                                     var expanded by remember(playlist.name) { mutableStateOf(false) }
                                     ListCardRow(onClick = { onOpen(playlist.name) }) {
-                                        Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(UiTokens.songItemSpacing)) {
+                                        ColorTile(playlist.name, UiTokens.songItemArtworkSize, Icons.AutoMirrored.Rounded.QueueMusic)
+                                        Column(Modifier.weight(1f).padding(horizontal = UiTokens.cardItemHorizontalPadding), verticalArrangement = Arrangement.spacedBy(UiTokens.songItemSpacing)) {
                                             ScrollingText(playlist.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                                             Text(tp(R.plurals.n_musicas, playlist.trackIds.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                         }
@@ -2225,7 +2266,8 @@ private fun PlaylistScreen(
             else items(playlists, key = { it.name }) { playlist ->
                 var expanded by remember(playlist.name) { mutableStateOf(false) }
                 ListCardRow(onClick = { onOpen(playlist.name) }) {
-                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(UiTokens.songItemSpacing)) {
+                    ColorTile(playlist.name, UiTokens.songItemArtworkSize, Icons.AutoMirrored.Rounded.QueueMusic)
+                    Column(Modifier.weight(1f).padding(horizontal = UiTokens.cardItemHorizontalPadding), verticalArrangement = Arrangement.spacedBy(UiTokens.songItemSpacing)) {
                         ScrollingText(playlist.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                         Text(tp(R.plurals.n_musicas, playlist.trackIds.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
                     }
@@ -2351,7 +2393,7 @@ private fun ArtistAvatar(artist: String, modifier: Modifier = Modifier, onClick:
     val bitmap = rememberArtistPhotoBitmap(artist)
     Box(
         modifier
-            .clip(RoundedCornerShape(UiTokens.songItemRadius))
+            .clip(androidx.compose.foundation.shape.CircleShape)
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         contentAlignment = Alignment.Center,
@@ -2400,21 +2442,20 @@ private fun GenresScreen(tracks: List<AudioTrack>, open: (String) -> Unit) {
 
 @Composable
 private fun GenreList(values: List<Pair<String, Int>>, open: (String) -> Unit, modifier: Modifier = Modifier) {
-    val state = rememberSaveable(saver = LazyListState.Saver) { LazyListState() }
-    PersistListScroll(state, "alpha_list")
-    val sections = values.groupBy { (name, _) -> name.firstOrNull()?.uppercaseChar()?.toString() ?: "#" }
-    SongListContainer(state = state, modifier = modifier.fillMaxSize()) {
-        sections.toSortedMap().forEach { (letter, genres) ->
-            item(key = "section-$letter") {
-                Text(letter, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary, modifier = Modifier.padding(top = UiTokens.standardListTopSpacing, bottom = UiTokens.space1))
-            }
-            items(genres, key = { (name, _) -> "$letter-$name" }) { (name, songs) ->
-                ListCardRow(onClick = { open(name) }, minHeight = UiTokens.controlHeight) {
-                    ScrollingText(name, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                    Text(tp(R.plurals.n_musicas, songs), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, modifier = Modifier.padding(start = UiTokens.space2))
-                }
-            }
+    val gridState = rememberSaveable(saver = LazyGridState.Saver) { LazyGridState() }
+    PersistGridScroll(gridState, "genres")
+    Box(modifier.fillMaxSize()) {
+        LazyVerticalGrid(
+            state = gridState,
+            columns = GridCells.Fixed(2),
+            modifier = Modifier.fillMaxSize().songListSpace(),
+            contentPadding = PaddingValues(bottom = UiTokens.songListBottomPadding),
+            verticalArrangement = Arrangement.spacedBy(UiTokens.space2),
+            horizontalArrangement = Arrangement.spacedBy(UiTokens.space2),
+        ) {
+            items(values, key = { it.first }) { (name, songs) -> GenreTile(name, tp(R.plurals.n_musicas, songs), onClick = { open(name) }) }
         }
+        TouchGridScrollbar(gridState, Modifier.align(Alignment.CenterEnd).fillMaxHeight().padding(vertical = UiTokens.scrollbarInset))
     }
 }
 
@@ -2509,18 +2550,11 @@ private fun AlbumsScreen(tracks: List<AudioTrack>, search: String, onSearchChang
                                 Modifier.fillMaxWidth().padding(UiTokens.songItemPadding),
                                 verticalArrangement = Arrangement.spacedBy(UiTokens.songItemSpacing),
                             ) {
-                                ScrollingText(item.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-                                ScrollingText(item.artist.ifBlank { "—" }, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                Text(
-                                    listOfNotNull(
-                                        tp(R.plurals.n_musicas, item.songs),
-                                        formatDuration(item.duration),
-                                        item.year.takeIf { it.isNotBlank() },
-                                    ).joinToString(" • "),
-                                    style = MaterialTheme.typography.labelSmall,
+                                ScrollingText(item.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                                ScrollingText(
+                                    listOfNotNull(item.year.takeIf { it.isNotBlank() }, item.artist.takeIf { it.isNotBlank() }).joinToString(" • ").ifBlank { "—" },
+                                    style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
                                 )
                             }
                         }
@@ -2624,208 +2658,181 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
     fun exitPlaylistSelection() { playlistSelectionMode = false; selectedPlaylistIds.clear() }
 
     val artwork = shown.firstOrNull { it.artworkBytes?.isNotEmpty() == true }?.artworkBytes
+    val coverId = shown.firstOrNull()?.id
+    val albumArtist = shown.firstOrNull()?.albumArtist?.ifBlank { shown.firstOrNull()?.artist.orEmpty() }.orEmpty()
+    // Artista: a fila segue exatamente a ordem da lista na tela (álbum por álbum).
+    val artistAlbums = if (type == Detail.ARTIST) shown.groupBy { it.album.ifBlank { t(R.string.sem_album) } }.toSortedMap(String.CASE_INSENSITIVE_ORDER) else null
+    val playOrder = artistAlbums?.values?.flatten() ?: shown
+
+    // Fundo colorido do cabeçalho: cor da capa (álbum, playlist), do destaque (artista) ou do nome (gênero).
+    val coverTint = rememberCoverTint(artwork, coverId)
+    val baseTint = when (type) {
+        Detail.GENRE -> genreColor(key)
+        Detail.ARTIST -> MaterialTheme.colorScheme.primary
+        else -> coverTint ?: MaterialTheme.colorScheme.surfaceVariant
+    }
+    val backdrop by animateColorAsState(heroBackdropColor(baseTint), label = "heroTint")
+    val pageBackground = MaterialTheme.colorScheme.background
+    val meta = when (type) {
+        Detail.ALBUM -> listOfNotNull(tp(R.plurals.n_musicas, shown.size), formatDuration(duration), shown.firstOrNull()?.year?.takeIf { it.isNotBlank() }).joinToString(" • ")
+        Detail.ARTIST -> listOf(tp(R.plurals.n_musicas, shown.size), tp(R.plurals.n_albuns, artistAlbums?.size ?: 0), formatDuration(duration)).joinToString(" • ")
+        else -> "${tp(R.plurals.n_musicas, shown.size)} • ${formatDuration(duration)}"
+    }
+
     Box(Modifier.fillMaxSize()) {
-        Column(Modifier.fillMaxSize().padding(horizontal = UiTokens.screenHorizontalPadding, vertical = UiTokens.screenVerticalPadding)) {
-            ScreenHeaderRow(
-                title = key,
-                onBack = { if (playlistSelectionMode) exitPlaylistSelection() else onBack() },
-            )
-            Spacer(Modifier.height(UiTokens.listHeaderGap))
-            if (type == Detail.PLAYLIST) {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(UiTokens.space1)) {
-                    SearchBar(value = playlistSearch, onValueChange = { playlistSearch = it }, placeholder = t(R.string.pesquisar_musicas), modifier = Modifier.weight(1f))
-                    SortMenuButton(
-                        open = playlistSortOpen,
-                        onOpenChange = { playlistSortOpen = it },
-                        title = t(R.string.ordenar_por),
-                        options = PlaylistSortMode.entries,
-                        selected = playlistSortMode,
-                        label = { it.label },
-                        onSelected = { playlistSortMode = it },
-                        ascending = playlistAscending.takeIf { playlistSortMode != PlaylistSortMode.MANUAL },
-                        onToggleAscending = { playlistAscending = !playlistAscending }.takeIf { playlistSortMode != PlaylistSortMode.MANUAL },
-                    )
-                    IconButton(
-                        onClick = {
-                            playlistSelectionMode = !playlistSelectionMode
-                            if (!playlistSelectionMode) selectedPlaylistIds.clear()
-                        },
-                        modifier = Modifier.size(UiTokens.iconButtonSize),
-                    ) {
-                        Icon(
-                            imageVector = if (playlistSelectionMode) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
-                            contentDescription = if (playlistSelectionMode) t(R.string.encerrar_selecao) else t(R.string.selecionar),
-                            tint = if (playlistSelectionMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(UiTokens.primaryIconSize),
-                        )
-                    }
-                }
-                if (playlistSelectionMode) {
-                    SelectionToolbar(
-                        selectedCount = selectedPlaylistIds.size,
-                        totalCount = playlistShown.size,
-                        onCancel = { exitPlaylistSelection() },
-                        onToggleAll = {
-                            if (selectedPlaylistIds.size == playlistShown.size) selectedPlaylistIds.clear()
-                            else { selectedPlaylistIds.clear(); selectedPlaylistIds.addAll(playlistShown.map { it.id }) }
-                        },
-                    )
-                    ActionButtonRow(Modifier.padding(vertical = UiTokens.sectionSpacing)) {
-                        ActionButton(
-                            t(R.string.remover_da_playlist),
-                            Icons.Rounded.Delete,
-                            { onRemoveSelectedFromPlaylist(key, selectedPlaylistIds.toList()); exitPlaylistSelection() },
-                            Modifier.weight(1f),
-                            enabled = selectedPlaylistIds.isNotEmpty(),
-                            contentColor = MaterialTheme.colorScheme.error,
-                        )
-                    }
-                } else {
-                    Spacer(Modifier.height(UiTokens.sectionSpacing))
-                    ActionButtonRow {
-                        ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(shown, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty(), emphasized = true)
-                        ActionButton(t(R.string.aleatorio), Icons.Rounded.Shuffle, { onPlayRandom(shown) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
-                    }
-                }
-                Spacer(Modifier.height(UiTokens.sectionSpacing))
-                Text("${tp(R.plurals.n_musicas, shown.size)} • ${formatDuration(duration)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                if (playlistSortMode != PlaylistSortMode.MANUAL || playlistSearch.isNotBlank()) Text(t(R.string.para_reordenar_manualmente_use_manual), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Spacer(Modifier.height(UiTokens.standardListTopSpacing))
-                if (shown.isEmpty()) {
-                    EmptyState(
-                        if (playlistSearch.isBlank()) Icons.AutoMirrored.Rounded.QueueMusic else Icons.Rounded.Search,
-                        if (playlistSearch.isBlank()) t(R.string.playlist_vazia) else t(R.string.nada_encontrado),
-                        if (playlistSearch.isBlank()) t(R.string.abra_o_menu_de_uma) else t(R.string.tente_outro_nome_de_musica),
-                    )
-                }
-                SongListContainer(state = state, modifier = Modifier.fillMaxWidth().weight(1f)) {
-                        items(shown, key = { it.id }) { t ->
-                            val orderIndex = playlistOrderIds.indexOf(t.id)
-                            SongItem(
-                                t,
-                                { onPlay(shown, shown.indexOfFirst { it.id == t.id }) },
-                                { onEdit(t) },
-                                { onShare(t) },
-                                {}, { onOpenAlbum(t.album) }, { onOpenArtist(t.artist) }, {},
-                                { onRemoveFromPlaylist(t.id) },
-                                showAddToPlaylist = false,
-                                isCurrent = t.id == currentTrackId,
-                                selectionMode = playlistSelectionMode,
-                                selected = t.id in selectedPlaylistIds,
-                                onToggleSelect = { if (t.id in selectedPlaylistIds) selectedPlaylistIds.remove(t.id) else selectedPlaylistIds.add(t.id) },
-                                reorderControls = !playlistSelectionMode && playlistSearch.isBlank() && playlistSortMode == PlaylistSortMode.MANUAL,
-                                onMoveUp = { movePlaylistItem(t.id, -1) },
-                                onMoveDown = { movePlaylistItem(t.id, 1) },
-                                canMoveUp = orderIndex > 0,
-                                canMoveDown = orderIndex in 0 until playlistOrderIds.lastIndex,
-                                emphasizedBorder = true,
-                            )
-                        }
-                    }
-            } else if (type == Detail.ALBUM) {
-                val artist = shown.firstOrNull()?.albumArtist?.ifBlank { shown.firstOrNull()?.artist.orEmpty() }.orEmpty()
-                Row(
-                    Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(UiTokens.sectionSpacing),
-                ) {
-                    PlayerArtworkBox(
-                        artwork,
-                        Modifier.size(UiTokens.detailArtworkSize),
-                        shown.firstOrNull()?.id,
-                    )
-                    Column(
-                        Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(UiTokens.itemSpacing),
-                    ) {
-                        ScrollingText(key, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                        // Sem TextButton: a altura mínima dele (40 dp) deixava o artista longe do título e da linha de baixo.
+        // Fundo que rola junto com o cabeçalho e se dissolve na cor da tela.
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(400.dp)
+                .offset { IntOffset(0, -(if (state.firstVisibleItemIndex == 0) state.firstVisibleItemScrollOffset else 100_000)) }
+                .background(Brush.verticalGradient(listOf(backdrop, pageBackground))),
+        )
+        SongListContainer(state = state, modifier = Modifier.fillMaxSize().padding(start = UiTokens.screenHorizontalPadding)) {
+            item(key = "hero") {
+                DetailHero(
+                    title = key,
+                    meta = meta,
+                    playEnabled = shown.isNotEmpty(),
+                    onPlay = { onPlay(playOrder, 0) },
+                    onShuffle = { onPlayRandom(playOrder) },
+                    cover = when (type) {
+                        Detail.GENRE -> null
+                        Detail.ARTIST -> ({ ArtistAvatar(key, Modifier.size(DETAIL_COVER)) })
+                        else -> ({ PlayerArtworkBox(artwork, Modifier.size(DETAIL_COVER).shadow(20.dp, RoundedCornerShape(4.dp)), coverId, maxDimension = 768) })
+                    },
+                    subtitle = if (type == Detail.ALBUM) ({
                         ScrollingText(
-                            artist.ifBlank { t(R.string.artista_desconhecido) },
-                            modifier = Modifier.clip(RoundedCornerShape(UiTokens.space1)).clickable { onOpenArtist(artist) },
+                            albumArtist.ifBlank { t(R.string.artista_desconhecido) },
+                            modifier = Modifier.clip(RoundedCornerShape(UiTokens.space1)).clickable { onOpenArtist(albumArtist) },
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.primary,
                         )
-                        ScrollingText(
-                            listOfNotNull(
-                                tp(R.plurals.n_musicas, shown.size),
-                                formatDuration(duration),
-                                shown.firstOrNull()?.year?.takeIf { it.isNotBlank() },
-                            ).joinToString(" • "),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
-                Spacer(Modifier.height(UiTokens.sectionSpacing))
-                ActionButtonRow {
-                    ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(shown, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty(), emphasized = true)
-                    ActionButton(t(R.string.aleatorio), Icons.Rounded.Shuffle, { onPlayRandom(shown) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
-                }
-                Spacer(Modifier.height(UiTokens.sectionSpacing))
-                SongListContainer(state = state, modifier = Modifier.fillMaxWidth().weight(1f)) {
-                        items(shown, key = { it.id }) { t ->
-                            SongItem(t, { onPlay(shown, shown.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, null, { onOpenArtist(t.artist) }, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId, showTrackNumber = true)
+                    }) else null,
+                )
+            }
+            when (type) {
+                Detail.PLAYLIST -> {
+                    item(key = "playlist-tools") {
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(UiTokens.space1)) {
+                            SearchBar(value = playlistSearch, onValueChange = { playlistSearch = it }, placeholder = t(R.string.pesquisar_musicas), modifier = Modifier.weight(1f))
+                            SortMenuButton(
+                                open = playlistSortOpen,
+                                onOpenChange = { playlistSortOpen = it },
+                                title = t(R.string.ordenar_por),
+                                options = PlaylistSortMode.entries,
+                                selected = playlistSortMode,
+                                label = { it.label },
+                                onSelected = { playlistSortMode = it },
+                                ascending = playlistAscending.takeIf { playlistSortMode != PlaylistSortMode.MANUAL },
+                                onToggleAscending = { playlistAscending = !playlistAscending }.takeIf { playlistSortMode != PlaylistSortMode.MANUAL },
+                            )
+                            IconButton(
+                                onClick = {
+                                    playlistSelectionMode = !playlistSelectionMode
+                                    if (!playlistSelectionMode) selectedPlaylistIds.clear()
+                                },
+                                modifier = Modifier.size(UiTokens.iconButtonSize),
+                            ) {
+                                Icon(
+                                    imageVector = if (playlistSelectionMode) Icons.Rounded.CheckBox else Icons.Rounded.CheckBoxOutlineBlank,
+                                    contentDescription = if (playlistSelectionMode) t(R.string.encerrar_selecao) else t(R.string.selecionar),
+                                    tint = if (playlistSelectionMode) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(UiTokens.primaryIconSize),
+                                )
+                            }
                         }
                     }
-             } else if (type == Detail.ARTIST) {
-                    val albums = shown.groupBy { it.album.ifBlank { t(R.string.sem_album) } }.toSortedMap(String.CASE_INSENSITIVE_ORDER)
-                    // A fila segue exatamente a ordem da lista na tela (álbum por álbum).
-                    val playOrder = albums.values.flatten()
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(UiTokens.sectionSpacing),
-                    ) {
-                        ArtistAvatar(
-                            key,
-                            Modifier.size(UiTokens.detailArtworkSize),
-                        )
-                        Column(
-                            Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(UiTokens.itemSpacing),
-                        ) {
-                            ScrollingText(key, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                            ScrollingText(
-                                listOf(tp(R.plurals.n_musicas, shown.size), tp(R.plurals.n_albuns, albums.size), formatDuration(duration)).joinToString(" • "),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    if (playlistSelectionMode) {
+                        item(key = "playlist-selection") {
+                            Column {
+                                SelectionToolbar(
+                                    selectedCount = selectedPlaylistIds.size,
+                                    totalCount = playlistShown.size,
+                                    onCancel = { exitPlaylistSelection() },
+                                    onToggleAll = {
+                                        if (selectedPlaylistIds.size == playlistShown.size) selectedPlaylistIds.clear()
+                                        else { selectedPlaylistIds.clear(); selectedPlaylistIds.addAll(playlistShown.map { it.id }) }
+                                    },
+                                )
+                                ActionButtonRow(Modifier.padding(vertical = UiTokens.sectionSpacing)) {
+                                    ActionButton(
+                                        t(R.string.remover_da_playlist),
+                                        Icons.Rounded.Delete,
+                                        { onRemoveSelectedFromPlaylist(key, selectedPlaylistIds.toList()); exitPlaylistSelection() },
+                                        Modifier.weight(1f),
+                                        enabled = selectedPlaylistIds.isNotEmpty(),
+                                        contentColor = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    if (playlistSortMode != PlaylistSortMode.MANUAL || playlistSearch.isNotBlank()) {
+                        item(key = "playlist-note") { Text(t(R.string.para_reordenar_manualmente_use_manual), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.padding(vertical = UiTokens.space1)) }
+                    }
+                    if (shown.isEmpty()) {
+                        item(key = "playlist-empty") {
+                            EmptyState(
+                                if (playlistSearch.isBlank()) Icons.AutoMirrored.Rounded.QueueMusic else Icons.Rounded.Search,
+                                if (playlistSearch.isBlank()) t(R.string.playlist_vazia) else t(R.string.nada_encontrado),
+                                if (playlistSearch.isBlank()) t(R.string.abra_o_menu_de_uma) else t(R.string.tente_outro_nome_de_musica),
                             )
                         }
                     }
-                    Spacer(Modifier.height(UiTokens.sectionSpacing))
-                    ActionButtonRow {
-                        ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(playOrder, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty(), emphasized = true)
-                        ActionButton(t(R.string.aleatorio), Icons.Rounded.Shuffle, { onPlayRandom(playOrder) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                    items(shown, key = { it.id }) { t ->
+                        val orderIndex = playlistOrderIds.indexOf(t.id)
+                        SongItem(
+                            t,
+                            { onPlay(shown, shown.indexOfFirst { it.id == t.id }) },
+                            { onEdit(t) },
+                            { onShare(t) },
+                            {}, { onOpenAlbum(t.album) }, { onOpenArtist(t.artist) }, {},
+                            { onRemoveFromPlaylist(t.id) },
+                            showAddToPlaylist = false,
+                            isCurrent = t.id == currentTrackId,
+                            selectionMode = playlistSelectionMode,
+                            selected = t.id in selectedPlaylistIds,
+                            onToggleSelect = { if (t.id in selectedPlaylistIds) selectedPlaylistIds.remove(t.id) else selectedPlaylistIds.add(t.id) },
+                            reorderControls = !playlistSelectionMode && playlistSearch.isBlank() && playlistSortMode == PlaylistSortMode.MANUAL,
+                            onMoveUp = { movePlaylistItem(t.id, -1) },
+                            onMoveDown = { movePlaylistItem(t.id, 1) },
+                            canMoveUp = orderIndex > 0,
+                            canMoveDown = orderIndex in 0 until playlistOrderIds.lastIndex,
+                            emphasizedBorder = true,
+                        )
                     }
-                    Spacer(Modifier.height(UiTokens.sectionSpacing))
-                    SongListContainer(state = state, modifier = Modifier.fillMaxWidth().weight(1f)) {
-                        albums.forEach { (album, albumTracks) ->
-                            item(key = "album-$album") {
-                                Column(Modifier.fillMaxWidth().padding(top = UiTokens.standardListTopSpacing, bottom = UiTokens.space1)) {
-                                    TextButton(onClick = { onOpenAlbum(album) }, contentPadding = PaddingValues(horizontal = 0.dp, vertical = 0.dp)) { ScrollingText(album, fontWeight = FontWeight.Bold) }
-                                    Text("${tp(R.plurals.n_musicas, albumTracks.size)} • ${formatDuration(albumTracks.sumOf { it.durationMs })}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                }
-                            }
-                            items(albumTracks, key = { it.id }) { t ->
-                                SongItem(t, { onPlay(playOrder, playOrder.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, { onOpenAlbum(t.album) }, null, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId)
-                            }
+                }
+                Detail.ALBUM -> items(shown, key = { it.id }) { t ->
+                    SongItem(t, { onPlay(shown, shown.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, null, { onOpenArtist(t.artist) }, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId, showTrackNumber = true)
+                }
+                Detail.ARTIST -> artistAlbums?.forEach { (album, albumTracks) ->
+                    item(key = "album-$album") {
+                        Column(Modifier.fillMaxWidth().padding(top = UiTokens.space4, bottom = UiTokens.space1)) {
+                            ScrollingText(album, modifier = Modifier.clip(RoundedCornerShape(UiTokens.space1)).clickable { onOpenAlbum(album) }, style = MaterialTheme.typography.titleMedium)
+                            Text("${tp(R.plurals.n_musicas, albumTracks.size)} • ${formatDuration(albumTracks.sumOf { it.durationMs })}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                } else {
-                    if (shown.isNotEmpty()) Text("${tp(R.plurals.n_musicas, shown.size)} • ${formatDuration(duration)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                    Spacer(Modifier.height(UiTokens.sectionSpacing))
-                    ActionButtonRow {
-                        ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(shown, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty(), emphasized = true)
-                        ActionButton(t(R.string.aleatorio), Icons.Rounded.Shuffle, { onPlayRandom(shown) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                    items(albumTracks, key = { it.id }) { t ->
+                        SongItem(t, { onPlay(playOrder, playOrder.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, { onOpenAlbum(t.album) }, null, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId)
                     }
-                    Spacer(Modifier.height(UiTokens.sectionSpacing))
-                    SongListContainer(state = state, modifier = Modifier.fillMaxWidth().weight(1f)) {
-                        items(shown, key = { it.id }) { t -> SongItem(t, { onPlay(shown, shown.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, { onOpenAlbum(t.album) }, { onOpenArtist(t.artist) }, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId) }
-                    }
+                }
+                else -> items(shown, key = { it.id }) { t ->
+                    SongItem(t, { onPlay(shown, shown.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, { onOpenAlbum(t.album) }, { onOpenArtist(t.artist) }, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId)
                 }
             }
         }
+        // Voltar fica sobre o cabeçalho colorido (na seleção da playlist, sai da seleção).
+        IconButton(
+            onClick = { if (playlistSelectionMode) exitPlaylistSelection() else onBack() },
+            modifier = Modifier.padding(start = UiTokens.space2, top = UiTokens.space1).size(UiTokens.iconButtonSize).background(Color.Black.copy(alpha = 0.35f), androidx.compose.foundation.shape.CircleShape),
+        ) {
+            Icon(Icons.AutoMirrored.Rounded.ArrowBack, t(R.string.voltar), tint = Color.White, modifier = Modifier.size(UiTokens.primaryIconSize))
+        }
     }
+}
+
+private val DETAIL_COVER = 208.dp
 
 private fun rangeLabel(range: StatsRange): String = when (range) {
     StatsRange.ALL -> t(R.string.range_all)
@@ -3223,12 +3230,28 @@ private fun rememberArtworkBitmap(bytes: ByteArray?, uri: String?, maxDimension:
     return bitmap
 }
 
+/** Cor que representa a capa (null enquanto carrega ou se não há capa): fundo do player e dos cabeçalhos. */
 @Composable
-private fun PlayerArtworkBox(bytes: ByteArray?, modifier: Modifier, uri: String? = null, maxDimension: Int = 512, onClick: (() -> Unit)? = null) {
+private fun rememberCoverTint(bytes: ByteArray?, uri: String?): Color? {
+    val bitmap = rememberArtworkBitmap(bytes, uri, 96)
+    return remember(bitmap) {
+        bitmap?.let { source ->
+            runCatching {
+                val small = Bitmap.createScaledBitmap(source, 24, 24, true)
+                val pixels = IntArray(24 * 24)
+                small.getPixels(pixels, 0, 24, 0, 0, 24, 24)
+                Color(0xFF000000.toInt() or dev.truetagger.data.dominantRgb(pixels))
+            }.getOrNull()
+        }
+    }
+}
+
+@Composable
+private fun PlayerArtworkBox(bytes: ByteArray?, modifier: Modifier, uri: String? = null, maxDimension: Int = 512, corner: Dp = 4.dp, onClick: (() -> Unit)? = null) {
     val bitmap = rememberArtworkBitmap(bytes, uri, maxDimension)
     Box(
         modifier
-            .clip(RoundedCornerShape(10.dp))
+            .clip(RoundedCornerShape(corner))
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier),
         contentAlignment = Alignment.Center,
