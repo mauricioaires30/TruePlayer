@@ -1,127 +1,127 @@
-## TruePlayer 1.17.0
+## TruePlayer 1.18.0
 
 ### English [en]
-- Choose a photo for each playlist from your phone. Album and playlist links bring their own photo.
-- The mini player now changes its color as soon as the song changes.
-- Clearer filters: the sort button shows the current order, the selected option is highlighted, and there is no check mark on Minutes / Plays.
-- Bigger text and buttons, especially in the bottom bar, and no circle around the play button.
+- Photo from the phone now opens an editor: rotate, zoom and drag to choose what shows. Photos no longer come in upside down.
+- The play button has no purple circle, and the mini player's bar and times have more room.
+- In the light theme, the mini player and the full player are lighter.
+- Bigger logo in the app icon.
 
 ### Português [pt]
-- Dá para escolher a foto de cada playlist pelo celular. Links de álbum e playlist já trazem a foto de lá.
-- O mini player agora muda de cor assim que a música troca.
-- Filtros mais claros: o botão de ordenar mostra a ordem atual, a opção escolhida fica em destaque e não há mais visto em Minutos / Vezes tocadas.
-- Textos e botões maiores, principalmente na barra de baixo, e sem círculo em volta do botão de tocar.
+- A foto escolhida no celular agora abre um editor: gire, aproxime e arraste para escolher o que aparece. A foto não vem mais virada.
+- O botão de tocar ficou sem o círculo roxo, e a barra e os tempos do mini player ganharam mais espaço.
+- No tema claro, o mini player e o player grande ficam mais claros.
+- Logo maior no ícone do app.
 
 ### Español [es]
-- Puedes elegir la foto de cada lista desde el teléfono. Los enlaces de álbum y lista traen su propia foto.
-- El minirreproductor cambia de color en cuanto cambia la canción.
-- Filtros más claros: el botón de ordenar muestra el orden actual, la opción elegida se destaca y ya no hay marca en Minutos / Reproducciones.
-- Textos y botones más grandes, sobre todo en la barra inferior, y sin círculo alrededor del botón de reproducir.
+- La foto elegida en el teléfono ahora abre un editor: gira, acerca y arrastra para elegir qué se ve. La foto ya no llega girada.
+- El botón de reproducir ya no tiene círculo morado, y la barra y los tiempos del minirreproductor tienen más espacio.
+- En el tema claro, el minirreproductor y el reproductor completo son más claros.
+- Logo más grande en el icono de la app.
 
 ### Français [fr]
-- Choisissez la photo de chaque playlist depuis votre téléphone. Les liens d'album et de playlist apportent leur propre photo.
-- Le mini lecteur change de couleur dès que le morceau change.
-- Filtres plus clairs : le bouton de tri montre l'ordre actuel, l'option choisie est mise en avant et il n'y a plus de coche sur Minutes / Écoutes.
-- Textes et boutons plus grands, surtout dans la barre du bas, et plus de cercle autour du bouton lecture.
+- La photo choisie sur le téléphone ouvre maintenant un éditeur : pivotez, zoomez et faites glisser pour choisir ce qui s'affiche. La photo n'arrive plus à l'envers.
+- Le bouton lecture n'a plus de cercle violet, et la barre et les temps du mini lecteur ont plus de place.
+- Dans le thème clair, le mini lecteur et le lecteur complet sont plus clairs.
+- Logo plus grand dans l'icône de l'app.
 
 ### Deutsch [de]
-- Für jede Playlist lässt sich ein Foto vom Telefon wählen. Album- und Playlist-Links bringen ihr eigenes Foto mit.
-- Der Mini-Player wechselt die Farbe jetzt sofort beim Titelwechsel.
-- Klarere Filter: Die Sortierschaltfläche zeigt die aktuelle Reihenfolge, die gewählte Option ist hervorgehoben und bei Minuten / Wiedergaben gibt es kein Häkchen mehr.
-- Größere Texte und Schaltflächen, besonders in der unteren Leiste, und kein Kreis mehr um die Abspielschaltfläche.
+- Ein vom Telefon gewähltes Foto öffnet jetzt einen Editor: drehen, zoomen und ziehen, um den Ausschnitt zu wählen. Fotos kommen nicht mehr verdreht an.
+- Die Abspielschaltfläche hat keinen lila Kreis mehr, und Leiste und Zeiten des Mini-Players haben mehr Platz.
+- Im hellen Design sind Mini-Player und großer Player heller.
+- Größeres Logo im App-Symbol.
 
 ### Italiano [it]
-- Puoi scegliere la foto di ogni playlist dal telefono. I link di album e playlist portano la loro foto.
-- Il mini lettore cambia colore appena cambia il brano.
-- Filtri più chiari: il pulsante di ordinamento mostra l'ordine attuale, l'opzione scelta è evidenziata e non c'è più la spunta su Minuti / Ascolti.
-- Testi e pulsanti più grandi, soprattutto nella barra inferiore, e niente cerchio intorno al pulsante play.
+- La foto scelta dal telefono ora apre un editor: ruota, ingrandisci e trascina per scegliere cosa si vede. La foto non arriva più capovolta.
+- Il pulsante play non ha più il cerchio viola e la barra e i tempi del mini lettore hanno più spazio.
+- Nel tema chiaro, il mini lettore e il lettore completo sono più chiari.
+- Logo più grande nell'icona dell'app.
 
 ### Nederlands [nl]
-- Je kunt voor elke afspeellijst een foto van je telefoon kiezen. Album- en afspeellijstlinks nemen hun eigen foto mee.
-- De minispeler verandert nu meteen van kleur als het nummer wisselt.
-- Duidelijkere filters: de sorteerknop toont de huidige volgorde, de gekozen optie is gemarkeerd en er is geen vinkje meer bij Minuten / Keer afgespeeld.
-- Grotere tekst en knoppen, vooral in de onderbalk, en geen cirkel meer rond de afspeelknop.
+- Een foto van je telefoon opent nu een editor: draai, zoom en sleep om te kiezen wat zichtbaar is. Foto's komen niet meer gedraaid binnen.
+- De afspeelknop heeft geen paarse cirkel meer, en de balk en tijden van de minispeler hebben meer ruimte.
+- In het lichte thema zijn de minispeler en de grote speler lichter.
+- Groter logo in het app-pictogram.
 
 ### Svenska [sv]
-- Du kan välja ett foto för varje spellista från telefonen. Album- och spellistlänkar tar med sitt eget foto.
-- Minispelaren byter färg direkt när låten byts.
-- Tydligare filter: sorteringsknappen visar aktuell ordning, valt alternativ är markerat och det finns ingen bock på Minuter / Spelningar.
-- Större text och knappar, särskilt i nedre fältet, och ingen cirkel runt spelaknappen.
+- Ett foto från telefonen öppnar nu en redigerare: rotera, zooma och dra för att välja vad som syns. Foton kommer inte längre upp och ned.
+- Spelaknappen har ingen lila cirkel längre, och minispelarens fält och tider har mer utrymme.
+- I det ljusa temat är minispelaren och den stora spelaren ljusare.
+- Större logotyp i appikonen.
 
 ### Polski [pl]
-- Dla każdej playlisty można wybrać zdjęcie z telefonu. Linki do albumów i playlist przynoszą własne zdjęcie.
-- Mini odtwarzacz zmienia kolor od razu po zmianie utworu.
-- Wyraźniejsze filtry: przycisk sortowania pokazuje bieżącą kolejność, wybrana opcja jest wyróżniona, a przy Minuty / Odtworzenia nie ma już znacznika.
-- Większy tekst i przyciski, zwłaszcza na dolnym pasku, oraz brak okręgu wokół przycisku odtwarzania.
+- Zdjęcie wybrane z telefonu otwiera teraz edytor: obróć, powiększ i przeciągnij, by wybrać, co widać. Zdjęcia nie są już odwrócone.
+- Przycisk odtwarzania nie ma już fioletowego koła, a pasek i czasy mini odtwarzacza mają więcej miejsca.
+- W jasnym motywie mini odtwarzacz i pełny odtwarzacz są jaśniejsze.
+- Większe logo w ikonie aplikacji.
 
 ### Türkçe [tr]
-- Her çalma listesi için telefondan fotoğraf seçebilirsiniz. Albüm ve liste bağlantıları kendi fotoğrafını getirir.
-- Mini oynatıcı şarkı değişir değişmez renk değiştirir.
-- Daha net filtreler: sıralama düğmesi mevcut sırayı gösterir, seçili seçenek vurgulanır ve Dakika / Dinlenme'de artık onay işareti yok.
-- Özellikle alt çubukta daha büyük yazı ve düğmeler, oynat düğmesinin etrafında daire yok.
+- Telefondan seçilen fotoğraf artık bir düzenleyici açar: döndürün, yakınlaştırın ve sürükleyerek görünecek kısmı seçin. Fotoğraflar artık ters gelmez.
+- Oynat düğmesinde mor daire yok ve mini oynatıcının çubuğu ile süreleri daha rahat.
+- Açık temada mini oynatıcı ve büyük oynatıcı daha açık.
+- Uygulama simgesinde daha büyük logo.
 
 ### Русский [ru]
-- Для каждого плейлиста можно выбрать фото с телефона. Ссылки на альбомы и плейлисты приносят своё фото.
-- Мини-плеер меняет цвет сразу при смене трека.
-- Понятнее фильтры: кнопка сортировки показывает текущий порядок, выбранный вариант выделен, а у «Минуты / Прослушивания» больше нет галочки.
-- Крупнее текст и кнопки, особенно в нижней панели, и нет круга вокруг кнопки воспроизведения.
+- Фото с телефона теперь открывается в редакторе: поворачивайте, увеличивайте и перетаскивайте, чтобы выбрать видимую часть. Фото больше не приходят перевёрнутыми.
+- У кнопки воспроизведения больше нет фиолетового круга, а у полосы и времени мини-плеера больше места.
+- В светлой теме мини-плеер и полный плеер светлее.
+- Логотип в значке приложения стал крупнее.
 
 ### Українська [uk]
-- Для кожного плейлиста можна вибрати фото з телефона. Посилання на альбоми й плейлисти приносять своє фото.
-- Міні-програвач змінює колір одразу після зміни треку.
-- Зрозуміліші фільтри: кнопка сортування показує поточний порядок, вибраний варіант виділено, а біля «Хвилини / Прослуховування» більше немає позначки.
-- Більший текст і кнопки, особливо в нижній панелі, і немає кола навколо кнопки відтворення.
+- Фото з телефона тепер відкривається в редакторі: повертайте, збільшуйте й перетягуйте, щоб вибрати видиму частину. Фото більше не приходять перевернутими.
+- У кнопки відтворення більше немає фіолетового кола, а в смуги й часу міні-програвача більше місця.
+- У світлій темі міні-програвач і повний програвач світліші.
+- Логотип у значку застосунку став більшим.
 
 ### العربية [ar]
-- يمكنك اختيار صورة لكل قائمة تشغيل من هاتفك. روابط الألبومات والقوائم تجلب صورتها الخاصة.
-- يغيّر المشغّل المصغّر لونه فور تغيّر المقطع.
-- فلاتر أوضح: يعرض زر الترتيب الترتيب الحالي، ويُميَّز الخيار المحدد، ولا توجد علامة صح في الدقائق / مرات التشغيل.
-- نصوص وأزرار أكبر، خصوصًا في الشريط السفلي، ولا دائرة حول زر التشغيل.
+- الصورة المختارة من الهاتف تفتح الآن محررًا: دوّر وكبّر واسحب لاختيار ما يظهر. لم تعد الصور تأتي مقلوبة.
+- لم يعد لزر التشغيل دائرة بنفسجية، وصار لشريط المشغّل المصغّر وأوقاته مساحة أكبر.
+- في السمة الفاتحة يكون المشغّل المصغّر والمشغّل الكامل أفتح.
+- شعار أكبر في أيقونة التطبيق.
 
 ### हिन्दी [hi]
-- हर प्लेलिस्ट के लिए फ़ोन से फ़ोटो चुन सकते हैं। एल्बम और प्लेलिस्ट के लिंक अपनी फ़ोटो साथ लाते हैं।
-- गाना बदलते ही मिनी प्लेयर का रंग बदल जाता है।
-- साफ़ फ़िल्टर: सॉर्ट बटन मौजूदा क्रम दिखाता है, चुना हुआ विकल्प उभरा रहता है और मिनट / कितनी बार चला पर अब टिक नहीं है।
-- ख़ासकर नीचे की बार में बड़े टेक्स्ट और बटन, और प्ले बटन के चारों ओर गोला नहीं।
+- फ़ोन से चुनी गई फ़ोटो अब एडिटर में खुलती है: घुमाएँ, ज़ूम करें और खींचकर चुनें कि क्या दिखे। फ़ोटो अब उलटी नहीं आती।
+- प्ले बटन पर बैंगनी गोला नहीं है, और मिनी प्लेयर की बार और समय को ज़्यादा जगह मिली है।
+- हल्की थीम में मिनी प्लेयर और बड़ा प्लेयर ज़्यादा हल्के हैं।
+- ऐप आइकन में बड़ा लोगो।
 
 ### Bahasa Indonesia [id]
-- Foto tiap playlist bisa dipilih dari ponsel. Tautan album dan playlist membawa fotonya sendiri.
-- Pemutar mini kini langsung berganti warna saat lagu berganti.
-- Filter lebih jelas: tombol urutkan menampilkan urutan saat ini, opsi terpilih disorot, dan tidak ada tanda centang pada Menit / Diputar.
-- Teks dan tombol lebih besar, terutama di bilah bawah, dan tanpa lingkaran di sekitar tombol putar.
+- Foto dari ponsel kini membuka editor: putar, perbesar, dan geser untuk memilih bagian yang tampil. Foto tidak lagi masuk terbalik.
+- Tombol putar tidak lagi berlingkaran ungu, dan bilah serta waktu pemutar mini punya ruang lebih.
+- Di tema terang, pemutar mini dan pemutar penuh lebih terang.
+- Logo lebih besar pada ikon aplikasi.
 
 ### Tiếng Việt [vi]
-- Có thể chọn ảnh cho từng danh sách phát từ điện thoại. Liên kết album và danh sách phát tự mang theo ảnh của chúng.
-- Trình phát mini đổi màu ngay khi bài hát đổi.
-- Bộ lọc rõ hơn: nút sắp xếp hiển thị thứ tự hiện tại, tùy chọn đã chọn được làm nổi bật và không còn dấu tích ở Phút / Lượt phát.
-- Chữ và nút lớn hơn, nhất là ở thanh dưới, và không còn vòng tròn quanh nút phát.
+- Ảnh chọn từ điện thoại giờ mở trình chỉnh sửa: xoay, phóng to và kéo để chọn phần hiển thị. Ảnh không còn bị ngược.
+- Nút phát không còn vòng tròn tím, thanh và thời gian của trình phát mini có nhiều chỗ hơn.
+- Ở giao diện sáng, trình phát mini và trình phát lớn sáng hơn.
+- Logo lớn hơn trong biểu tượng ứng dụng.
 
 ### ไทย [th]
-- เลือกรูปให้แต่ละเพลย์ลิสต์จากโทรศัพท์ได้ ลิงก์อัลบั้มและเพลย์ลิสต์จะนำรูปของตัวเองมาด้วย
-- เครื่องเล่นขนาดเล็กเปลี่ยนสีทันทีเมื่อเปลี่ยนเพลง
-- ตัวกรองชัดเจนขึ้น: ปุ่มเรียงลำดับแสดงลำดับปัจจุบัน ตัวเลือกที่เลือกจะเด่นขึ้น และไม่มีเครื่องหมายถูกที่ นาที / จำนวนครั้ง
-- ตัวอักษรและปุ่มใหญ่ขึ้น โดยเฉพาะแถบด้านล่าง และไม่มีวงกลมรอบปุ่มเล่น
+- รูปที่เลือกจากโทรศัพท์จะเปิดตัวแก้ไข: หมุน ซูม และลากเพื่อเลือกส่วนที่แสดง รูปไม่กลับหัวอีกต่อไป
+- ปุ่มเล่นไม่มีวงกลมสีม่วงแล้ว และแถบกับเวลาของเครื่องเล่นขนาดเล็กมีที่ว่างมากขึ้น
+- ในธีมสว่าง เครื่องเล่นขนาดเล็กและเครื่องเล่นแบบเต็มสว่างขึ้น
+- โลโก้ในไอคอนแอปใหญ่ขึ้น
 
 ### 日本語 [ja]
-- プレイリストごとに、スマホから写真を選べます。アルバムやプレイリストのリンクからは、元の写真が入ります。
-- 曲が変わるとすぐにミニプレーヤーの色も変わります。
-- フィルターをわかりやすくしました。並べ替えボタンに現在の順序が表示され、選んだ項目が目立ち、再生時間／再生回数のチェックマークはなくなりました。
-- 文字とボタンを大きくしました（特に下のバー）。再生ボタンの周りの円もなくしました。
+- スマホから選んだ写真が編集画面で開きます。回転、拡大、ドラッグで表示範囲を選べ、写真が逆さまになることもなくなりました。
+- 再生ボタンの紫の円をなくし、ミニプレーヤーのバーと時間の余白を広げました。
+- ライトテーマでは、ミニプレーヤーとフルプレーヤーが明るくなります。
+- アプリアイコンのロゴを大きくしました。
 
 ### 한국어 [ko]
-- 재생목록마다 휴대폰에서 사진을 고를 수 있습니다. 앨범과 재생목록 링크는 원본 사진을 가져옵니다.
-- 미니 플레이어가 곡이 바뀌자마자 색이 바뀝니다.
-- 필터를 더 알기 쉽게 했습니다. 정렬 버튼에 현재 순서가 표시되고, 선택한 항목이 강조되며, 재생 시간/재생 횟수의 체크 표시는 없어졌습니다.
-- 글자와 버튼을 키웠고(특히 하단 바), 재생 버튼 둘레의 원을 없앴습니다.
+- 휴대폰에서 고른 사진이 편집 화면으로 열립니다. 회전, 확대, 드래그로 보이는 부분을 고를 수 있고, 사진이 뒤집혀 들어오지 않습니다.
+- 재생 버튼의 보라색 원을 없앴고, 미니 플레이어의 막대와 시간에 여유를 더했습니다.
+- 밝은 테마에서는 미니 플레이어와 전체 플레이어가 더 밝아집니다.
+- 앱 아이콘의 로고를 키웠습니다.
 
 ### 简体中文 [zh-CN]
-- 可以从手机为每个播放列表选择照片。专辑和播放列表链接会带上自己的照片。
-- 歌曲切换后，迷你播放器会立刻变色。
-- 筛选更清晰：排序按钮显示当前顺序，所选项目高亮，“播放时长 / 播放次数”不再有勾选标记。
-- 文字和按钮更大（尤其是底部栏），播放按钮周围不再有圆圈。
+- 从手机选的照片现在会打开编辑器：可旋转、缩放、拖动来选择显示的部分，照片不再是倒的。
+- 播放按钮不再有紫色圆圈，迷你播放器的进度条和时间有了更多空间。
+- 浅色主题下，迷你播放器和完整播放器更浅。
+- 应用图标里的标志更大。
 
 ### 繁體中文 [zh-TW]
-- 可以從手機為每個播放清單選擇照片。專輯和播放清單連結會帶上自己的照片。
-- 歌曲切換後，迷你播放器會立刻變色。
-- 篩選更清楚：排序按鈕顯示目前順序，所選項目醒目標示，「播放時間 / 播放次數」不再有勾選記號。
-- 文字和按鈕更大（尤其是底部列），播放按鈕周圍不再有圓圈。
+- 從手機選的照片現在會開啟編輯器：可旋轉、縮放、拖曳來選擇顯示的部分，照片不再是倒的。
+- 播放按鈕不再有紫色圓圈，迷你播放器的進度列和時間有了更多空間。
+- 淺色主題下，迷你播放器和完整播放器更淺。
+- 應用程式圖示裡的標誌更大。

@@ -502,6 +502,8 @@
     <string name="dl_album_baixado">Albumet laddades ner</string>
     <string name="playlist_foto_alterar">Ändra foto</string>
     <string name="playlist_foto_remover">Ta bort foto</string>
+    <string name="playlist_foto_ajustar">Justera foto</string>
+    <string name="playlist_foto_girar">Rotera</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s spellista</item>
         <item quantity="other">+%1$s spellistor</item>

@@ -502,6 +502,8 @@
     <string name="dl_album_baixado">ดาวน์โหลดอัลบั้มแล้ว</string>
     <string name="playlist_foto_alterar">เปลี่ยนรูป</string>
     <string name="playlist_foto_remover">ลบรูป</string>
+    <string name="playlist_foto_ajustar">ปรับรูป</string>
+    <string name="playlist_foto_girar">หมุน</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s เพลย์ลิสต์</item>
     </plurals>

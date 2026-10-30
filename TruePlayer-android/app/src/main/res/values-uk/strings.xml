@@ -502,6 +502,8 @@
     <string name="dl_album_baixado">Альбом завантажено</string>
     <string name="playlist_foto_alterar">Змінити фото</string>
     <string name="playlist_foto_remover">Видалити фото</string>
+    <string name="playlist_foto_ajustar">Налаштувати фото</string>
+    <string name="playlist_foto_girar">Повернути</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s плейлист</item>
         <item quantity="few">+%1$s плейлисти</item>

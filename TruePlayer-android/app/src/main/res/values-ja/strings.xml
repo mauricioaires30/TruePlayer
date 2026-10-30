@@ -502,6 +502,8 @@
     <string name="dl_album_baixado">アルバムをダウンロードしました</string>
     <string name="playlist_foto_alterar">写真を変更</string>
     <string name="playlist_foto_remover">写真を削除</string>
+    <string name="playlist_foto_ajustar">写真を調整</string>
+    <string name="playlist_foto_girar">回転</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s件のプレイリスト</item>
     </plurals>

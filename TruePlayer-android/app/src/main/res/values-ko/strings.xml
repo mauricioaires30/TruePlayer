@@ -502,6 +502,8 @@
     <string name="dl_album_baixado">앨범을 다운로드했습니다</string>
     <string name="playlist_foto_alterar">사진 변경</string>
     <string name="playlist_foto_remover">사진 삭제</string>
+    <string name="playlist_foto_ajustar">사진 조정</string>
+    <string name="playlist_foto_girar">회전</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+재생목록 %1$s개</item>
     </plurals>

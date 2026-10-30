@@ -502,6 +502,8 @@
     <string name="dl_album_baixado">एल्बम डाउनलोड हो गया</string>
     <string name="playlist_foto_alterar">फ़ोटो बदलें</string>
     <string name="playlist_foto_remover">फ़ोटो हटाएँ</string>
+    <string name="playlist_foto_ajustar">फ़ोटो एडजस्ट करें</string>
+    <string name="playlist_foto_girar">घुमाएँ</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s प्लेलिस्ट</item>
         <item quantity="other">+%1$s प्लेलिस्ट</item>

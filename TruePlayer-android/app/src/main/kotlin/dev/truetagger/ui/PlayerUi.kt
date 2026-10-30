@@ -79,6 +79,7 @@ import androidx.compose.ui.zIndex
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
 import androidx.compose.ui.draw.shadow
@@ -1021,9 +1022,14 @@ private fun MiniPlayer(
 ) {
     val context = LocalContext.current
     val tint = rememberCoverTint(s.current?.artworkBytes, s.current?.id)
-    val card by animateColorAsState(tint?.let { lerp(it, Color.Black, 0.42f) } ?: TruePlayerDarkScheme.surfaceVariant, label = "miniTint")
-    // Cartão flutuante na cor da capa, como no Spotify. Por dentro é sempre escuro, com texto claro.
-    TruePlayerTheme(ThemeMode.DARK) {
+    val light = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val fallback = MaterialTheme.colorScheme.surfaceVariant
+    // Cartão flutuante na cor da capa, como no Spotify: escurecida no tema escuro e bem clara (pastel) no claro.
+    val card by animateColorAsState(
+        tint?.let { if (light) lerp(it, Color.White, 0.62f) else lerp(it, Color.Black, 0.42f) } ?: fallback,
+        label = "miniTint",
+    )
+    TruePlayerTheme(LocalThemeMode.current) {
         val accent = MaterialTheme.colorScheme.primary
         Box(
             Modifier
@@ -1031,7 +1037,7 @@ private fun MiniPlayer(
                 .then(if (extendBehindNavBar) Modifier.navigationBarsPadding() else Modifier)
                 .padding(horizontal = UiTokens.space2, vertical = UiTokens.space1),
         ) {
-            Surface(color = card, shape = RoundedCornerShape(UiTokens.space3), modifier = Modifier.fillMaxWidth()) {
+            Surface(color = card, contentColor = MaterialTheme.colorScheme.onSurface, shape = RoundedCornerShape(UiTokens.space3), modifier = Modifier.fillMaxWidth()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -1043,7 +1049,7 @@ private fun MiniPlayer(
                     SeekableWavyBar(
                         s = s,
                         onSeek = { f -> MusicPlaybackService.command(context, MusicPlaybackService.ACTION_SEEK, (f * s.durationMs).toLong()) },
-                        modifier = Modifier.fillMaxWidth().height(20.dp).padding(horizontal = UiTokens.space3),
+                        modifier = Modifier.fillMaxWidth().padding(start = UiTokens.space3, end = UiTokens.space3, top = UiTokens.space2).height(24.dp),
                     )
                     Row(
                         modifier = Modifier.fillMaxWidth().weight(1f).padding(start = UiTokens.space3, end = UiTokens.space2),
@@ -1127,9 +1133,14 @@ private val MINI_SMALL_BUTTON = 34.dp
 private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Unit, onArtist: () -> Unit, onAlbum: () -> Unit) {
     val context = LocalContext.current
     val tint = rememberCoverTint(s.current?.artworkBytes, s.current?.id)
-    val top by animateColorAsState(tint?.let { lerp(it, Color.Black, 0.30f) } ?: TruePlayerDarkScheme.surfaceVariant, label = "playerTint")
-    // Como o "Tocando agora" do Spotify: fundo que sai da cor da capa e escurece para baixo, sempre com texto claro.
-    TruePlayerTheme(ThemeMode.DARK) {
+    val light = MaterialTheme.colorScheme.background.luminance() > 0.5f
+    val fallback = MaterialTheme.colorScheme.surfaceVariant
+    val top by animateColorAsState(
+        tint?.let { if (light) lerp(it, Color.White, 0.5f) else lerp(it, Color.Black, 0.30f) } ?: fallback,
+        label = "playerTint",
+    )
+    // Como o "Tocando agora" do Spotify: fundo que sai da cor da capa e se dissolve na cor da tela (escura ou clara).
+    TruePlayerTheme(LocalThemeMode.current) {
         val bg = MaterialTheme.colorScheme.background
         Box(Modifier.fillMaxSize().background(Brush.verticalGradient(0f to top, 0.7f to bg, 1f to bg))) {
             Column(Modifier.fillMaxSize().padding(horizontal = UiTokens.space5, vertical = UiTokens.screenVerticalPadding)) {
@@ -1721,10 +1732,21 @@ private fun CombinedMostPlayedPlaylistHost(
     var renameText by remember { mutableStateOf("") }
     val photoScope = rememberCoroutineScope()
     var photoTarget by remember { mutableStateOf<String?>(null) }
+    var pendingPhoto by remember { mutableStateOf<Pair<String, android.graphics.Bitmap>?>(null) }
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
         val target = photoTarget
         photoTarget = null
-        if (uri != null && target != null) photoScope.launch(Dispatchers.IO) { PlaylistCovers.setFromUri(context, target, uri) }
+        if (uri != null && target != null) photoScope.launch {
+            val picked = withContext(Dispatchers.IO) { PlaylistCovers.decodeForEditor(context, uri) }
+            if (picked != null) pendingPhoto = target to picked
+        }
+    }
+    pendingPhoto?.let { (target, picked) ->
+        PhotoAdjustDialog(
+            source = picked,
+            onSave = { cropped -> pendingPhoto = null; photoScope.launch(Dispatchers.IO) { PlaylistCovers.saveBitmap(context, target, cropped) } },
+            onDismiss = { pendingPhoto = null },
+        )
     }
 
     // A revisão muda sempre que uma reprodução é registrada. Isso força
@@ -2710,8 +2732,16 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
     val ownCover = if (type == Detail.PLAYLIST) rememberPlaylistCover(key) else null
     val ownTint = remember(ownCover) { ownCover?.let(::tintOfBitmap) }
     val detailScope = rememberCoroutineScope()
+    var pendingPhoto by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
     val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
-        if (uri != null) detailScope.launch(Dispatchers.IO) { PlaylistCovers.setFromUri(detailContext, key, uri) }
+        if (uri != null) detailScope.launch { pendingPhoto = withContext(Dispatchers.IO) { PlaylistCovers.decodeForEditor(detailContext, uri) } }
+    }
+    pendingPhoto?.let { picked ->
+        PhotoAdjustDialog(
+            source = picked,
+            onSave = { cropped -> pendingPhoto = null; detailScope.launch(Dispatchers.IO) { PlaylistCovers.saveBitmap(detailContext, key, cropped) } },
+            onDismiss = { pendingPhoto = null },
+        )
     }
     val baseTint = when (type) {
         Detail.GENRE -> genreColor(key)

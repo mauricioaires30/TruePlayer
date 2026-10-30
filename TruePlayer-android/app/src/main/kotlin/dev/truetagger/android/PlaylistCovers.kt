@@ -19,6 +19,7 @@ import java.security.MessageDigest
 internal object PlaylistCovers {
     private const val DIR = "playlist-covers"
     private const val MAX_SIDE = 800
+    private const val EDITOR_SIDE = 1600
 
     private val _revision = MutableStateFlow(0)
 
@@ -58,10 +59,50 @@ internal object PlaylistCovers {
         return ok
     }
 
-    fun setFromUri(context: Context, name: String, uri: Uri): Boolean = runCatching {
-        val raw = context.contentResolver.openInputStream(uri)?.use { it.readBytes() } ?: return false
-        set(context, name, raw)
-    }.getOrDefault(false)
+    /**
+     * Lê a foto escolhida na galeria para ajustar: reduzida (até 1600 px) e já na posição certa. Fotos de câmera vêm
+     * "deitadas" e trazem a orientação nos metadados (EXIF); sem aplicá-la a imagem aparecia virada.
+     */
+    fun decodeForEditor(context: Context, uri: Uri): Bitmap? = runCatching {
+        val resolver = context.contentResolver
+        val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        resolver.openInputStream(uri)?.use { BitmapFactory.decodeStream(it, null, bounds) }
+        val longest = maxOf(bounds.outWidth, bounds.outHeight)
+        if (longest <= 0) return null
+        val sample = generateSequence(1) { it * 2 }.takeWhile { longest / it >= EDITOR_SIDE }.lastOrNull() ?: 1
+        val decoded = resolver.openInputStream(uri)?.use {
+            BitmapFactory.decodeStream(it, null, BitmapFactory.Options().apply { inSampleSize = sample })
+        } ?: return null
+        val orientation = resolver.openInputStream(uri)?.use {
+            android.media.ExifInterface(it).getAttributeInt(android.media.ExifInterface.TAG_ORIENTATION, android.media.ExifInterface.ORIENTATION_NORMAL)
+        } ?: android.media.ExifInterface.ORIENTATION_NORMAL
+        val matrix = matrixFor(orientation) ?: return decoded
+        Bitmap.createBitmap(decoded, 0, 0, decoded.width, decoded.height, matrix, true)
+    }.getOrNull()
+
+    private fun matrixFor(orientation: Int): android.graphics.Matrix? {
+        val m = android.graphics.Matrix()
+        when (orientation) {
+            android.media.ExifInterface.ORIENTATION_ROTATE_90 -> m.postRotate(90f)
+            android.media.ExifInterface.ORIENTATION_ROTATE_180 -> m.postRotate(180f)
+            android.media.ExifInterface.ORIENTATION_ROTATE_270 -> m.postRotate(270f)
+            android.media.ExifInterface.ORIENTATION_FLIP_HORIZONTAL -> m.postScale(-1f, 1f)
+            android.media.ExifInterface.ORIENTATION_FLIP_VERTICAL -> m.postScale(1f, -1f)
+            android.media.ExifInterface.ORIENTATION_TRANSPOSE -> { m.postRotate(90f); m.postScale(-1f, 1f) }
+            android.media.ExifInterface.ORIENTATION_TRANSVERSE -> { m.postRotate(-90f); m.postScale(-1f, 1f) }
+            else -> return null
+        }
+        return m
+    }
+
+    /** Guarda o recorte já pronto (quadrado) como foto da playlist. */
+    fun saveBitmap(context: Context, name: String, bitmap: Bitmap): Boolean {
+        val target = file(context, name)
+        target.parentFile?.mkdirs()
+        val ok = runCatching { target.outputStream().use { bitmap.compress(Bitmap.CompressFormat.JPEG, 90, it) } }.getOrDefault(false)
+        if (ok) _revision.value++
+        return ok
+    }
 
     /** Baixa a imagem do link. Falha em silêncio (sem internet, link quebrado): a playlist fica sem foto. */
     fun setFromUrl(context: Context, name: String, url: String): Boolean {

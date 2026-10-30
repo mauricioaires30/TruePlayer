@@ -502,6 +502,8 @@
     <string name="dl_album_baixado">專輯已下載</string>
     <string name="playlist_foto_alterar">更換照片</string>
     <string name="playlist_foto_remover">移除照片</string>
+    <string name="playlist_foto_ajustar">調整照片</string>
+    <string name="playlist_foto_girar">旋轉</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s個播放清單</item>
     </plurals>

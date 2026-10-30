@@ -502,6 +502,8 @@
     <string name="dl_album_baixado">Album heruntergeladen</string>
     <string name="playlist_foto_alterar">Foto ändern</string>
     <string name="playlist_foto_remover">Foto entfernen</string>
+    <string name="playlist_foto_ajustar">Foto anpassen</string>
+    <string name="playlist_foto_girar">Drehen</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s Playlist</item>
         <item quantity="other">+%1$s Playlists</item>

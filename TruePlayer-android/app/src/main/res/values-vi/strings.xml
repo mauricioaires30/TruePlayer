@@ -502,6 +502,8 @@
     <string name="dl_album_baixado">Đã tải album</string>
     <string name="playlist_foto_alterar">Đổi ảnh</string>
     <string name="playlist_foto_remover">Xóa ảnh</string>
+    <string name="playlist_foto_ajustar">Chỉnh ảnh</string>
+    <string name="playlist_foto_girar">Xoay</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s danh sách phát</item>
     </plurals>

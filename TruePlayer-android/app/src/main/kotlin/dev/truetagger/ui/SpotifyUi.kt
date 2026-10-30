@@ -21,6 +21,7 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -58,16 +59,9 @@ internal fun PlayControls(enabled: Boolean, onShuffle: () -> Unit, onPlay: () ->
         IconButton(onClick = onShuffle, enabled = enabled, modifier = Modifier.size(48.dp)) {
             Icon(Icons.Rounded.Shuffle, t(R.string.aleatorio), Modifier.size(26.dp))
         }
-        FilledIconButton(
-            onClick = onPlay,
-            enabled = enabled,
-            modifier = Modifier.size(56.dp),
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ),
-        ) {
-            Icon(Icons.Rounded.PlayArrow, t(R.string.tocar), Modifier.size(34.dp))
+        // Só o triângulo na cor de destaque, sem círculo em volta (o círculo roxo cobria o começo da lista).
+        IconButton(onClick = onPlay, enabled = enabled, modifier = Modifier.size(56.dp)) {
+            Icon(Icons.Rounded.PlayArrow, t(R.string.tocar), Modifier.size(48.dp), tint = if (enabled) MaterialTheme.colorScheme.primary else LocalContentColor.current.copy(alpha = 0.38f))
         }
     }
 }

@@ -502,6 +502,8 @@
     <string name="dl_album_baixado">Albüm indirildi</string>
     <string name="playlist_foto_alterar">Fotoğrafı değiştir</string>
     <string name="playlist_foto_remover">Fotoğrafı kaldır</string>
+    <string name="playlist_foto_ajustar">Fotoğrafı ayarla</string>
+    <string name="playlist_foto_girar">Döndür</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s çalma listesi</item>
         <item quantity="other">+%1$s çalma listesi</item>
