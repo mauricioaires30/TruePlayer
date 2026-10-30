@@ -183,6 +183,11 @@ class GitManagerTest {
             assertTrue("songs/Artista/Album/nova.mp3" in names)
             assertFalse("songs/b.mp3" in names)
         }
+
+        // só arquivo apagado, com a lista de mudanças já conferida
+        File(dir, "songs/a.mp3").delete()
+        GitManager.commitAll(dir, "Terceiro", "Fulano", "f@x.com", GitManager.TextMonitor { }, known = GitManager.status(dir))
+        assertTrue(GitManager.isClean(dir))
     }
 
     /** Cria um "GitHub" com um histórico próprio (a.mp3, b.mp3 e so-no-github.mp3) e devolve a pasta bare. */

@@ -285,10 +285,16 @@ internal object GitManager {
                 return skipped
             }
             // [known]: o que mudou já foi conferido pouco antes; conferir de novo era outra passada na pasta inteira.
-            val paths = (known ?: status(dir)).filter { it.kind != GitChange.Kind.REMOVED }.map { it.path }.distinct()
+            val changes = known ?: status(dir)
+            val paths = changes.filter { it.kind != GitChange.Kind.REMOVED }.map { it.path }.distinct()
             val parts = splitBySize(paths.map { it to File(dir, it).length() }, maxPartBytes)
-            // Os arquivos que sumiram entram no primeiro commit.
-            git.add().setUpdate(true).addFilepattern(".").call()
+            // Os arquivos que sumiram entram no primeiro commit. Só eles saem do índice: o `add --update .` do JGit
+            // relia e recalculava todas as músicas da pasta, e 2 arquivos levavam minutos para registrar.
+            changes.filter { it.kind == GitChange.Kind.REMOVED }.map { it.path }.distinct().chunked(50).forEach { chunk ->
+                val rm = git.rm().setCached(true)
+                chunk.forEach { rm.addFilepattern(it) }
+                rm.call()
+            }
             if (parts.isEmpty()) {
                 git.commit().setMessage(message).setAuthor(author).setCommitter(author).setAllowEmpty(false).call()
                 return skipped

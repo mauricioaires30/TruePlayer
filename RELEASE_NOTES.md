@@ -1,85 +1,64 @@
-## TruePlayer 1.19.0
+## TruePlayer 1.19.1
 
 ### English [en]
-- Faster downloads.
-- Faster Git commit and send.
+- Git: saving a commit no longer re-reads the whole music folder, so it is much faster.
 
 ### Português [pt]
-- Downloads mais rápidos.
-- Commit e envio do Git mais rápidos.
+- Git: registrar o commit não relê mais a pasta de músicas inteira, então ficou bem mais rápido.
 
 ### Español [es]
-- Descargas más rápidas.
-- Commit y envío de Git más rápidos.
+- Git: registrar el commit ya no vuelve a leer toda la carpeta de música, así que es mucho más rápido.
 
 ### Français [fr]
-- Téléchargements plus rapides.
-- Commit et envoi Git plus rapides.
+- Git : l'enregistrement du commit ne relit plus tout le dossier de musique, il est donc beaucoup plus rapide.
 
 ### Deutsch [de]
-- Schnellere Downloads.
-- Schnellerer Git-Commit und -Versand.
+- Git: Beim Speichern des Commits wird nicht mehr der ganze Musikordner neu gelesen, daher geht es viel schneller.
 
 ### Italiano [it]
-- Download più veloci.
-- Commit e invio Git più veloci.
+- Git: la registrazione del commit non rilegge più tutta la cartella della musica, quindi è molto più veloce.
 
 ### Nederlands [nl]
-- Snellere downloads.
-- Snellere Git-commit en -verzending.
+- Git: het opslaan van de commit leest niet meer de hele muziekmap opnieuw, dus het gaat veel sneller.
 
 ### Svenska [sv]
-- Snabbare nedladdningar.
-- Snabbare Git-commit och -skickning.
+- Git: att spara en commit läser inte längre om hela musikmappen, så det går mycket snabbare.
 
 ### Polski [pl]
-- Szybsze pobieranie.
-- Szybszy commit i wysyłanie w Git.
+- Git: zapis commita nie czyta już ponownie całego folderu z muzyką, więc jest dużo szybszy.
 
 ### Türkçe [tr]
-- Daha hızlı indirme.
-- Daha hızlı Git commit ve gönderimi.
+- Git: commit kaydı artık tüm müzik klasörünü yeniden okumuyor, bu yüzden çok daha hızlı.
 
 ### Русский [ru]
-- Быстрее загрузка.
-- Быстрее коммит и отправка в Git.
+- Git: при записи коммита папка с музыкой больше не перечитывается целиком, поэтому это намного быстрее.
 
 ### Українська [uk]
-- Швидше завантаження.
-- Швидші коміт і надсилання в Git.
+- Git: запис коміту більше не перечитує всю теку з музикою, тож він став набагато швидшим.
 
 ### العربية [ar]
-- تنزيلات أسرع.
-- إيداع وإرسال Git أسرع.
+- Git: لم يعد تسجيل الإيداع يعيد قراءة مجلد الموسيقى بالكامل، لذا أصبح أسرع بكثير.
 
 ### हिन्दी [hi]
-- तेज़ डाउनलोड।
-- तेज़ Git कमिट और भेजना।
+- Git: कमिट दर्ज करते समय अब पूरा संगीत फ़ोल्डर दोबारा नहीं पढ़ा जाता, इसलिए यह बहुत तेज़ है।
 
 ### Bahasa Indonesia [id]
-- Unduhan lebih cepat.
-- Commit dan kirim Git lebih cepat.
+- Git: mencatat commit tidak lagi membaca ulang seluruh folder musik, jadi jauh lebih cepat.
 
 ### Tiếng Việt [vi]
-- Tải nhanh hơn.
-- Commit và gửi Git nhanh hơn.
+- Git: ghi commit không còn đọc lại toàn bộ thư mục nhạc nên nhanh hơn nhiều.
 
 ### ไทย [th]
-- ดาวน์โหลดเร็วขึ้น
-- Commit และส่ง Git เร็วขึ้น
+- Git: การบันทึก commit ไม่อ่านโฟลเดอร์เพลงทั้งหมดซ้ำอีกต่อไป จึงเร็วขึ้นมาก
 
 ### 日本語 [ja]
-- ダウンロードが速くなりました。
-- Gitのコミットと送信が速くなりました。
+- Git：コミットの記録時に音楽フォルダ全体を読み直さなくなり、大幅に速くなりました。
 
 ### 한국어 [ko]
-- 다운로드가 빨라졌습니다.
-- Git 커밋과 전송이 빨라졌습니다.
+- Git: 커밋을 기록할 때 더 이상 음악 폴더 전체를 다시 읽지 않아 훨씬 빨라졌습니다.
 
 ### 简体中文 [zh-CN]
-- 下载更快。
-- Git 提交和发送更快。
+- Git：记录提交时不再重新读取整个音乐文件夹，因此快了很多。
 
 ### 繁體中文 [zh-TW]
-- 下載更快。
-- Git 提交和傳送更快。
+- Git：記錄提交時不再重新讀取整個音樂資料夾，因此快了許多。
