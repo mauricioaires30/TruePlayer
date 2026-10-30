@@ -504,6 +504,7 @@
     <string name="playlist_foto_remover">Ta bort foto</string>
     <string name="playlist_foto_ajustar">Justera foto</string>
     <string name="playlist_foto_girar">Rotera</string>
+    <string name="git_tempos">\n\nTid: förbereda %1$s, spara %2$s, skicka %3$s.</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s spellista</item>
         <item quantity="other">+%1$s spellistor</item>

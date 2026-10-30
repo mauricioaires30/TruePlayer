@@ -102,4 +102,13 @@ class DownloadQueueTest {
         File(tmp.root, "future.json").writeText("""{"schemaVersion":99,"items":[{"id":1,"url":"x"}]}""")
         assertTrue(store("future.json").load().isEmpty())
     }
+
+    @Test fun cancelingAJobKeepsEverySongThatIsDownloadingRightNow() {
+        val s = store()
+        val items = (1..5).map { s.add("u$it", playlist = "Treino", total = 5, position = it) }
+        val removed = s.removeJob("Treino", exceptIds = setOf(items[0].id, items[2].id))
+        assertEquals(listOf("u2", "u4", "u5"), removed.map { it.url })
+        assertEquals(listOf("u1", "u3"), store().load().map { it.url })
+        assertEquals(3, s.finishJob("Treino").canceled)
+    }
 }

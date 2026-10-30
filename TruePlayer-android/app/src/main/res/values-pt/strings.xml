@@ -504,6 +504,7 @@
     <string name="playlist_foto_remover">Remover foto</string>
     <string name="playlist_foto_ajustar">Ajustar foto</string>
     <string name="playlist_foto_girar">Girar</string>
+    <string name="git_tempos">\n\nTempo: preparar %1$s, registrar %2$s, enviar %3$s.</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s playlist</item>
         <item quantity="many">+%1$s playlists</item>

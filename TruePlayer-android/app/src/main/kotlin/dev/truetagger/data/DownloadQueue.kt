@@ -80,9 +80,13 @@ class DownloadQueueStore(private val file: File) {
      * se cancela sozinho) e soma ao contador de cancelados. Devolve os itens tirados.
      */
     @Synchronized
-    fun removeJob(playlist: String, exceptId: Long? = null): List<QueuedDownload> {
+    fun removeJob(playlist: String, exceptId: Long? = null): List<QueuedDownload> = removeJob(playlist, setOfNotNull(exceptId))
+
+    /** Como [removeJob], deixando de fora todas as que estão baixando agora ([exceptIds]). */
+    @Synchronized
+    fun removeJob(playlist: String, exceptIds: Set<Long>): List<QueuedDownload> {
         val dto = read()
-        val removed = dto.items.filter { it.playlist == playlist && it.id != exceptId }
+        val removed = dto.items.filter { it.playlist == playlist && it.id !in exceptIds }
         if (removed.isEmpty()) return emptyList()
         val now = dto.jobs[playlist] ?: QueueJobCounts()
         write(dto.copy(items = dto.items - removed.toSet(), jobs = dto.jobs + (playlist to now.copy(canceled = now.canceled + removed.size))))

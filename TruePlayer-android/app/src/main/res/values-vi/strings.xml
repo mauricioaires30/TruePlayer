@@ -504,6 +504,7 @@
     <string name="playlist_foto_remover">Xóa ảnh</string>
     <string name="playlist_foto_ajustar">Chỉnh ảnh</string>
     <string name="playlist_foto_girar">Xoay</string>
+    <string name="git_tempos">\n\nThời gian: chuẩn bị %1$s, lưu %2$s, gửi %3$s.</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s danh sách phát</item>
     </plurals>

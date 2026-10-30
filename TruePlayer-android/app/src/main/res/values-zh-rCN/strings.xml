@@ -504,6 +504,7 @@
     <string name="playlist_foto_remover">移除照片</string>
     <string name="playlist_foto_ajustar">调整照片</string>
     <string name="playlist_foto_girar">旋转</string>
+    <string name="git_tempos">\n\n用时：准备 %1$s，记录 %2$s，发送 %3$s。</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s个播放列表</item>
     </plurals>

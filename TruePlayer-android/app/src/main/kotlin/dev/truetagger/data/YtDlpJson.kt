@@ -71,7 +71,13 @@ object YtDlpJson {
     }
 
     /** Resultados de uma busca (`ytsearch`, `scsearch`, busca do YouTube Music), na ordem em que vieram. */
-    fun parseSearch(text: String): List<SearchHit> {
+    fun parseSearch(text: String): List<SearchHit> = parseSearchWithInfo(text).map { it.first }
+
+    /**
+     * Como [parseSearch], junto com o JSON de cada resultado. Numa busca detalhada (sem `--flat-playlist`) esse JSON
+     * já tem os formatos de áudio: dá para baixar direto dele (`--load-info-json`) sem o yt-dlp ler a página de novo.
+     */
+    fun parseSearchWithInfo(text: String): List<Pair<SearchHit, String>> {
         val entries = parseObject(text)?.get("entries") as? JsonArray ?: return emptyList()
         return entries.mapNotNull { element ->
             val entry = element as? JsonObject ?: return@mapNotNull null
@@ -84,9 +90,13 @@ object YtDlpJson {
                 durationSec = (entry["duration"] as? JsonPrimitive)?.doubleOrNull?.toInt() ?: 0,
                 uploader = entry["uploader"].text().ifBlank { entry["channel"].text() },
                 artist = entry["artist"].text(),
-            )
+            ) to entry.toString()
         }
     }
+
+    /** O JSON tem formatos de áudio prontos para baixar (veio de uma busca detalhada, não da rápida). */
+    fun hasFormats(infoJson: String): Boolean =
+        (parseObject(infoJson)?.get("formats") as? JsonArray)?.isNotEmpty() == true
 
     fun parseInfo(text: String): SourceInfo? {
         val obj = parseObject(text) ?: return null

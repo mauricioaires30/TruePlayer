@@ -504,6 +504,7 @@
     <string name="playlist_foto_remover">إزالة الصورة</string>
     <string name="playlist_foto_ajustar">ضبط الصورة</string>
     <string name="playlist_foto_girar">تدوير</string>
+    <string name="git_tempos">\n\nالوقت: التحضير %1$s، الحفظ %2$s، الإرسال %3$s.</string>
     <plurals name="commit_playlists_added">
         <item quantity="zero">لا قوائم تشغيل جديدة</item>
         <item quantity="one">+قائمة تشغيل واحدة</item>

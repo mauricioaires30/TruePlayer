@@ -504,6 +504,7 @@
     <string name="playlist_foto_remover">Видалити фото</string>
     <string name="playlist_foto_ajustar">Налаштувати фото</string>
     <string name="playlist_foto_girar">Повернути</string>
+    <string name="git_tempos">\n\nЧас: підготовка %1$s, запис %2$s, надсилання %3$s.</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s плейлист</item>
         <item quantity="few">+%1$s плейлисти</item>

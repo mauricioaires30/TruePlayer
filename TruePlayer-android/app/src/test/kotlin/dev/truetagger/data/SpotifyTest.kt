@@ -182,4 +182,14 @@ class SpotifyTest {
         assertEquals("https://i/large.jpg", YtDlpJson.parseListing(json)!!.thumbnail)
         assertEquals("https://i/only.jpg", YtDlpJson.parseListing("""{"title":"P","thumbnail":"https://i/only.jpg","entries":[{"id":"a","url":"https://youtu.be/a"}]}""")!!.thumbnail)
     }
+
+    @Test fun detailedSearchResultsKeepTheirFullInfoForADirectDownload() {
+        val json = """{"entries":[{"id":"a","title":"Housewife","duration":209,"uploader":"Tate McRae","webpage_url":"https://www.youtube.com/watch?v=a",
+            "formats":[{"format_id":"140","ext":"m4a","url":"https://rr/audio"}]},{"id":"b","title":"x","url":"https://www.youtube.com/watch?v=b"}]}"""
+        val hits = YtDlpJson.parseSearchWithInfo(json)
+        assertEquals(2, hits.size)
+        assertTrue(YtDlpJson.hasFormats(hits[0].second))
+        assertFalse(YtDlpJson.hasFormats(hits[1].second))
+        assertEquals("https://www.youtube.com/watch?v=a", hits[0].first.url)
+    }
 }

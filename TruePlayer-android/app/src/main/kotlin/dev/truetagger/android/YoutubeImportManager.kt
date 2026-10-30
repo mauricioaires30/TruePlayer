@@ -34,15 +34,25 @@ import java.util.Locale
 /** Resultado de um download: nome salvo em songs/, caminho relativo e se as tags precisam de revisão. */
 data class ImportResult(val fileName: String, val relPath: String, val label: String)
 
-/** Onde a música do Spotify foi achada. */
-data class FoundTrack(val url: String, val source: MatchSource)
+/**
+ * Onde a música do Spotify foi achada. [infoJson] (quando veio da busca detalhada do YouTube Music) já traz os
+ * formatos de áudio: o download começa direto dele, sem o yt-dlp abrir a página da música outra vez.
+ */
+data class FoundTrack(val url: String, val source: MatchSource, val infoJson: String? = null)
 
 class YoutubeImportManager(private val context: Context) {
     private val prefs get() = context.getSharedPreferences(ShareContract.PREFS, Context.MODE_PRIVATE)
 
-    private fun initEngines() {
+    /** Vários downloads correm ao mesmo tempo: preparar o motor (descompactar o Python na 1ª vez) é feito por um só. */
+    private fun initEngines() = synchronized(ENGINE_LOCK) {
         YoutubeDL.getInstance().init(context)
         FFmpeg.getInstance().init(context)
+    }
+
+    /** Pastas de trabalho que sobraram de um download interrompido (o app foi fechado no meio). */
+    fun cleanWorkDirs() {
+        context.cacheDir.listFiles { f -> f.isDirectory && (f.name.startsWith("dl-") || f.name.startsWith("youtube-import")) }
+            ?.forEach { it.deleteRecursively() }
     }
 
     /** Lista o conteúdo de uma playlist (YouTube ou SoundCloud). Devolve null se o link não é uma playlist ou falhou. */
@@ -69,111 +79,103 @@ class YoutubeImportManager(private val context: Context) {
         destinationTree: Uri,
         processId: String,
         hint: TrackHint? = null,
+        infoJson: String? = null,
         onStatus: (ImportStatus) -> Unit,
     ): ImportResult = withContext(Dispatchers.IO) {
-        onStatus(ImportStatus(url, t(R.string.dl_preparando_download_2), 0))
+        onStatus(ImportStatus(url, t(R.string.dl_preparando_download_2), 0, mediaTitle = hint?.title.orEmpty()))
         initEngines()
-
         updateEngineIfNeeded(url, onStatus)
-        var info = mergeHint(fetchSourceInfo(url, processId, onStatus), hint)
-        val initialTitle = cleanFeaturingText(info?.title.orEmpty())
-        if (initialTitle.isNotBlank()) {
-            onStatus(ImportStatus(url, t(R.string.dl_preparando_audio), 0, mediaTitle = initialTitle))
-        }
 
         val firstAttempt = runCatching {
-            executeDownload(url, destinationTree, processId, onStatus, retry = false, info = info, hint = hint)
+            executeDownload(url, destinationTree, processId, onStatus, retry = false, hint = hint, infoJson = infoJson)
         }
         if (firstAttempt.isSuccess) return@withContext firstAttempt.getOrThrow()
         // Cancelado pelo usuário: não atualiza o baixador nem tenta de novo.
         currentCoroutineContext().ensureActive()
 
-        onStatus(
-            ImportStatus(
-                url,
-                t(R.string.dl_atualizando_o_baixador),
-                0,
-                mediaTitle = cleanFeaturingText(info?.title.orEmpty()),
-            )
-        )
-        runCatching {
-            YoutubeDL.getInstance().updateYoutubeDL(context, YoutubeDL.UpdateChannel._NIGHTLY)
-            rememberEngineUpdate()
-        }
-        info = mergeHint(fetchSourceInfo(url, processId, onStatus), hint) ?: info
-        executeDownload(url, destinationTree, processId, onStatus, retry = true, info = info, hint = hint)
-    }
-
-    private fun fetchSourceInfo(url: String, processId: String, onStatus: (ImportStatus) -> Unit): SourceInfo? {
-        onStatus(ImportStatus(url, t(R.string.dl_lendo_informacoes), 0))
-        val raw = runCatching {
-            val request = YoutubeDLRequest(url).apply {
-                addOption("--dump-single-json")
-                addOption("--no-playlist")
-                addOption("--no-warnings")
+        // O YouTube muda e o yt-dlp antigo para de funcionar: atualiza (no máximo uma vez a cada 6 h) e tenta de novo,
+        // agora lendo a página da música (os endereços guardados da busca podem ter sido o problema).
+        val recentlyUpdated = System.currentTimeMillis() - prefs.getLong(PREF_ENGINE_UPDATE, 0L) < RETRY_UPDATE_INTERVAL_MS
+        if (!recentlyUpdated) {
+            onStatus(ImportStatus(url, t(R.string.dl_atualizando_o_baixador), 0, mediaTitle = hint?.title.orEmpty()))
+            synchronized(ENGINE_LOCK) {
+                runCatching {
+                    YoutubeDL.getInstance().updateYoutubeDL(context, YoutubeDL.UpdateChannel._NIGHTLY)
+                    rememberEngineUpdate()
+                }
             }
-            YtDlpJson.parseInfo(YoutubeDL.getInstance().execute(request, processId).out)
-        }.getOrNull()
-        val info = raw ?: runCatching { YoutubeDL.getInstance().getInfo(url) }.getOrNull()?.let {
-            SourceInfo(
-                title = it.title.orEmpty(),
-                uploader = it.uploader.orEmpty(),
-                uploadDate = it.uploadDate.orEmpty(),
-                thumbnail = it.thumbnail.orEmpty(),
-                durationSec = it.duration,
-            )
         }
-        if (info?.title?.isNotBlank() == true) {
-            onStatus(ImportStatus(url, t(R.string.dl_informacoes_encontradas), 0, mediaTitle = cleanFeaturingText(info.title)))
-        }
-        return info
+        executeDownload(url, destinationTree, processId, onStatus, retry = true, hint = hint, infoJson = null)
     }
 
+    /**
+     * Baixa e salva a música com uma única execução do yt-dlp: ele lê a página (ou usa [infoJson] pronto), imprime as
+     * informações (`-j`) e baixa na sequência. O áudio vem como está no site (M4A/AAC do YouTube, MP3 do SoundCloud),
+     * sem converter: a conversão para MP3 no celular era a parte mais lenta e ainda perdia qualidade. Só um formato
+     * diferente desses dois (raro) é convertido para M4A.
+     */
     private suspend fun executeDownload(
         url: String,
         destinationTree: Uri,
         processId: String,
         onStatus: (ImportStatus) -> Unit,
         retry: Boolean,
-        info: SourceInfo?,
         hint: TrackHint? = null,
+        infoJson: String? = null,
     ): ImportResult {
-        val workDir = File(context.cacheDir, if (retry) "youtube-import-retry" else "youtube-import").apply {
+        // Uma pasta por download: vários correm ao mesmo tempo.
+        val workDir = File(context.cacheDir, "dl-" + processId.replace(Regex("[^A-Za-z0-9_-]"), "_") + if (retry) "-retry" else "").apply {
             deleteRecursively()
             mkdirs()
         }
-        val mediaTitle = cleanFeaturingText(info?.title.orEmpty())
+        var liveInfo: SourceInfo? = null
+        var mediaTitle = cleanFeaturingText(hint?.title.orEmpty())
 
-        val request = YoutubeDLRequest(url).apply {
+        val savedInfo = infoJson?.takeIf { YtDlpJson.hasFormats(it) }?.let { json ->
+            File(workDir, "info.json").apply { writeText(json) }
+        }
+        val request = (if (savedInfo != null) YoutubeDLRequest(emptyList<String>()) else YoutubeDLRequest(url)).apply {
+            if (savedInfo != null) addOption("--load-info-json", savedInfo.absolutePath)
             addOption("--no-playlist")
             addOption("--no-mtime")
             addOption("--no-warnings")
-            addOption("--retries", "2")
-            addOption("--fragment-retries", "2")
-            addOption("-f", "bestaudio/best")
+            addOption("--retries", "3")
+            addOption("--fragment-retries", "3")
+            // Formatos em pedaços (HLS/DASH) baixam 4 partes por vez.
+            addOption("--concurrent-fragments", "4")
+            addOption("-f", "ba[ext=m4a]/ba[ext=mp3]/ba/b")
             addOption("-x")
-            addOption("--audio-format", "mp3")
+            // MP3 e M4A ficam como vieram (sem recodificar); qualquer outro vira M4A.
+            addOption("--audio-format", "mp3>mp3/m4a>m4a/m4a")
             addOption("--audio-quality", "0")
             addOption("--embed-metadata")
+            // Informações e download na mesma execução (antes eram duas: uma só para ler o título).
+            addOption("-j")
+            addOption("--no-simulate")
+            addOption("--progress")
             addOption("-o", File(workDir, "%(autonumber)s.%(ext)s").absolutePath)
         }
 
-        YoutubeDL.getInstance().execute(request, processId) { progress, eta, line ->
+        val response = YoutubeDL.getInstance().execute(request, processId) { progress, eta, line ->
+            if (line.startsWith("{")) {
+                // A linha de informações chega antes do download: já dá o nome da música para a notificação.
+                YtDlpJson.parseInfo(line)?.let { found ->
+                    liveInfo = found
+                    if (hint == null && found.title.isNotBlank()) mediaTitle = cleanFeaturingText(found.title)
+                }
+                onStatus(ImportStatus(url, t(R.string.dl_preparando_audio), 0, mediaTitle = mediaTitle))
+                return@execute
+            }
             val percent = progress.toInt().coerceIn(0, 100)
-            onStatus(
-                ImportStatus(
-                    url = url,
-                    message = normalizeProgressLine(line, eta),
-                    progress = percent,
-                    mediaTitle = mediaTitle,
-                )
-            )
+            onStatus(ImportStatus(url = url, message = normalizeProgressLine(line, eta), progress = percent, mediaTitle = mediaTitle))
         }
 
         currentCoroutineContext().ensureActive()
+        val info = mergeHint(YtDlpJson.parseInfo(response.out) ?: liveInfo, hint)
+        if (mediaTitle.isBlank()) mediaTitle = cleanFeaturingText(info?.title.orEmpty())
         val output = workDir.listFiles()
-            ?.filter { it.isFile && it.extension.equals("mp3", ignoreCase = true) }
-            ?.maxByOrNull { it.lastModified() }
+            ?.filter { it.isFile && it.extension.lowercase(Locale.ROOT) in AUDIO_EXTENSIONS }
+            ?.maxByOrNull { it.length() }
             ?: error(t(R.string.dl_o_mp3_final_nao_foi))
 
         var label = mediaTitle
@@ -211,7 +213,6 @@ class YoutubeImportManager(private val context: Context) {
         val savedName = copyIntoTree(cleanOutput, destinationTree)
         val relPath = "${MigrationPlanner.SONGS_DIR}/$savedName"
         scanPrimaryTreeFile(destinationTree, relPath)
-        output.delete()
         workDir.deleteRecursively()
         return ImportResult(savedName, relPath, label.ifBlank { savedName })
     }
@@ -269,8 +270,11 @@ class YoutubeImportManager(private val context: Context) {
         // 1) YouTube Music: a busca rápida não traz duração nem artista, então pede os detalhes dos 3 primeiros
         //    resultados (o yt-dlp lê os três no mesmo processo).
         val musicSearch = "https://music.youtube.com/search?q=${java.net.URLEncoder.encode(query, "UTF-8")}#songs"
-        TrackMatcher.best(hint, search(musicSearch, processId, limit = 3, detailed = true), MatchSource.YT_MUSIC)
-            ?.let { return@withContext FoundTrack(it.url, MatchSource.YT_MUSIC) }
+        val detailed = searchWithInfo(musicSearch, processId, limit = 3, detailed = true)
+        TrackMatcher.best(hint, detailed.map { it.first }, MatchSource.YT_MUSIC)?.let { best ->
+            val json = detailed.firstOrNull { it.first == best }?.second
+            return@withContext FoundTrack(best.url, MatchSource.YT_MUSIC, json)
+        }
         // 2) YouTube e 3) SoundCloud: a busca rápida já traz duração e canal.
         for ((prefix, source) in listOf("ytsearch6:" to MatchSource.YOUTUBE, "scsearch6:" to MatchSource.SOUNDCLOUD)) {
             currentCoroutineContext().ensureActive()
@@ -280,14 +284,17 @@ class YoutubeImportManager(private val context: Context) {
         null
     }
 
-    private fun search(target: String, processId: String, limit: Int, detailed: Boolean = false): List<SearchHit> = runCatching {
+    private fun search(target: String, processId: String, limit: Int): List<SearchHit> =
+        searchWithInfo(target, processId, limit, detailed = false).map { it.first }
+
+    private fun searchWithInfo(target: String, processId: String, limit: Int, detailed: Boolean): List<Pair<SearchHit, String>> = runCatching {
         val request = YoutubeDLRequest(target).apply {
             addOption("-J")
             if (!detailed) addOption("--flat-playlist")
             addOption("--no-warnings")
             addOption("--playlist-end", limit.toString())
         }
-        YtDlpJson.parseSearch(YoutubeDL.getInstance().execute(request, processId).out)
+        YtDlpJson.parseSearchWithInfo(YoutubeDL.getInstance().execute(request, processId).out)
     }.getOrDefault(emptyList())
 
     /** Baixa a imagem do vídeo e devolve em JPEG, ou null se não der. */
@@ -321,7 +328,7 @@ class YoutubeImportManager(private val context: Context) {
 
     private fun renamedOutputFile(source: File, title: String): File {
         val baseTitle = sanitizeFileName(cleanFeaturingText(title).ifBlank { source.nameWithoutExtension })
-        val target = File(source.parentFile, "$baseTitle.mp3")
+        val target = File(source.parentFile, "$baseTitle.${source.extension.lowercase(Locale.ROOT)}")
         if (target.absolutePath == source.absolutePath) return source
         if (target.exists()) target.delete()
         return if (source.renameTo(target)) target else source
@@ -343,7 +350,7 @@ class YoutubeImportManager(private val context: Context) {
         return result.replace(Regex("\\s+"), " ").trim()
     }
 
-    private fun updateEngineIfNeeded(url: String, onStatus: (ImportStatus) -> Unit) {
+    private fun updateEngineIfNeeded(url: String, onStatus: (ImportStatus) -> Unit): Unit = synchronized(ENGINE_LOCK) {
         val prefs = context.getSharedPreferences(ShareContract.PREFS, Context.MODE_PRIVATE)
         if (!prefs.getBoolean(ShareContract.PREF_AUTO_UPDATE_DOWNLOADER, true)) return
 
@@ -356,6 +363,7 @@ class YoutubeImportManager(private val context: Context) {
             YoutubeDL.getInstance().updateYoutubeDL(context, YoutubeDL.UpdateChannel._STABLE)
             rememberEngineUpdate()
         }
+        Unit
     }
 
     private fun rememberEngineUpdate() {
@@ -372,7 +380,7 @@ class YoutubeImportManager(private val context: Context) {
         if (line.contains("Sleeping for", ignoreCase = true)) return t(R.string.dl_conectando)
         if (line.contains("Downloading webpage", ignoreCase = true)) return t(R.string.dl_lendo_informacoes)
         if (line.contains("player API", ignoreCase = true)) return t(R.string.dl_preparando_audio)
-        if (line.contains("ExtractAudio", ignoreCase = true)) return t(R.string.dl_convertendo_para_mp3)
+        if (line.contains("ExtractAudio", ignoreCase = true)) return t(R.string.dl_finalizando)
         if (line.contains("Destination", ignoreCase = true)) return t(R.string.dl_preparando_arquivo)
         if (line.contains("Deleting original file", ignoreCase = true)) return t(R.string.dl_finalizando)
         if (line.startsWith("[download]", ignoreCase = true)) return t(R.string.dl_baixando_audio, etaText)
@@ -386,7 +394,9 @@ class YoutubeImportManager(private val context: Context) {
         val resolver = context.contentResolver
         val tree = SafTree(context, treeUri)
         val parentDocId = tree.ensureDir(tree.rootDocId, MigrationPlanner.SONGS_DIR) ?: tree.rootDocId
-        val destinationId = tree.create(parentDocId, "audio/mpeg", source.name)
+        // O tipo segue a extensão (MP3, M4A...), do mesmo jeito que o Android lê o nome do arquivo.
+        val mime = android.webkit.MimeTypeMap.getSingleton().getMimeTypeFromExtension(source.extension.lowercase(Locale.ROOT)) ?: "audio/mpeg"
+        val destinationId = tree.create(parentDocId, mime, source.name)
             ?: error(t(R.string.dl_nao_consegui_salvar_o_arquivo))
         resolver.openOutputStream(tree.docUri(destinationId), "w")!!.use { output ->
             source.inputStream().use { input -> input.copyTo(output) }
@@ -401,12 +411,15 @@ class YoutubeImportManager(private val context: Context) {
             val relative = treeId.removePrefix("primary:").trim('/')
             val base = Environment.getExternalStorageDirectory()
             val file = if (relative.isBlank()) File(base, fileName) else File(File(base, relative), fileName)
-            MediaScannerConnection.scanFile(context, arrayOf(file.absolutePath), arrayOf("audio/mpeg"), null)
+            MediaScannerConnection.scanFile(context, arrayOf(file.absolutePath), null, null)
         }
     }
 
     companion object {
         private const val PREF_ENGINE_UPDATE = "yt_dlp_last_update"
         private const val ENGINE_UPDATE_INTERVAL_MS = 24L * 60L * 60L * 1000L
+        private const val RETRY_UPDATE_INTERVAL_MS = 6L * 60L * 60L * 1000L
+        private val ENGINE_LOCK = Any()
+        private val AUDIO_EXTENSIONS = setOf("m4a", "mp3", "aac", "opus", "ogg", "flac", "wav")
     }
 }

@@ -504,6 +504,7 @@
     <string name="playlist_foto_remover">ลบรูป</string>
     <string name="playlist_foto_ajustar">ปรับรูป</string>
     <string name="playlist_foto_girar">หมุน</string>
+    <string name="git_tempos">\n\nเวลา: เตรียม %1$s บันทึก %2$s ส่ง %3$s</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s เพลย์ลิสต์</item>
     </plurals>

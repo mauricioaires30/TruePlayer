@@ -504,6 +504,7 @@
     <string name="playlist_foto_remover">사진 삭제</string>
     <string name="playlist_foto_ajustar">사진 조정</string>
     <string name="playlist_foto_girar">회전</string>
+    <string name="git_tempos">\n\n소요 시간: 준비 %1$s, 기록 %2$s, 전송 %3$s.</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+재생목록 %1$s개</item>
     </plurals>

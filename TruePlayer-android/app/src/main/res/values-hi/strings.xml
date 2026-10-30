@@ -504,6 +504,7 @@
     <string name="playlist_foto_remover">फ़ोटो हटाएँ</string>
     <string name="playlist_foto_ajustar">फ़ोटो एडजस्ट करें</string>
     <string name="playlist_foto_girar">घुमाएँ</string>
+    <string name="git_tempos">\n\nसमय: तैयारी %1$s, सहेजना %2$s, भेजना %3$s।</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s प्लेलिस्ट</item>
         <item quantity="other">+%1$s प्लेलिस्ट</item>

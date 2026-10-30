@@ -310,6 +310,12 @@ object GitController {
         else -> t(R.string.git_em_trueplayer_covers, tp(R.plurals.n_capas_salvas, covers.written))
     }
 
+    /** "4 s", "2 min 05 s". */
+    private fun elapsed(ms: Long): String {
+        val seconds = (ms / 1000).coerceAtLeast(0)
+        return if (seconds < 60) "$seconds s" else "${seconds / 60} min ${(seconds % 60).toString().padStart(2, '0')} s"
+    }
+
     private fun largeFilesNote(large: List<String>) =
         if (large.isEmpty()) "" else t(R.string.git_acima_de_100_mb_o, tp(R.plurals.n_arquivos, large.size), large.take(3).joinToString(", "))
 
@@ -347,6 +353,8 @@ object GitController {
                     }
                 }
 
+                // Tempo de cada etapa, mostrado no fim: se algo ficar lento, dá para ver onde.
+                val startedAt = android.os.SystemClock.elapsedRealtime()
                 // Estatísticas e configurações vão no commit: grava a versão mais recente antes de olhar o que mudou.
                 runCatching { PlayStatsState.flushNow(app) }
                 runCatching { SettingsBackup.writeCurrent(app) }
@@ -356,8 +364,10 @@ object GitController {
                 // Arquivos grandes demais ficam de fora sem mexer no .gitignore do usuário (lista local em .git/info/exclude).
                 val large = GitManager.tooLarge(dir, changes)
                 GitManager.addLocalExclude(dir, large)
+                val preparedAt = android.os.SystemClock.elapsedRealtime()
                 show(2, steps, t(R.string.git_registrando, tp(R.plurals.n_arquivos, changes.size)))
-                val skipped = GitManager.commitAll(dir, message.ifBlank { t(R.string.git_atualizacao_da_pasta) }, name.trim(), email.trim(), monitor(2, steps))
+                val skipped = GitManager.commitAll(dir, message.ifBlank { t(R.string.git_atualizacao_da_pasta) }, name.trim(), email.trim(), monitor(2, steps), known = changes)
+                val committedAt = android.os.SystemClock.elapsedRealtime()
 
                 var pushed = false
                 if (push) {
@@ -366,7 +376,9 @@ object GitController {
                     GitManager.push(dir, GitManager.remoteUrl(dir).orEmpty(), sendUser, sendSecret, monitor(3, steps), replace)
                     pushed = true
                 }
-                (if (pushed) (if (replace) t(R.string.git_commit_feito_e_enviado_o) else t(R.string.git_commit_feito_e_enviado_ao)) else t(R.string.git_commit_feito)) + skippedNote(skipped) + coversNote(covers) + largeFilesNote(large)
+                val doneAt = android.os.SystemClock.elapsedRealtime()
+                val times = t(R.string.git_tempos, elapsed(preparedAt - startedAt), elapsed(committedAt - preparedAt), if (pushed) elapsed(doneAt - committedAt) else "—")
+                (if (pushed) (if (replace) t(R.string.git_commit_feito_e_enviado_o) else t(R.string.git_commit_feito_e_enviado_ao)) else t(R.string.git_commit_feito)) + skippedNote(skipped) + coversNote(covers) + largeFilesNote(large) + times
             }
             finishOrAsk(outcome, app) { commit(app, message, name, email, push, token, remoteUrl, replace = true) }
         }

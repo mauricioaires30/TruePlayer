@@ -23,7 +23,7 @@ internal object CoverExport {
      * Grava só o que ainda não existe, no máximo [limit] por vez, para o commit não demorar demais.
      * Nunca apaga nem substitui uma capa que já está na pasta.
      */
-    fun export(context: Context, dir: File, tracks: List<AudioTrack>, limit: Int = 300, onProgress: (done: Int, total: Int) -> Unit = { _, _ -> }): Result {
+    fun export(context: Context, dir: File, tracks: List<AudioTrack>, limit: Int = 300, budgetMs: Long = 20_000L, onProgress: (done: Int, total: Int) -> Unit = { _, _ -> }): Result {
         val groups = CoverNames.firstTrackPerCover(tracks)
         if (groups.isEmpty()) return Result(0, 0, 0)
         val coversDir = File(dir, "${MigrationPlanner.META_DIR}/$DIR")
@@ -34,7 +34,12 @@ internal object CoverExport {
         val pending = groups.filterKeys { it !in existing && it !in withoutCover }.entries.toList()
         val batch = pending.take(limit)
         var written = 0
+        var tried = 0
+        // Ler a capa de dentro de cada música é lento: no máximo [budgetMs] por commit, o resto fica para o próximo.
+        val deadline = System.currentTimeMillis() + budgetMs
         batch.forEachIndexed { index, (key, group) ->
+            if (System.currentTimeMillis() > deadline) return@forEachIndexed
+            tried++
             onProgress(index, batch.size)
             val bytes = group.firstNotNullOfOrNull { track -> embeddedPicture(context, track) }
             if (bytes == null) {
@@ -51,7 +56,7 @@ internal object CoverExport {
         onProgress(batch.size, batch.size)
         prefs.edit().putStringSet("none", withoutCover).apply()
         // "Faltando" são só as que o limite deixou para o próximo commit.
-        return Result(written, (pending.size - batch.size).coerceAtLeast(0), groups.size)
+        return Result(written, (pending.size - tried).coerceAtLeast(0), groups.size)
     }
 
     private fun embeddedPicture(context: Context, track: AudioTrack): ByteArray? =

@@ -174,6 +174,15 @@ internal class PlaylistStore(private val context: Context) {
         mutate(name) { it.copy(entries = it.entries + entries) }
     }
 
+    /** Põe [entries] na posição [index] (ou no fim, se a playlist for menor). */
+    fun insertEntries(name: String, entries: List<PlaylistEntry>, index: Int) {
+        if (entries.isEmpty()) return
+        mutate(name) { stored ->
+            val at = index.coerceIn(0, stored.entries.size)
+            stored.copy(entries = stored.entries.take(at) + entries + stored.entries.drop(at))
+        }
+    }
+
     /** Nome que ainda não existe: "Treino" -> "Treino (2)". */
     fun uniqueNameFor(base: String): String = uniqueName(base.trim().ifBlank { t(R.string.playlist) })
 

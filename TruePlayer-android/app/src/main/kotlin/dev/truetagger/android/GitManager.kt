@@ -179,6 +179,14 @@ internal object GitManager {
         // MP3/FLAC já são comprimidos: tentar de novo não economiza nada e deixa commit e envio bem mais lentos.
         config.setInt("core", null, "compression", 0)
         config.setInt("pack", null, "compression", 0)
+        // No armazenamento do Android a hora dos arquivos pode variar em frações de segundo entre leituras. Com a
+        // comparação completa o JGit achava que a música mudou e relia o arquivo inteiro para conferir (gigabytes a
+        // cada commit). Basta tamanho + segundos; uma edição de tag muda pelo menos um dos dois.
+        config.setString("core", null, "checkstat", "minimal")
+        config.setBoolean("core", null, "trustctime", false)
+        // Músicas não viram delta umas das outras: não procura semelhança entre elas.
+        config.setInt("pack", null, "window", 0)
+        config.setInt("pack", null, "depth", 0)
     }
 
     fun hasRepo(dir: File) = File(dir, ".git").exists()
@@ -266,7 +274,7 @@ internal object GitManager {
      * Registra tudo que mudou. Com [monitor] mostra o andamento e, se os arquivos novos passam de
      * [maxPartBytes], divide em vários commits ("... (parte 2 de 3)") para que cada envio caiba no limite do GitHub.
      */
-    fun commitAll(dir: File, message: String, name: String, email: String, monitor: ProgressMonitor? = null, maxPartBytes: Long = MAX_PART_BYTES): List<String> {
+    fun commitAll(dir: File, message: String, name: String, email: String, monitor: ProgressMonitor? = null, maxPartBytes: Long = MAX_PART_BYTES, known: List<GitChange>? = null): List<String> {
         val skipped = ArrayList<String>()
         openRepo(dir).use { git ->
             val author = PersonIdent(name, email)
@@ -276,7 +284,8 @@ internal object GitManager {
                 git.commit().setMessage(message).setAuthor(author).setCommitter(author).setAllowEmpty(false).call()
                 return skipped
             }
-            val paths = status(dir).filter { it.kind != GitChange.Kind.REMOVED }.map { it.path }.distinct()
+            // [known]: o que mudou já foi conferido pouco antes; conferir de novo era outra passada na pasta inteira.
+            val paths = (known ?: status(dir)).filter { it.kind != GitChange.Kind.REMOVED }.map { it.path }.distinct()
             val parts = splitBySize(paths.map { it to File(dir, it).length() }, maxPartBytes)
             // Os arquivos que sumiram entram no primeiro commit.
             git.add().setUpdate(true).addFilepattern(".").call()
