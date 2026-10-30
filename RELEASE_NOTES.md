@@ -1,85 +1,64 @@
-## TruePlayer 1.18.1
+## TruePlayer 1.18.2
 
 ### English [en]
-- The play-all button is no longer purple.
-- In the light theme, selected buttons and filters (Minutes / Plays, periods) are soft lilac instead of black.
+- New app icon, redrawn clean: sharp play triangle with a music note on a dark background (no more blurry edges). It also works with the phone's themed icons.
 
 ### Português [pt]
-- O botão de tocar a lista não é mais roxo.
-- No tema claro, botões e filtros selecionados (Minutos / Vezes tocadas, períodos) ficam num lilás suave em vez de pretos.
+- Ícone do app novo, redesenhado limpo: triângulo de tocar nítido com uma nota musical sobre fundo escuro (sem bordas borradas). Também funciona com os ícones temáticos do celular.
 
 ### Español [es]
-- El botón de reproducir la lista ya no es morado.
-- En el tema claro, los botones y filtros seleccionados (Minutos / Reproducciones, períodos) son lila suave en lugar de negros.
+- Nuevo icono de la app, redibujado y limpio: triángulo de reproducir nítido con una nota musical sobre fondo oscuro (sin bordes borrosos). También funciona con los iconos temáticos del teléfono.
 
 ### Français [fr]
-- Le bouton de lecture de la liste n'est plus violet.
-- Dans le thème clair, les boutons et filtres sélectionnés (Minutes / Écoutes, périodes) sont d'un lilas doux au lieu de noirs.
+- Nouvelle icône de l'app, redessinée proprement : triangle de lecture net avec une note de musique sur fond sombre (plus de bords flous). Elle fonctionne aussi avec les icônes thématiques du téléphone.
 
 ### Deutsch [de]
-- Die Schaltfläche zum Abspielen der Liste ist nicht mehr lila.
-- Im hellen Design sind ausgewählte Schaltflächen und Filter (Minuten / Wiedergaben, Zeiträume) sanft flieder statt schwarz.
+- Neues App-Symbol, sauber neu gezeichnet: scharfes Abspiel-Dreieck mit Musiknote auf dunklem Hintergrund (keine unscharfen Kanten mehr). Funktioniert auch mit den Themensymbolen des Telefons.
 
 ### Italiano [it]
-- Il pulsante per riprodurre la lista non è più viola.
-- Nel tema chiaro, i pulsanti e i filtri selezionati (Minuti / Ascolti, periodi) sono lilla tenue invece che neri.
+- Nuova icona dell'app, ridisegnata in modo pulito: triangolo play nitido con una nota musicale su sfondo scuro (niente più bordi sfocati). Funziona anche con le icone a tema del telefono.
 
 ### Nederlands [nl]
-- De knop om de lijst af te spelen is niet meer paars.
-- In het lichte thema zijn geselecteerde knoppen en filters (Minuten / Keer afgespeeld, periodes) zacht lila in plaats van zwart.
+- Nieuw app-pictogram, schoon opnieuw getekend: scherpe afspeeldriehoek met een muzieknoot op een donkere achtergrond (geen wazige randen meer). Werkt ook met de themapictogrammen van de telefoon.
 
 ### Svenska [sv]
-- Knappen för att spela listan är inte längre lila.
-- I det ljusa temat är valda knappar och filter (Minuter / Spelningar, perioder) mjukt lila i stället för svarta.
+- Ny appikon, ren omritad: skarp spelatriangel med en musiknot på mörk bakgrund (inga suddiga kanter längre). Fungerar även med telefonens temaikoner.
 
 ### Polski [pl]
-- Przycisk odtwarzania listy nie jest już fioletowy.
-- W jasnym motywie wybrane przyciski i filtry (Minuty / Odtworzenia, okresy) są jasnoliliowe zamiast czarnych.
+- Nowa ikona aplikacji, czysto przerysowana: ostry trójkąt odtwarzania z nutą na ciemnym tle (bez rozmytych krawędzi). Działa też z ikonami tematycznymi telefonu.
 
 ### Türkçe [tr]
-- Listeyi oynat düğmesi artık mor değil.
-- Açık temada seçili düğmeler ve filtreler (Dakika / Dinlenme, dönemler) siyah yerine yumuşak lila.
+- Yeni uygulama simgesi, temiz yeniden çizildi: koyu zeminde net bir oynat üçgeni ve nota (artık bulanık kenar yok). Telefonun tema simgeleriyle de çalışır.
 
 ### Русский [ru]
-- Кнопка воспроизведения списка больше не фиолетовая.
-- В светлой теме выбранные кнопки и фильтры («Минуты / Прослушивания», периоды) мягкого сиреневого цвета вместо чёрного.
+- Новый значок приложения, аккуратно перерисован: чёткий треугольник воспроизведения с нотой на тёмном фоне (без размытых краёв). Работает и с тематическими значками телефона.
 
 ### Українська [uk]
-- Кнопка відтворення списку більше не фіолетова.
-- У світлій темі вибрані кнопки та фільтри («Хвилини / Прослуховування», періоди) м'якого бузкового кольору замість чорного.
+- Новий значок застосунку, акуратно перемальований: чіткий трикутник відтворення з нотою на темному тлі (без розмитих країв). Працює й з тематичними значками телефона.
 
 ### العربية [ar]
-- لم يعد زر تشغيل القائمة بنفسجيًا.
-- في السمة الفاتحة تظهر الأزرار والفلاتر المحددة (الدقائق / مرات التشغيل، الفترات) بلون ليلكي هادئ بدل الأسود.
+- أيقونة تطبيق جديدة بإعادة رسم نظيفة: مثلث تشغيل حاد مع نغمة موسيقية على خلفية داكنة (بلا حواف ضبابية). تعمل أيضًا مع أيقونات السمة في الهاتف.
 
 ### हिन्दी [hi]
-- सूची चलाने वाला बटन अब बैंगनी नहीं है।
-- हल्की थीम में चुने हुए बटन और फ़िल्टर (मिनट / कितनी बार चला, अवधि) काले की जगह हल्के लीलाक रंग के हैं।
+- नया ऐप आइकन, साफ़ तरीके से दोबारा बनाया गया: गहरे बैकग्राउंड पर तीखा प्ले त्रिकोण और संगीत का नोट (धुंधले किनारे नहीं)। फ़ोन के थीम वाले आइकनों के साथ भी काम करता है।
 
 ### Bahasa Indonesia [id]
-- Tombol putar daftar tidak lagi ungu.
-- Di tema terang, tombol dan filter terpilih (Menit / Diputar, periode) berwarna lilac lembut, bukan hitam.
+- Ikon aplikasi baru, digambar ulang bersih: segitiga putar tajam dengan not musik di latar gelap (tidak ada lagi tepi buram). Juga berfungsi dengan ikon bertema ponsel.
 
 ### Tiếng Việt [vi]
-- Nút phát danh sách không còn màu tím.
-- Ở giao diện sáng, nút và bộ lọc được chọn (Phút / Lượt phát, khoảng thời gian) có màu tím nhạt thay vì đen.
+- Biểu tượng ứng dụng mới, vẽ lại sạch sẽ: tam giác phát sắc nét với nốt nhạc trên nền tối (không còn viền mờ). Cũng dùng được với biểu tượng theo chủ đề của điện thoại.
 
 ### ไทย [th]
-- ปุ่มเล่นทั้งรายการไม่เป็นสีม่วงแล้ว
-- ในธีมสว่าง ปุ่มและตัวกรองที่เลือก (นาที / จำนวนครั้ง, ช่วงเวลา) เป็นสีไลแลคอ่อนแทนสีดำ
+- ไอคอนแอปใหม่ วาดใหม่ให้สะอาด: สามเหลี่ยมเล่นคมชัดพร้อมโน้ตดนตรีบนพื้นหลังสีเข้ม (ไม่มีขอบเบลอแล้ว) ใช้กับไอคอนธีมของโทรศัพท์ได้ด้วย
 
 ### 日本語 [ja]
-- リスト全体を再生するボタンは紫ではなくなりました。
-- ライトテーマでは、選択中のボタンやフィルター（再生時間／再生回数、期間）が黒ではなく淡いライラック色になります。
+- アプリアイコンを描き直して、すっきりさせました。暗い背景にくっきりした再生マークと音符です（ぼやけた縁はなくなりました）。端末のテーマアイコンにも対応しています。
 
 ### 한국어 [ko]
-- 목록 전체 재생 버튼이 더 이상 보라색이 아닙니다.
-- 밝은 테마에서 선택한 버튼과 필터(재생 시간/재생 횟수, 기간)가 검은색 대신 연한 라일락색으로 표시됩니다.
+- 앱 아이콘을 깔끔하게 다시 그렸습니다. 어두운 배경에 또렷한 재생 삼각형과 음표입니다(흐릿한 가장자리가 없어졌습니다). 휴대폰의 테마 아이콘도 지원합니다.
 
 ### 简体中文 [zh-CN]
-- 整列表播放按钮不再是紫色。
-- 浅色主题下，选中的按钮和筛选（播放时长 / 播放次数、时间段）改为柔和的淡紫色，而不是黑色。
+- 应用图标重新绘制，更干净：深色背景上清晰的播放三角形和音符（不再有模糊的边缘）。同样支持手机的主题图标。
 
 ### 繁體中文 [zh-TW]
-- 整份清單播放按鈕不再是紫色。
-- 淺色主題下，選中的按鈕和篩選（播放時間 / 播放次數、時間範圍）改為柔和的淡紫色，而不是黑色。
+- 應用程式圖示重新繪製，更乾淨：深色背景上清晰的播放三角形和音符（不再有模糊的邊緣）。同樣支援手機的主題圖示。
