@@ -102,22 +102,22 @@ internal object UiTokens {
     val reorderControlsWidth = 32.dp
 
     // ---- Controles --------------------------------------------------------
-    val controlHeight = 44.dp
-    val searchHeight = 46.dp
-    val selectionRowHeight = 44.dp
-    val toolbarIconButtonSize = 38.dp
-    val iconButtonSize = 40.dp
-    val smallIconButtonSize = 32.dp
-    val primaryIconSize = 20.dp
-    val smallIconSize = 18.dp
+    val controlHeight = 48.dp
+    val searchHeight = 48.dp
+    val selectionRowHeight = 48.dp
+    val toolbarIconButtonSize = 42.dp
+    val iconButtonSize = 44.dp
+    val smallIconButtonSize = 36.dp
+    val primaryIconSize = 24.dp
+    val smallIconSize = 20.dp
     val buttonContentPadding = 10.dp
     val buttonRadius = space6                 // 24: botões em pílula
     val fieldRadius = 10.dp                   // campos de texto e busca
 
     // ---- Barras e player --------------------------------------------------
-    val bottomBarHeight = 60.dp
-    val bottomBarIconSize = 20.dp
-    val bottomBarLabelSize = 10.sp
+    val bottomBarHeight = 68.dp
+    val bottomBarIconSize = 22.dp
+    val bottomBarLabelSize = 12.sp
     val miniPlayerHeight = 102.dp
     val miniPlayerArtworkSize = 56.dp
 
@@ -186,10 +186,10 @@ internal fun CompactBottomBar(
                         maxLines = 1,
                         style = LocalTextStyle.current.copy(
                             color = tint,
-                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         ),
-                        autoSize = TextAutoSize.StepBased(minFontSize = 7.sp, maxFontSize = UiTokens.bottomBarLabelSize, stepSize = 0.5.sp),
+                        autoSize = TextAutoSize.StepBased(minFontSize = 9.sp, maxFontSize = UiTokens.bottomBarLabelSize, stepSize = 0.5.sp),
                     )
                 }
             }

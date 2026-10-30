@@ -500,6 +500,8 @@
     <string name="dl_spotify_nao_li">Не вдалося прочитати посилання Spotify</string>
     <string name="dl_spotify_confira">Переконайтеся, що це відкритий трек, альбом або плейлист.</string>
     <string name="dl_album_baixado">Альбом завантажено</string>
+    <string name="playlist_foto_alterar">Змінити фото</string>
+    <string name="playlist_foto_remover">Видалити фото</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s плейлист</item>
         <item quantity="few">+%1$s плейлисти</item>

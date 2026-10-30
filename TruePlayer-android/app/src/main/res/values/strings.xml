@@ -501,6 +501,8 @@
     <string name="dl_spotify_nao_li">Couldn\'t read the Spotify link</string>
     <string name="dl_spotify_confira">Check that it\'s a public song, album or playlist.</string>
     <string name="dl_album_baixado">Album downloaded</string>
+    <string name="playlist_foto_alterar">Change photo</string>
+    <string name="playlist_foto_remover">Remove photo</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s playlist</item>
         <item quantity="other">+%1$s playlists</item>

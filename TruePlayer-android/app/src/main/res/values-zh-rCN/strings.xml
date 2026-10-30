@@ -500,6 +500,8 @@
     <string name="dl_spotify_nao_li">无法读取 Spotify 链接</string>
     <string name="dl_spotify_confira">请确认这是公开的歌曲、专辑或播放列表。</string>
     <string name="dl_album_baixado">专辑已下载</string>
+    <string name="playlist_foto_alterar">更换照片</string>
+    <string name="playlist_foto_remover">移除照片</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s个播放列表</item>
     </plurals>

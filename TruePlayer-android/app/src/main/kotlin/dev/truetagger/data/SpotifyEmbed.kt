@@ -41,7 +41,7 @@ data class TrackHint(
 }
 
 /** Uma música, um álbum ou uma playlist do Spotify já lidos. [tracks] vem na ordem original. */
-data class SpotifyCollection(val kind: SpotifyKind, val name: String, val tracks: List<TrackHint>, val ids: List<String>)
+data class SpotifyCollection(val kind: SpotifyKind, val name: String, val tracks: List<TrackHint>, val ids: List<String>, val coverUrl: String = "")
 
 object SpotifyLinks {
     private val HOSTS = setOf("open.spotify.com", "play.spotify.com")
@@ -82,6 +82,14 @@ object SpotifyEmbed {
     private fun clean(text: String) = text.replace(' ', ' ').replace(Regex("\\s+"), " ").trim()
 
     private fun splitArtists(line: String): List<String> = clean(line).split(',').map { it.trim() }.filter { it.isNotEmpty() }
+
+    /** A maior imagem do álbum ou da playlist: a capa nas fontes, ou a maior da identidade visual. */
+    private fun coverOf(entity: JsonObject): String {
+        val sources = (entity["coverArt"].obj()?.get("sources") as? JsonArray).orEmpty().mapNotNull { it.obj() }
+        val visual = (entity["visualIdentity"].obj()?.get("image") as? JsonArray).orEmpty().mapNotNull { it.obj() }
+        return (sources + visual).filter { it["url"].text().startsWith("http") }
+            .maxByOrNull { maxOf(it["width"].number(), it["maxWidth"].number()) }?.get("url").text()
+    }
 
     fun parse(html: String): SpotifyCollection? {
         val raw = NEXT_DATA.find(html)?.groupValues?.get(1) ?: return null
@@ -125,7 +133,7 @@ object SpotifyEmbed {
         }
         if (tracks.isEmpty()) return null
         val ids = items.map { trackId(it["uri"].text(), "") }
-        return SpotifyCollection(kind, name.ifBlank { if (kind == SpotifyKind.ALBUM) "Album" else "Playlist" }, tracks, ids)
+        return SpotifyCollection(kind, name.ifBlank { if (kind == SpotifyKind.ALBUM) "Album" else "Playlist" }, tracks, ids, coverOf(entity))
     }
 
     /** "spotify:track:ID" -> "ID". */

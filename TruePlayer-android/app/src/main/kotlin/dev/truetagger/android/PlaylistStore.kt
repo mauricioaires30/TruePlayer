@@ -180,6 +180,7 @@ internal class PlaylistStore(private val context: Context) {
     fun delete(name: String) {
         val current = loadStored()
         save(current.filterNot { it.name == name })
+        PlaylistCovers.remove(context, name)
         PlaylistFolderSync.scheduleTrash(context, name)
     }
 
@@ -188,6 +189,7 @@ internal class PlaylistStore(private val context: Context) {
         val items = loadStored()
         if (clean.isBlank() || oldName == clean || items.any { it.name != oldName && it.name.equals(clean, true) } || items.none { it.name == oldName }) return false
         save(items.map { if (it.name == oldName) it.copy(name = clean) else it })
+        PlaylistCovers.rename(context, oldName, clean)
         PlaylistFolderSync.scheduleTrash(context, oldName)
         return true
     }

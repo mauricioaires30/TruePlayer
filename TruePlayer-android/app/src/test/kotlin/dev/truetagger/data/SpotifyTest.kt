@@ -159,4 +159,27 @@ class SpotifyTest {
         val cover = SearchHit("u", "Housewife", 208, "Release - Topic", artist = "Xtina Louise, Fran Garro")
         assertNull(TrackMatcher.best(housewife, listOf(cover), MatchSource.YT_MUSIC))
     }
+
+    @Test fun playlistCoverIsTheLargestImageOfTheEmbed() {
+        val collection = SpotifyEmbed.parse(
+            page("""{"type":"playlist","name":"Treino","coverArt":{"sources":[{"url":"https://i.scdn.co/image/small","width":64},{"url":"https://i.scdn.co/image/big","width":640}]},
+                "trackList":[{"uri":"spotify:track:AAAAAAAAAAAAAAAAAAAAAA","title":"Housewife","subtitle":"Tate McRae","duration":1,"entityType":"track"}]}""")
+        )!!
+        assertEquals("https://i.scdn.co/image/big", collection.coverUrl)
+    }
+
+    @Test fun albumCoverFallsBackToTheVisualIdentityImages() {
+        val collection = SpotifyEmbed.parse(
+            page("""{"type":"album","name":"A","subtitle":"B","visualIdentity":{"image":[{"url":"https://x/300","maxWidth":300},{"url":"https://x/640","maxWidth":640}]},
+                "trackList":[{"uri":"spotify:track:AAAAAAAAAAAAAAAAAAAAAA","title":"T","subtitle":"B","duration":1,"entityType":"track"}]}""")
+        )!!
+        assertEquals("https://x/640", collection.coverUrl)
+    }
+
+    @Test fun listedPlaylistsKeepTheirPicture() {
+        val json = """{"title":"Popular","thumbnails":[{"url":"https://i/small.jpg","width":168},{"url":"https://i/large.jpg","width":246}],
+            "entries":[{"id":"a","title":"x","url":"https://www.youtube.com/watch?v=a"}]}"""
+        assertEquals("https://i/large.jpg", YtDlpJson.parseListing(json)!!.thumbnail)
+        assertEquals("https://i/only.jpg", YtDlpJson.parseListing("""{"title":"P","thumbnail":"https://i/only.jpg","entries":[{"id":"a","url":"https://youtu.be/a"}]}""")!!.thumbnail)
+    }
 }

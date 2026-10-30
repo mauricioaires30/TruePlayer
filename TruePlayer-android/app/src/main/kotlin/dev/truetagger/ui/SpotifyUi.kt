@@ -1,5 +1,6 @@
 package dev.truetagger.ui
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +16,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.QueueMusic
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Shuffle
 import androidx.compose.material3.FilledIconButton
@@ -24,17 +26,24 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import dev.truetagger.android.R
 import dev.truetagger.android.t
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlin.math.abs
 
 /*
@@ -129,6 +138,33 @@ internal fun GenreTile(name: String, songs: String, onClick: () -> Unit, modifie
     ) {
         Text(name, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = Color.White, maxLines = 2, overflow = TextOverflow.Ellipsis)
         Text(songs, style = MaterialTheme.typography.labelMedium, color = Color.White.copy(alpha = 0.85f), maxLines = 1)
+    }
+}
+
+/** Foto da playlist (escolhida ou vinda do link), ou null se ela não tem. Recarrega quando a foto muda. */
+@Composable
+internal fun rememberPlaylistCover(name: String): android.graphics.Bitmap? {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val revision by dev.truetagger.android.PlaylistCovers.revision.collectAsState()
+    val bitmap by produceState<android.graphics.Bitmap?>(null, name, revision) {
+        value = withContext(Dispatchers.IO) { dev.truetagger.android.PlaylistCovers.load(context, name) }
+    }
+    return bitmap
+}
+
+/** Quadrado da playlist: a foto dela ou, sem foto, o quadrado colorido com o ícone. */
+@Composable
+internal fun PlaylistTile(name: String, size: androidx.compose.ui.unit.Dp, modifier: Modifier = Modifier) {
+    val photo = rememberPlaylistCover(name)
+    if (photo != null) {
+        Image(
+            photo.asImageBitmap(),
+            contentDescription = name,
+            modifier = modifier.size(size).clip(RoundedCornerShape(4.dp)),
+            contentScale = ContentScale.Crop,
+        )
+    } else {
+        ColorTile(name, size, Icons.AutoMirrored.Rounded.QueueMusic, modifier)
     }
 }
 

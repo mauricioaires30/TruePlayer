@@ -500,6 +500,8 @@
     <string name="dl_spotify_nao_li">Spotify bağlantısı okunamadı</string>
     <string name="dl_spotify_confira">Herkese açık bir şarkı, albüm veya liste olduğundan emin olun.</string>
     <string name="dl_album_baixado">Albüm indirildi</string>
+    <string name="playlist_foto_alterar">Fotoğrafı değiştir</string>
+    <string name="playlist_foto_remover">Fotoğrafı kaldır</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s çalma listesi</item>
         <item quantity="other">+%1$s çalma listesi</item>

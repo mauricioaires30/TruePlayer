@@ -13,7 +13,7 @@ import kotlinx.serialization.json.jsonObject
 data class FlatEntry(val url: String, val title: String)
 
 /** Conteúdo de uma playlist, na ordem original. */
-data class FlatPlaylist(val title: String, val entries: List<FlatEntry>)
+data class FlatPlaylist(val title: String, val entries: List<FlatEntry>, val thumbnail: String = "")
 
 /** O que o yt-dlp sabe sobre uma faixa/vídeo. Todos os campos podem vir vazios. */
 data class SourceInfo(
@@ -62,7 +62,12 @@ object YtDlpJson {
         }
         if (items.isEmpty()) return null
         val title = obj["title"].text().ifBlank { obj["playlist_title"].text() }.ifBlank { "Playlist" }
-        return FlatPlaylist(title, items)
+        // Foto da playlist: o campo "thumbnail" ou, se não houver, a maior da lista "thumbnails".
+        val thumbnail = obj["thumbnail"].text().ifBlank {
+            (obj["thumbnails"] as? JsonArray)?.mapNotNull { it as? JsonObject }
+                ?.maxByOrNull { (it["width"] as? JsonPrimitive)?.doubleOrNull ?: 0.0 }?.get("url").text()
+        }
+        return FlatPlaylist(title, items, thumbnail)
     }
 
     /** Resultados de uma busca (`ytsearch`, `scsearch`, busca do YouTube Music), na ordem em que vieram. */

@@ -237,6 +237,8 @@ class YoutubeDownloadService : Service() {
         val store = PlaylistStore(this)
         val name = store.uniqueNameFor(playlist.title)
         store.createWithEntries(name, emptyList())
+        // A foto da playlist do link vira a foto da playlist do app (se não baixar, fica sem foto).
+        PlaylistCovers.setFromUrl(this, name, playlist.thumbnail)
         playlist.entries.forEachIndexed { index, entry ->
             enqueue(queue.add(entry.url, playlist = name, total = playlist.entries.size, position = index + 1))
         }
@@ -282,6 +284,7 @@ class YoutubeDownloadService : Service() {
                 val store = PlaylistStore(this)
                 val name = store.uniqueNameFor(collection.name)
                 store.createWithEntries(name, emptyList())
+                PlaylistCovers.setFromUrl(this, name, collection.coverUrl)
                 if (collection.tracks.size >= SpotifyEmbed.PLAYLIST_LIMIT) truncated.add(name)
                 collection.tracks.forEachIndexed { index, hint ->
                     enqueue(queue.add(trackUrl(index), playlist = name, total = collection.tracks.size, position = index + 1, kind = DownloadKind.PLAYLIST, hint = hint))

@@ -500,6 +500,8 @@
     <string name="dl_spotify_nao_li">Não consegui ler o link do Spotify</string>
     <string name="dl_spotify_confira">Confira se é uma música, álbum ou playlist pública.</string>
     <string name="dl_album_baixado">Álbum baixado</string>
+    <string name="playlist_foto_alterar">Alterar foto</string>
+    <string name="playlist_foto_remover">Remover foto</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s playlist</item>
         <item quantity="many">+%1$s playlists</item>

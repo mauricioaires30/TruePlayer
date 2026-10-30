@@ -500,6 +500,8 @@
     <string name="dl_spotify_nao_li">Không đọc được liên kết Spotify</string>
     <string name="dl_spotify_confira">Hãy kiểm tra đó là bài hát, album hoặc danh sách phát công khai.</string>
     <string name="dl_album_baixado">Đã tải album</string>
+    <string name="playlist_foto_alterar">Đổi ảnh</string>
+    <string name="playlist_foto_remover">Xóa ảnh</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s danh sách phát</item>
     </plurals>

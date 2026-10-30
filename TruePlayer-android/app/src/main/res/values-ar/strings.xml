@@ -500,6 +500,8 @@
     <string name="dl_spotify_nao_li">تعذّرت قراءة رابط Spotify</string>
     <string name="dl_spotify_confira">تأكد من أنه مقطع أو ألبوم أو قائمة عامة.</string>
     <string name="dl_album_baixado">تم تنزيل الألبوم</string>
+    <string name="playlist_foto_alterar">تغيير الصورة</string>
+    <string name="playlist_foto_remover">إزالة الصورة</string>
     <plurals name="commit_playlists_added">
         <item quantity="zero">لا قوائم تشغيل جديدة</item>
         <item quantity="one">+قائمة تشغيل واحدة</item>

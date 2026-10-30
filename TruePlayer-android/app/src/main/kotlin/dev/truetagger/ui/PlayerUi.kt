@@ -38,6 +38,8 @@ import java.net.URL
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
+import dev.truetagger.android.PlaylistCovers
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
@@ -318,11 +320,23 @@ private fun StatValue.text(metric: StatsMetric): String =
 private fun StatsMetricToggle(metric: StatsMetric, onChange: (StatsMetric) -> Unit) {
     SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(bottom = UiTokens.space2)) {
         StatsMetric.entries.forEachIndexed { index, m ->
+            val on = m == metric
             SegmentedButton(
-                selected = m == metric,
+                selected = on,
                 onClick = { onChange(m) },
                 shape = SegmentedButtonDefaults.itemShape(index, StatsMetric.entries.size),
-                label = { Text(t(if (m == StatsMetric.MINUTES) R.string.stats_minutes else R.string.stats_plays), maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                // Sem o visto: o botão selecionado fica claro (invertido) e os outros apagados.
+                icon = {},
+                colors = SegmentedButtonDefaults.colors(
+                    activeContainerColor = MaterialTheme.colorScheme.onSurface,
+                    activeContentColor = MaterialTheme.colorScheme.background,
+                    activeBorderColor = Color.Transparent,
+                    inactiveContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    inactiveBorderColor = Color.Transparent,
+                ),
+                modifier = Modifier.height(UiTokens.controlHeight),
+                label = { Text(t(if (m == StatsMetric.MINUTES) R.string.stats_minutes else R.string.stats_plays), style = MaterialTheme.typography.labelLarge, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Ellipsis) },
             )
         }
     }
@@ -339,14 +353,15 @@ private fun StatsRangeChips(range: StatsRange, onChange: (StatsRange) -> Unit) {
             FilterChip(
                 selected = r == range,
                 onClick = { onChange(r) },
-                label = { Text(rangeLabel(r)) },
+                label = { Text(rangeLabel(r), style = MaterialTheme.typography.labelLarge, fontWeight = if (r == range) FontWeight.Bold else FontWeight.Normal) },
                 shape = RoundedCornerShape(UiTokens.buttonRadius),
                 border = null,
+                modifier = Modifier.height(36.dp),
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    labelColor = MaterialTheme.colorScheme.onSurface,
-                    selectedContainerColor = MaterialTheme.colorScheme.primary,
-                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    selectedContainerColor = MaterialTheme.colorScheme.onSurface,
+                    selectedLabelColor = MaterialTheme.colorScheme.background,
                 ),
             )
         }
@@ -1066,15 +1081,8 @@ private fun MiniPlayer(
                                 IconButton(onClick = onPrevious, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_MAIN_BUTTON)) {
                                     Icon(Icons.Rounded.SkipPrevious, t(R.string.anterior), Modifier.size(28.dp))
                                 }
-                                FilledIconButton(
-                                    onClick = onToggle,
-                                    modifier = Modifier.size(MINI_MAIN_BUTTON),
-                                    colors = IconButtonDefaults.filledIconButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.onSurface,
-                                        contentColor = MaterialTheme.colorScheme.background,
-                                    ),
-                                ) {
-                                    Icon(if (s.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (s.playing) t(R.string.pausar) else t(R.string.reproduzir), Modifier.size(30.dp))
+                                IconButton(onClick = onToggle, modifier = Modifier.size(MINI_MAIN_BUTTON)) {
+                                    Icon(if (s.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (s.playing) t(R.string.pausar) else t(R.string.reproduzir), Modifier.size(42.dp))
                                 }
                                 IconButton(onClick = onNext, modifier = Modifier.size(MINI_SIDE_BUTTON, MINI_MAIN_BUTTON)) {
                                     Icon(Icons.Rounded.SkipNext, t(R.string.proxima), Modifier.size(28.dp))
@@ -1202,11 +1210,10 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
                     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth().padding(vertical = UiTokens.space2)) {
                         IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_SHUFFLE) }, modifier = Modifier.size(UiTokens.iconButtonSize)) { Icon(painterResource(if (s.shuffle) dev.truetagger.android.R.drawable.truetagger_shuffle_on else dev.truetagger.android.R.drawable.truetagger_shuffle_off), t(R.string.aleatorio), modifier = Modifier.size(UiTokens.primaryIconSize + 4.dp), tint = if (s.shuffle) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
                         IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_PREVIOUS) }, modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.SkipPrevious, t(R.string.anterior), Modifier.size(40.dp)) }
-                        FilledIconButton(
+                        IconButton(
                             onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_TOGGLE) },
-                            modifier = Modifier.size(72.dp),
-                            colors = IconButtonDefaults.filledIconButtonColors(containerColor = MaterialTheme.colorScheme.onSurface, contentColor = MaterialTheme.colorScheme.background),
-                        ) { Icon(if (s.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (s.playing) t(R.string.pausar) else t(R.string.reproduzir), Modifier.size(40.dp)) }
+                            modifier = Modifier.size(80.dp),
+                        ) { Icon(if (s.playing) Icons.Rounded.Pause else Icons.Rounded.PlayArrow, if (s.playing) t(R.string.pausar) else t(R.string.reproduzir), Modifier.size(68.dp)) }
                         IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_NEXT) }, modifier = Modifier.size(56.dp)) { Icon(Icons.Rounded.SkipNext, t(R.string.proxima), Modifier.size(40.dp)) }
                         IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_REPEAT) }, modifier = Modifier.size(UiTokens.iconButtonSize)) { Icon(painterResource(if (s.repeat == RepeatMode.ONE) dev.truetagger.android.R.drawable.truetagger_repeat_on else dev.truetagger.android.R.drawable.truetagger_repeat_off), t(R.string.repeticao), modifier = Modifier.size(UiTokens.primaryIconSize + 4.dp), tint = if (s.repeat != RepeatMode.OFF) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
                     }
@@ -1650,20 +1657,38 @@ private fun <T> SortMenuButton(
     onToggleAscending: (() -> Unit)? = null,
 ) {
     Box {
-        IconButton(onClick = { onOpenChange(true) }, modifier = Modifier.size(UiTokens.iconButtonSize)) {
-            Icon(Icons.Rounded.FilterAlt, t(R.string.filtros), modifier = Modifier.size(UiTokens.primaryIconSize))
+        // O botão mostra como a lista está ordenada agora (critério e direção), em vez de um ícone mudo.
+        Row(
+            Modifier
+                .height(UiTokens.controlHeight)
+                .clip(RoundedCornerShape(UiTokens.buttonRadius))
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clickable { onOpenChange(true) }
+                .padding(horizontal = UiTokens.space3),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Rounded.SwapVert, t(R.string.filtros), modifier = Modifier.size(UiTokens.smallIconSize))
+            Spacer(Modifier.width(UiTokens.space1))
+            Text(label(selected), style = MaterialTheme.typography.labelLarge, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 96.dp))
+            if (ascending != null) {
+                Icon(if (ascending) Icons.Rounded.ArrowUpward else Icons.Rounded.ArrowDownward, null, modifier = Modifier.size(UiTokens.smallIconSize))
+            }
         }
         DropdownMenu(expanded = open, onDismissRequest = { onOpenChange(false) }) {
-            Text(title, modifier = Modifier.padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.space2), fontWeight = FontWeight.Bold)
+            Text(title, modifier = Modifier.padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.space2), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
             options.forEach { option ->
+                val on = option == selected
                 DropdownMenuItem(
-                    text = { Text(label(option)) },
+                    text = { Text(label(option), style = MaterialTheme.typography.bodyLarge, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, color = if (on) MaterialTheme.colorScheme.primary else Color.Unspecified) },
+                    trailingIcon = if (on) ({ Icon(Icons.Rounded.Check, null, tint = MaterialTheme.colorScheme.primary) }) else null,
                     onClick = { onSelected(option); onOpenChange(false) },
                 )
             }
             if (ascending != null && onToggleAscending != null) {
+                HorizontalDivider(Modifier.padding(vertical = UiTokens.space1))
                 DropdownMenuItem(
-                    text = { Text(if (ascending) t(R.string.crescente) else t(R.string.decrescente)) },
+                    text = { Text(if (ascending) t(R.string.crescente) else t(R.string.decrescente), style = MaterialTheme.typography.bodyLarge) },
+                    leadingIcon = { Icon(if (ascending) Icons.Rounded.ArrowUpward else Icons.Rounded.ArrowDownward, null) },
                     onClick = { onToggleAscending(); onOpenChange(false) },
                 )
             }
@@ -1694,6 +1719,13 @@ private fun CombinedMostPlayedPlaylistHost(
     var createName by remember { mutableStateOf("") }
     var renaming by remember { mutableStateOf<PlaylistData?>(null) }
     var renameText by remember { mutableStateOf("") }
+    val photoScope = rememberCoroutineScope()
+    var photoTarget by remember { mutableStateOf<String?>(null) }
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        val target = photoTarget
+        photoTarget = null
+        if (uri != null && target != null) photoScope.launch(Dispatchers.IO) { PlaylistCovers.setFromUri(context, target, uri) }
+    }
 
     // A revisão muda sempre que uma reprodução é registrada. Isso força
     // as três categorias a recalcularem juntas, sem depender da identidade
@@ -1738,7 +1770,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                 items(playlists, key = { it.name }) { playlist ->
                                     var expanded by remember(playlist.name) { mutableStateOf(false) }
                                     ListCardRow(onClick = { onOpen(playlist.name) }) {
-                                        ColorTile(playlist.name, UiTokens.songItemArtworkSize, Icons.AutoMirrored.Rounded.QueueMusic)
+                                        PlaylistTile(playlist.name, UiTokens.songItemArtworkSize)
                                         Column(Modifier.weight(1f).padding(horizontal = UiTokens.cardItemHorizontalPadding), verticalArrangement = Arrangement.spacedBy(UiTokens.songItemSpacing)) {
                                             ScrollingText(playlist.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                                             Text(tp(R.plurals.n_musicas, playlist.trackIds.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -1748,6 +1780,14 @@ private fun CombinedMostPlayedPlaylistHost(
                                                 Icon(Icons.Rounded.MoreVert, t(R.string.opcoes), modifier = Modifier.size(UiTokens.primaryIconSize))
                                             }
                                             DropdownMenu(expanded, { expanded = false }) {
+                                                DropdownMenuItem({ Text(t(R.string.playlist_foto_alterar)) }, onClick = {
+                                                    expanded = false
+                                                    photoTarget = playlist.name
+                                                    photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                                })
+                                                if (PlaylistCovers.has(context, playlist.name)) {
+                                                    DropdownMenuItem({ Text(t(R.string.playlist_foto_remover)) }, onClick = { expanded = false; PlaylistCovers.remove(context, playlist.name) })
+                                                }
                                                 DropdownMenuItem({ Text(t(R.string.exportar_m3u)) }, onClick = { expanded = false; onExport(playlist) })
                                                 DropdownMenuItem({ Text(t(R.string.renomear)) }, onClick = { expanded = false; renameText = playlist.name; renaming = playlist })
                                                 DropdownMenuItem({ Text(t(R.string.excluir_2)) }, onClick = { expanded = false; onDelete(playlist.name) })
@@ -2266,7 +2306,7 @@ private fun PlaylistScreen(
             else items(playlists, key = { it.name }) { playlist ->
                 var expanded by remember(playlist.name) { mutableStateOf(false) }
                 ListCardRow(onClick = { onOpen(playlist.name) }) {
-                    ColorTile(playlist.name, UiTokens.songItemArtworkSize, Icons.AutoMirrored.Rounded.QueueMusic)
+                    PlaylistTile(playlist.name, UiTokens.songItemArtworkSize)
                     Column(Modifier.weight(1f).padding(horizontal = UiTokens.cardItemHorizontalPadding), verticalArrangement = Arrangement.spacedBy(UiTokens.songItemSpacing)) {
                         ScrollingText(playlist.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
                         Text(tp(R.plurals.n_musicas, playlist.trackIds.size), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant, maxLines = 1, overflow = TextOverflow.Ellipsis)
@@ -2666,9 +2706,17 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
 
     // Fundo colorido do cabeçalho: cor da capa (álbum, playlist), do destaque (artista) ou do nome (gênero).
     val coverTint = rememberCoverTint(artwork, coverId)
+    val detailContext = LocalContext.current
+    val ownCover = if (type == Detail.PLAYLIST) rememberPlaylistCover(key) else null
+    val ownTint = remember(ownCover) { ownCover?.let(::tintOfBitmap) }
+    val detailScope = rememberCoroutineScope()
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+        if (uri != null) detailScope.launch(Dispatchers.IO) { PlaylistCovers.setFromUri(detailContext, key, uri) }
+    }
     val baseTint = when (type) {
         Detail.GENRE -> genreColor(key)
         Detail.ARTIST -> MaterialTheme.colorScheme.primary
+        Detail.PLAYLIST -> ownTint ?: coverTint ?: MaterialTheme.colorScheme.surfaceVariant
         else -> coverTint ?: MaterialTheme.colorScheme.surfaceVariant
     }
     val backdrop by animateColorAsState(heroBackdropColor(baseTint), label = "heroTint")
@@ -2699,6 +2747,26 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                     cover = when (type) {
                         Detail.GENRE -> null
                         Detail.ARTIST -> ({ ArtistAvatar(key, Modifier.size(DETAIL_COVER)) })
+                        // Playlist: a foto escolhida (ou a do link) e, sem ela, a capa da primeira música; tocar troca a foto.
+                        Detail.PLAYLIST -> ({
+                            Box(
+                                Modifier
+                                    .size(DETAIL_COVER)
+                                    .shadow(20.dp, RoundedCornerShape(4.dp))
+                                    .clip(RoundedCornerShape(4.dp))
+                                    .clickable { photoPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                            ) {
+                                if (ownCover != null) {
+                                    Image(ownCover.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                                } else {
+                                    PlayerArtworkBox(artwork, Modifier.fillMaxSize(), coverId, maxDimension = 768)
+                                }
+                                Box(
+                                    Modifier.align(Alignment.BottomEnd).padding(UiTokens.space2).size(36.dp).background(Color.Black.copy(alpha = 0.55f), androidx.compose.foundation.shape.CircleShape),
+                                    contentAlignment = Alignment.Center,
+                                ) { Icon(Icons.Rounded.Edit, t(R.string.playlist_foto_alterar), tint = Color.White, modifier = Modifier.size(UiTokens.smallIconSize)) }
+                            }
+                        })
                         else -> ({ PlayerArtworkBox(artwork, Modifier.size(DETAIL_COVER).shadow(20.dp, RoundedCornerShape(4.dp)), coverId, maxDimension = 768) })
                     },
                     subtitle = if (type == Detail.ALBUM) ({
@@ -3188,9 +3256,11 @@ private fun AudioTrack.toEditableTags() = EditableTags(title = title.ifBlank { d
 private fun rememberArtworkBitmap(bytes: ByteArray?, uri: String?, maxDimension: Int = 512): Bitmap? {
     val context = LocalContext.current
     val cacheKey = remember(uri, bytes, maxDimension) { uri ?: "bytes:${bytes?.let { System.identityHashCode(it) } ?: 0}:$maxDimension" }
-    val bitmap by produceState<Bitmap?>(initialValue = artworkCache.get(cacheKey), cacheKey) {
-        if (value != null) return@produceState
-        value = withContext(Dispatchers.IO) {
+    // O estado é recriado a cada chave: com produceState o bitmap da música anterior ficava e a nova nunca carregava.
+    var bitmap by remember(cacheKey) { mutableStateOf<Bitmap?>(artworkCache.get(cacheKey)) }
+    LaunchedEffect(cacheKey) {
+        if (bitmap != null) return@LaunchedEffect
+        bitmap = withContext(Dispatchers.IO) {
             val loaded = bytes?.let { raw ->
                 runCatching {
                     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -3234,17 +3304,15 @@ private fun rememberArtworkBitmap(bytes: ByteArray?, uri: String?, maxDimension:
 @Composable
 private fun rememberCoverTint(bytes: ByteArray?, uri: String?): Color? {
     val bitmap = rememberArtworkBitmap(bytes, uri, 96)
-    return remember(bitmap) {
-        bitmap?.let { source ->
-            runCatching {
-                val small = Bitmap.createScaledBitmap(source, 24, 24, true)
-                val pixels = IntArray(24 * 24)
-                small.getPixels(pixels, 0, 24, 0, 0, 24, 24)
-                Color(0xFF000000.toInt() or dev.truetagger.data.dominantRgb(pixels))
-            }.getOrNull()
-        }
-    }
+    return remember(bitmap) { bitmap?.let(::tintOfBitmap) }
 }
+
+private fun tintOfBitmap(source: Bitmap): Color? = runCatching {
+    val small = Bitmap.createScaledBitmap(source, 24, 24, true)
+    val pixels = IntArray(24 * 24)
+    small.getPixels(pixels, 0, 24, 0, 0, 24, 24)
+    Color(0xFF000000.toInt() or dev.truetagger.data.dominantRgb(pixels))
+}.getOrNull()
 
 @Composable
 private fun PlayerArtworkBox(bytes: ByteArray?, modifier: Modifier, uri: String? = null, maxDimension: Int = 512, corner: Dp = 4.dp, onClick: (() -> Unit)? = null) {

@@ -500,6 +500,8 @@
     <string name="dl_spotify_nao_li">無法讀取 Spotify 連結</string>
     <string name="dl_spotify_confira">請確認這是公開的歌曲、專輯或播放清單。</string>
     <string name="dl_album_baixado">專輯已下載</string>
+    <string name="playlist_foto_alterar">更換照片</string>
+    <string name="playlist_foto_remover">移除照片</string>
     <plurals name="commit_playlists_added">
         <item quantity="other">+%1$s個播放清單</item>
     </plurals>

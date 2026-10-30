@@ -500,6 +500,8 @@
     <string name="dl_spotify_nao_li">Spotify-Link konnte nicht gelesen werden</string>
     <string name="dl_spotify_confira">Prüfe, ob es ein öffentlicher Titel, ein Album oder eine Playlist ist.</string>
     <string name="dl_album_baixado">Album heruntergeladen</string>
+    <string name="playlist_foto_alterar">Foto ändern</string>
+    <string name="playlist_foto_remover">Foto entfernen</string>
     <plurals name="commit_playlists_added">
         <item quantity="one">+%1$s Playlist</item>
         <item quantity="other">+%1$s Playlists</item>
