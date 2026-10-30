@@ -55,6 +55,14 @@ class YoutubeImportManager(private val context: Context) {
             ?.forEach { it.deleteRecursively() }
     }
 
+    /**
+     * A biblioteca roda o yt-dlp com `--no-cache-dir` quando o pedido não diz outra coisa, e então cada música baixava
+     * e decifrava de novo o player do YouTube. Uma pasta de cache guarda isso entre as execuções (e entre as 3 vagas).
+     */
+    private fun YoutubeDLRequest.useCache() {
+        addOption("--cache-dir", File(context.cacheDir, "yt-dlp-cache").apply { mkdirs() }.absolutePath)
+    }
+
     /** Lista o conteúdo de uma playlist (YouTube ou SoundCloud). Devolve null se o link não é uma playlist ou falhou. */
     suspend fun listPlaylist(url: String, processId: String, onStatus: (ImportStatus) -> Unit): FlatPlaylist? = withContext(Dispatchers.IO) {
         initEngines()
@@ -65,6 +73,7 @@ class YoutubeImportManager(private val context: Context) {
                 addOption("-J")
                 addOption("--flat-playlist")
                 addOption("--no-warnings")
+                useCache()
             }
             YtDlpJson.parseListing(YoutubeDL.getInstance().execute(request, processId).out)
         }.getOrNull()
@@ -136,6 +145,7 @@ class YoutubeImportManager(private val context: Context) {
         }
         val request = (if (savedInfo != null) YoutubeDLRequest(emptyList<String>()) else YoutubeDLRequest(url)).apply {
             if (savedInfo != null) addOption("--load-info-json", savedInfo.absolutePath)
+            useCache()
             addOption("--no-playlist")
             addOption("--no-mtime")
             addOption("--no-warnings")
@@ -267,13 +277,18 @@ class YoutubeImportManager(private val context: Context) {
         val url = "spotify:${hint.title}"
         onStatus(ImportStatus(url, t(R.string.dl_procurando_a_musica), 0))
 
-        // 1) YouTube Music: a busca rápida não traz duração nem artista, então pede os detalhes dos 3 primeiros
-        //    resultados (o yt-dlp lê os três no mesmo processo).
-        val musicSearch = "https://music.youtube.com/search?q=${java.net.URLEncoder.encode(query, "UTF-8")}#songs"
-        val detailed = searchWithInfo(musicSearch, processId, limit = 3, detailed = true)
-        TrackMatcher.best(hint, detailed.map { it.first }, MatchSource.YT_MUSIC)?.let { best ->
-            val json = detailed.firstOrNull { it.first == best }?.second
-            return@withContext FoundTrack(best.url, MatchSource.YT_MUSIC, json)
+        // 1) YouTube Music: a API do site já traz título, artistas e duração numa requisição só, sem abrir o yt-dlp.
+        val direct = YtMusicClient.search(query)
+        if (direct != null) {
+            TrackMatcher.best(hint, direct, MatchSource.YT_MUSIC)?.let { return@withContext FoundTrack(it.url, MatchSource.YT_MUSIC) }
+        } else {
+            // A API não respondeu (rede ou formato novo): o yt-dlp lê os 3 primeiros resultados, mais devagar.
+            val musicSearch = "https://music.youtube.com/search?q=${java.net.URLEncoder.encode(query, "UTF-8")}#songs"
+            val detailed = searchWithInfo(musicSearch, processId, limit = 3, detailed = true)
+            TrackMatcher.best(hint, detailed.map { it.first }, MatchSource.YT_MUSIC)?.let { best ->
+                val json = detailed.firstOrNull { it.first == best }?.second
+                return@withContext FoundTrack(best.url, MatchSource.YT_MUSIC, json)
+            }
         }
         // 2) YouTube e 3) SoundCloud: a busca rápida já traz duração e canal.
         for ((prefix, source) in listOf("ytsearch6:" to MatchSource.YOUTUBE, "scsearch6:" to MatchSource.SOUNDCLOUD)) {
@@ -293,6 +308,7 @@ class YoutubeImportManager(private val context: Context) {
             if (!detailed) addOption("--flat-playlist")
             addOption("--no-warnings")
             addOption("--playlist-end", limit.toString())
+            useCache()
         }
         YtDlpJson.parseSearchWithInfo(YoutubeDL.getInstance().execute(request, processId).out)
     }.getOrDefault(emptyList())

@@ -211,13 +211,21 @@ class YoutubeDownloadService : Service() {
     private val notificationLock = Any()
     private val slotNotifications = HashMap<Int, Notification>()
     private val slotLastPost = HashMap<Int, Long>()
+    private val slotLastStep = HashMap<Int, String>()
 
     private fun slotNotificationId(slot: Int) = ShareContract.NOTIFICATION_ID + 10 + slot
 
-    private fun post(slot: Int, notification: Notification, force: Boolean = false) = synchronized(notificationLock) {
+    /**
+     * [step] identifica a etapa ("procurando", "baixando"...). Etapa nova aparece na hora; só as atualizações da mesma
+     * etapa (a porcentagem do download) esperam o intervalo de 700 ms. Sem isso a etapa curta que vem logo depois de
+     * outra era descartada e a notificação parecia parada em "Lendo as informações do link".
+     */
+    private fun post(slot: Int, notification: Notification, force: Boolean = false, step: String? = null) = synchronized(notificationLock) {
         val now = android.os.SystemClock.elapsedRealtime()
-        if (!force && now - (slotLastPost[slot] ?: 0L) < 700L) return@synchronized
+        val newStep = step != null && slotLastStep[slot] != step
+        if (!force && !newStep && now - (slotLastPost[slot] ?: 0L) < 700L) return@synchronized
         slotLastPost[slot] = now
+        if (step != null) slotLastStep[slot] = step
         slotNotifications[slot] = notification
         val primary = slotNotifications.keys.min()
         runCatching {
@@ -233,6 +241,7 @@ class YoutubeDownloadService : Service() {
     private fun endSlot(slot: Int) = synchronized(notificationLock) {
         slotNotifications.remove(slot)
         slotLastPost.remove(slot)
+        slotLastStep.remove(slot)
         notificationManager().cancel(slotNotificationId(slot))
         val primary = slotNotifications.keys.minOrNull() ?: return@synchronized
         runCatching {
@@ -367,6 +376,7 @@ class YoutubeDownloadService : Service() {
                     actions = actions,
                 ),
                 force = true,
+                step = "start",
             )
 
             val tree = MusicFolder.treeUri(this)
@@ -375,7 +385,7 @@ class YoutubeDownloadService : Service() {
             // Spotify: acha a música em outro lugar (YouTube Music, YouTube, SoundCloud) e baixa de lá.
             val found = if (hint != null) {
                 importer.findForHint(hint, processIdOf(task.id)) { status ->
-                    post(slot, buildNotification(title = videoTitle, text = status.message.trimEnd('.', '…'), subText = position, indeterminate = true, actions = actions))
+                    post(slot, buildNotification(title = videoTitle, text = status.message.trimEnd('.', '…'), subText = position, indeterminate = true, actions = actions), step = "find:" + status.message)
                 } ?: throw SongNotFoundException(videoTitle)
             } else null
 
@@ -399,7 +409,9 @@ class YoutubeDownloadService : Service() {
                         actions = actions,
                     ),
                     // Etapas novas (tags, salvar) aparecem na hora; o progresso do download, no máximo 1 vez a cada 700 ms.
+                    // Durante o download o texto muda a cada segundo (tempo restante): conta como uma etapa só.
                     force = progress == 100,
+                    step = if (progress != null && progress > 0) "downloading" else "get:$step",
                 )
             }
         }.onSuccess { result ->
