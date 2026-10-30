@@ -74,7 +74,7 @@ internal object UiTokens {
     val listHeaderGap = 6.dp
     val standardListTopSpacing = 6.dp
     val formFieldSpacing = 10.dp
-    val songListSpacing = 6.dp
+    val songListSpacing = 2.dp
     val songListBottomPadding = 10.dp
 
     // ---- Barra de rolagem -------------------------------------------------
@@ -91,13 +91,13 @@ internal object UiTokens {
     val cardRadius = space3                   // 12
     val cardPadding = 10.dp
     val cardItemHorizontalPadding = 10.dp
-    val songItemRadius = space3               // 12
+    val songItemRadius = space2               // 8: linhas planas, só o toque e a música atual mostram o formato
     val songItemPadding = 6.dp
     val songItemSpacing = 2.dp
-    val songItemArtworkSize = 44.dp
-    val songItemHeight = 56.dp
-    val compactRowHeight = 56.dp
-    val mostPlayedRowHeight = 60.dp
+    val songItemArtworkSize = 52.dp
+    val songItemHeight = 64.dp
+    val compactRowHeight = 64.dp
+    val mostPlayedRowHeight = 64.dp
     val rankWidth = 22.dp
     val reorderControlsWidth = 32.dp
 
@@ -111,10 +111,11 @@ internal object UiTokens {
     val primaryIconSize = 20.dp
     val smallIconSize = 18.dp
     val buttonContentPadding = 10.dp
-    val buttonRadius = space3                 // 12
+    val buttonRadius = space6                 // 24: botões em pílula
+    val fieldRadius = 10.dp                   // campos de texto e busca
 
     // ---- Barras e player --------------------------------------------------
-    val bottomBarHeight = 64.dp
+    val bottomBarHeight = 60.dp
     val bottomBarIconSize = 20.dp
     val bottomBarLabelSize = 10.sp
     val miniPlayerHeight = 102.dp
@@ -142,10 +143,10 @@ internal fun CompactBottomBar(
     selectedIndex: Int,
     onSelected: (Int) -> Unit,
 ) {
+    // Mesmo fundo da tela, sem sombra: só o ícone e o nome da aba atual ganham a cor de destaque.
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp,
+        color = MaterialTheme.colorScheme.background,
     ) {
         Row(
             Modifier
@@ -158,10 +159,6 @@ internal fun CompactBottomBar(
                 val tint by animateColorAsState(
                     if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                     label = "tabTint",
-                )
-                val pill by animateColorAsState(
-                    if (selected) MaterialTheme.colorScheme.primary.copy(alpha = 0.16f) else Color.Transparent,
-                    label = "tabPill",
                 )
                 Column(
                     modifier = Modifier
@@ -176,19 +173,13 @@ internal fun CompactBottomBar(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                 ) {
-                    // Indicador em "pílula" atrás do ícone da aba atual.
-                    Box(
-                        Modifier.width(52.dp).height(28.dp).clip(RoundedCornerShape(14.dp)).background(pill),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            imageVector = item.icon,
-                            contentDescription = item.label,
-                            modifier = Modifier.size(UiTokens.bottomBarIconSize),
-                            tint = tint,
-                        )
-                    }
-                    Spacer(Modifier.height(2.dp))
+                    Icon(
+                        imageVector = item.icon,
+                        contentDescription = item.label,
+                        modifier = Modifier.size(UiTokens.bottomBarIconSize + 4.dp),
+                        tint = tint,
+                    )
+                    Spacer(Modifier.height(3.dp))
                     // Em alguns idiomas o nome da aba é longo: a letra diminui até caber, sem cortar a palavra.
                     BasicText(
                         item.label,
@@ -239,7 +230,7 @@ internal fun ScreenTitle(
     modifier: Modifier = Modifier,
 ) {
     // Título longo (nome de álbum, playlist, artista...) rola em loop em vez de ser cortado.
-    ScrollingText(title, modifier = modifier, style = MaterialTheme.typography.titleLarge)
+    ScrollingText(title, modifier = modifier, style = MaterialTheme.typography.headlineSmall)
 }
 
 /**
@@ -269,7 +260,7 @@ internal fun ScreenHeaderRow(
 }
 
 /**
- * Linha-cartão usada por playlists, artistas, gêneros e afins.
+ * Linha de lista usada por playlists, artistas, gêneros e afins: plana, sem borda nem fundo, como as músicas.
  * Antes esse bloco estava duplicado em quatro telas com paddings diferentes;
  * agora todas passam por aqui e ficam idênticas.
  */
@@ -285,11 +276,6 @@ internal fun ListCardRow(
             .fillMaxWidth()
             .heightIn(min = minHeight)
             .clip(RoundedCornerShape(UiTokens.songItemRadius))
-            .border(
-                BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-                RoundedCornerShape(UiTokens.songItemRadius),
-            )
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.34f))
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.songItemPadding),
         verticalAlignment = Alignment.CenterVertically,
@@ -311,7 +297,10 @@ internal fun ActionButtonRow(
     )
 }
 
-/** Botão de ação padrão do app: mesma altura, mesmo raio, mesmo espaçamento interno. */
+/**
+ * Botão de ação padrão do app, em pílula: mesma altura e mesmo espaçamento interno em todas as telas.
+ * [emphasized] é o botão principal da tela (Tocar), cheio na cor de destaque; os demais são tonais.
+ */
 @Composable
 internal fun ActionButton(
     text: String,
@@ -320,22 +309,30 @@ internal fun ActionButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     contentColor: androidx.compose.ui.graphics.Color? = null,
+    emphasized: Boolean = false,
 ) {
-    OutlinedButton(
-        onClick = onClick,
-        enabled = enabled,
-        modifier = modifier.height(UiTokens.controlHeight),
-        shape = RoundedCornerShape(UiTokens.buttonRadius),
-        contentPadding = PaddingValues(horizontal = UiTokens.buttonContentPadding, vertical = 0.dp),
-        colors = if (contentColor != null) {
-            ButtonDefaults.outlinedButtonColors(contentColor = contentColor)
-        } else {
-            ButtonDefaults.outlinedButtonColors()
-        },
-    ) {
+    val shape = RoundedCornerShape(UiTokens.buttonRadius)
+    val padding = PaddingValues(horizontal = UiTokens.buttonContentPadding, vertical = 0.dp)
+    val label: @Composable RowScope.() -> Unit = {
         Icon(icon, null, modifier = Modifier.size(UiTokens.smallIconSize))
         Spacer(Modifier.width(UiTokens.space2))
         Text(text, maxLines = 1, softWrap = false, overflow = TextOverflow.Ellipsis)
+    }
+    if (emphasized) {
+        Button(onClick = onClick, enabled = enabled, modifier = modifier.height(UiTokens.controlHeight), shape = shape, contentPadding = padding, content = label)
+    } else {
+        FilledTonalButton(
+            onClick = onClick,
+            enabled = enabled,
+            modifier = modifier.height(UiTokens.controlHeight),
+            shape = shape,
+            contentPadding = padding,
+            colors = ButtonDefaults.filledTonalButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                contentColor = contentColor ?: MaterialTheme.colorScheme.onSurface,
+            ),
+            content = label,
+        )
     }
 }
 
@@ -410,8 +407,8 @@ internal fun SectionTitle(
     subtitle: String = "",
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(UiTokens.space1)) {
-        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+    Column(modifier = modifier.padding(top = UiTokens.space2), verticalArrangement = Arrangement.spacedBy(UiTokens.space1)) {
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         if (subtitle.isNotBlank()) {
             Text(subtitle, style = MaterialTheme.typography.bodySmall, color = secondaryTextColor)
         }
@@ -435,14 +432,13 @@ internal fun SearchBar(
     enabled: Boolean = true,
     trailingContent: (@Composable (() -> Unit))? = null,
 ) {
-    val shape = RoundedCornerShape(UiTokens.buttonRadius)
+    val shape = RoundedCornerShape(UiTokens.fieldRadius)
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(UiTokens.searchHeight)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.34f))
-            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), shape)
+            .background(MaterialTheme.colorScheme.surfaceVariant)
             .padding(horizontal = UiTokens.space3),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -487,17 +483,12 @@ internal fun FormCard(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(UiTokens.cardRadius),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-    ) {
-        Column(
-            Modifier.fillMaxWidth().padding(UiTokens.cardPadding),
-            verticalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing),
-            content = content,
-        )
-    }
+    // Campos soltos na tela, sem cartão em volta.
+    Column(
+        modifier.fillMaxWidth().padding(vertical = UiTokens.space1),
+        verticalArrangement = Arrangement.spacedBy(UiTokens.formFieldSpacing),
+        content = content,
+    )
 }
 
 @Composable
@@ -512,7 +503,7 @@ internal fun EditableField(
         onValueChange = onValueChange,
         modifier = modifier.fillMaxWidth(),
         singleLine = true,
-        shape = RoundedCornerShape(UiTokens.buttonRadius),
+        shape = RoundedCornerShape(UiTokens.fieldRadius),
         label = { Text(label) },
     )
 }

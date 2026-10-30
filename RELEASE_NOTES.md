@@ -1,85 +1,85 @@
-## TruePlayer 1.13.0
+## TruePlayer 1.14.0
 
 ### English [en]
-- Download from Spotify links: songs, albums and playlists. The song is found on YouTube Music, YouTube or SoundCloud, and the ones not found are listed at the end.
-- Spotify only provides the first 100 songs of a playlist.
+- New look: flat lists without borders, neutral colors with purple only on highlights, pill buttons and the same style on every screen.
+- Settings without boxes, and a simpler bottom bar.
 
 ### Português [pt]
-- Download por links do Spotify: músicas, álbuns e playlists. A música é achada no YouTube Music, no YouTube ou no SoundCloud, e as não achadas aparecem no fim.
-- O Spotify só entrega as 100 primeiras músicas de uma playlist.
+- Visual novo: listas planas sem bordas, cores neutras com o roxo só nos destaques, botões em pílula e o mesmo estilo em todas as telas.
+- Configurações sem caixas e barra de baixo mais simples.
 
 ### Español [es]
-- Descarga desde enlaces de Spotify: canciones, álbumes y listas. La canción se busca en YouTube Music, YouTube o SoundCloud, y las que no se encuentran aparecen al final.
-- Spotify solo entrega las primeras 100 canciones de una lista.
+- Nuevo aspecto: listas planas sin bordes, colores neutros con el morado solo en los destacados, botones en píldora y el mismo estilo en todas las pantallas.
+- Ajustes sin cajas y barra inferior más simple.
 
 ### Français [fr]
-- Téléchargement depuis des liens Spotify : morceaux, albums et playlists. Le morceau est cherché sur YouTube Music, YouTube ou SoundCloud, et ceux introuvables sont listés à la fin.
-- Spotify ne fournit que les 100 premiers morceaux d'une playlist.
+- Nouveau look : listes plates sans bordures, couleurs neutres avec le violet seulement sur les éléments clés, boutons en pilule et le même style sur tous les écrans.
+- Réglages sans cadres et barre du bas plus simple.
 
 ### Deutsch [de]
-- Download über Spotify-Links: Titel, Alben und Playlists. Der Titel wird auf YouTube Music, YouTube oder SoundCloud gesucht, nicht gefundene werden am Ende aufgelistet.
-- Spotify liefert nur die ersten 100 Titel einer Playlist.
+- Neues Aussehen: flache Listen ohne Rahmen, neutrale Farben mit Lila nur bei Hervorhebungen, runde Schaltflächen und derselbe Stil auf allen Bildschirmen.
+- Einstellungen ohne Kästen und eine einfachere untere Leiste.
 
 ### Italiano [it]
-- Download da link di Spotify: brani, album e playlist. Il brano viene cercato su YouTube Music, YouTube o SoundCloud e quelli non trovati sono elencati alla fine.
-- Spotify fornisce solo i primi 100 brani di una playlist.
+- Nuovo aspetto: elenchi piatti senza bordi, colori neutri con il viola solo sugli elementi in evidenza, pulsanti a pillola e lo stesso stile in tutte le schermate.
+- Impostazioni senza riquadri e barra inferiore più semplice.
 
 ### Nederlands [nl]
-- Downloaden via Spotify-links: nummers, albums en afspeellijsten. Het nummer wordt gezocht op YouTube Music, YouTube of SoundCloud; wat niet gevonden wordt staat aan het eind.
-- Spotify levert alleen de eerste 100 nummers van een afspeellijst.
+- Nieuwe look: vlakke lijsten zonder randen, neutrale kleuren met paars alleen bij accenten, ronde knoppen en dezelfde stijl op elk scherm.
+- Instellingen zonder vakken en een eenvoudigere onderbalk.
 
 ### Svenska [sv]
-- Nedladdning från Spotify-länkar: låtar, album och spellistor. Låten söks på YouTube Music, YouTube eller SoundCloud, och de som inte hittas listas i slutet.
-- Spotify ger bara de första 100 låtarna i en spellista.
+- Ny look: släta listor utan ramar, neutrala färger med lila bara på det viktiga, runda knappar och samma stil på alla skärmar.
+- Inställningar utan rutor och ett enklare nedre fält.
 
 ### Polski [pl]
-- Pobieranie z linków Spotify: utwory, albumy i playlisty. Utwór jest szukany w YouTube Music, YouTube lub SoundCloud, a te, których nie znaleziono, są wypisane na końcu.
-- Spotify udostępnia tylko pierwsze 100 utworów playlisty.
+- Nowy wygląd: płaskie listy bez ramek, neutralne kolory z fioletem tylko na wyróżnieniach, zaokrąglone przyciski i ten sam styl na każdym ekranie.
+- Ustawienia bez ramek i prostszy dolny pasek.
 
 ### Türkçe [tr]
-- Spotify bağlantılarından indirme: şarkılar, albümler ve listeler. Şarkı YouTube Music, YouTube veya SoundCloud'da aranır; bulunamayanlar sonda listelenir.
-- Spotify bir listenin yalnızca ilk 100 şarkısını verir.
+- Yeni görünüm: çerçevesiz düz listeler, yalnızca vurgularda mor olan nötr renkler, hap biçimli düğmeler ve her ekranda aynı stil.
+- Kutusuz ayarlar ve daha sade alt çubuk.
 
 ### Русский [ru]
-- Загрузка по ссылкам Spotify: треки, альбомы и плейлисты. Трек ищется на YouTube Music, YouTube или SoundCloud, а ненайденные перечисляются в конце.
-- Spotify отдаёт только первые 100 треков плейлиста.
+- Новый вид: плоские списки без рамок, нейтральные цвета с фиолетовым только в акцентах, кнопки-«таблетки» и единый стиль на всех экранах.
+- Настройки без рамок и более простая нижняя панель.
 
 ### Українська [uk]
-- Завантаження за посиланнями Spotify: треки, альбоми та плейлисти. Трек шукається на YouTube Music, YouTube або SoundCloud, а не знайдені перелічуються в кінці.
-- Spotify віддає лише перші 100 треків плейлиста.
+- Новий вигляд: пласкі списки без рамок, нейтральні кольори з фіолетовим лише в акцентах, кнопки-«пігулки» та однаковий стиль на всіх екранах.
+- Налаштування без рамок і простіша нижня панель.
 
 ### العربية [ar]
-- التنزيل من روابط Spotify: مقاطع وألبومات وقوائم. يُبحث عن المقطع في YouTube Music أو YouTube أو SoundCloud، وتُذكر المقاطع التي لم يُعثر عليها في النهاية.
-- يوفّر Spotify أول 100 مقطع فقط من القائمة.
+- مظهر جديد: قوائم مسطحة بلا حدود، وألوان محايدة مع البنفسجي في التمييز فقط، وأزرار بيضاوية، ونفس الأسلوب في كل الشاشات.
+- إعدادات بلا صناديق وشريط سفلي أبسط.
 
 ### हिन्दी [hi]
-- Spotify लिंक से डाउनलोड: गाने, एल्बम और प्लेलिस्ट। गाना YouTube Music, YouTube या SoundCloud पर खोजा जाता है, और जो नहीं मिले वे आख़िर में दिखते हैं।
-- Spotify प्लेलिस्ट के सिर्फ़ पहले 100 गाने देता है।
+- नया रूप: बिना बॉर्डर की सपाट सूचियाँ, सिर्फ़ ख़ास जगहों पर बैंगनी वाले सादे रंग, गोली जैसे बटन और हर स्क्रीन पर एक जैसा स्टाइल।
+- सेटिंग्स बिना डिब्बों के और नीचे की बार ज़्यादा सरल।
 
 ### Bahasa Indonesia [id]
-- Unduh dari tautan Spotify: lagu, album, dan playlist. Lagu dicari di YouTube Music, YouTube, atau SoundCloud, dan yang tidak ditemukan ditampilkan di akhir.
-- Spotify hanya memberikan 100 lagu pertama dari sebuah playlist.
+- Tampilan baru: daftar datar tanpa bingkai, warna netral dengan ungu hanya pada sorotan, tombol berbentuk pil, dan gaya yang sama di semua layar.
+- Pengaturan tanpa kotak dan bilah bawah yang lebih sederhana.
 
 ### Tiếng Việt [vi]
-- Tải từ liên kết Spotify: bài hát, album và danh sách phát. Bài hát được tìm trên YouTube Music, YouTube hoặc SoundCloud, và những bài không thấy được liệt kê ở cuối.
-- Spotify chỉ cung cấp 100 bài đầu tiên của một danh sách phát.
+- Giao diện mới: danh sách phẳng không viền, màu trung tính chỉ dùng màu tím cho điểm nhấn, nút hình viên thuốc và cùng một phong cách ở mọi màn hình.
+- Cài đặt không có khung và thanh dưới đơn giản hơn.
 
 ### ไทย [th]
-- ดาวน์โหลดจากลิงก์ Spotify: เพลง อัลบั้ม และเพลย์ลิสต์ โดยค้นหาเพลงบน YouTube Music, YouTube หรือ SoundCloud และแสดงรายการเพลงที่ไม่พบไว้ท้ายสุด
-- Spotify ให้เพลงจากเพลย์ลิสต์เพียง 100 เพลงแรก
+- หน้าตาใหม่: รายการแบบเรียบไม่มีกรอบ สีกลางๆ ใช้สีม่วงเฉพาะจุดเด่น ปุ่มทรงแคปซูล และสไตล์เดียวกันทุกหน้าจอ
+- การตั้งค่าไม่มีกล่อง และแถบด้านล่างเรียบง่ายขึ้น
 
 ### 日本語 [ja]
-- Spotifyのリンクからダウンロードできます（曲、アルバム、プレイリスト）。曲はYouTube Music、YouTube、SoundCloudで探し、見つからなかった曲は最後に一覧表示されます。
-- Spotifyはプレイリストの最初の100曲しか提供しません。
+- 新しいデザイン：枠のないフラットなリスト、紫は強調だけに使うニュートラルな配色、丸いボタン、全画面で同じスタイル。
+- 設定の枠をなくし、下のバーをシンプルにしました。
 
 ### 한국어 [ko]
-- Spotify 링크로 다운로드할 수 있습니다(곡, 앨범, 재생목록). 곡은 YouTube Music, YouTube, SoundCloud에서 찾고, 찾지 못한 곡은 마지막에 표시됩니다.
-- Spotify는 재생목록의 처음 100곡만 제공합니다.
+- 새 디자인: 테두리 없는 평평한 목록, 강조에만 보라색을 쓰는 중립 색상, 알약 모양 버튼, 모든 화면에서 같은 스타일.
+- 설정의 상자를 없애고 하단 바를 단순하게 했습니다.
 
 ### 简体中文 [zh-CN]
-- 支持通过 Spotify 链接下载歌曲、专辑和播放列表。歌曲会在 YouTube Music、YouTube 或 SoundCloud 中查找，未找到的会在最后列出。
-- Spotify 只提供播放列表的前 100 首歌曲。
+- 全新外观：无边框的扁平列表、仅在重点处使用紫色的中性配色、胶囊形按钮，所有界面风格统一。
+- 设置页去掉了方框，底部栏更简洁。
 
 ### 繁體中文 [zh-TW]
-- 支援透過 Spotify 連結下載歌曲、專輯和播放清單。歌曲會在 YouTube Music、YouTube 或 SoundCloud 中尋找，找不到的會在最後列出。
-- Spotify 只提供播放清單的前 100 首歌曲。
+- 全新外觀：無邊框的扁平清單、僅在重點處使用紫色的中性配色、膠囊形按鈕，所有畫面風格一致。
+- 設定頁去掉了方框，底部列更簡潔。

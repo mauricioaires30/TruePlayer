@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -47,45 +48,31 @@ import dev.truetagger.android.R
  * ícone, título e uma frase curta, e um diálogo padrão. Mudar aqui muda o app inteiro do mesmo jeito.
  */
 
-/** Grupo de Configurações: título pequeno em cor de destaque e as linhas dentro de um cartão. */
+/** Grupo de Configurações: título em negrito e as linhas direto na tela, sem cartão. */
 @Composable
 internal fun SettingsGroup(title: String, modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
-    Column(modifier.fillMaxWidth().padding(vertical = UiTokens.space2)) {
+    Column(modifier.fillMaxWidth().padding(top = UiTokens.space4, bottom = UiTokens.space1)) {
         Text(
             title,
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.SemiBold,
-            modifier = Modifier.padding(start = UiTokens.space1, bottom = UiTokens.space2),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(bottom = UiTokens.space1),
         )
-        Card(
-            shape = RoundedCornerShape(UiTokens.space4),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-            modifier = Modifier.fillMaxWidth().animateContentSize(),
-        ) {
-            Column(Modifier.fillMaxWidth(), content = content)
-        }
+        Column(Modifier.fillMaxWidth().animateContentSize(), content = content)
     }
 }
 
-/** Linha fina entre duas linhas de um grupo, alinhada com o texto (não com o ícone). */
+/** As linhas planas não precisam de divisória: fica só o espaço delas. */
 @Composable
 internal fun SettingsDivider() {
-    HorizontalDivider(
-        modifier = Modifier.padding(start = 64.dp),
-        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.12f),
-    )
+    Spacer(Modifier.height(0.dp))
 }
 
-/** Ícone dentro de um círculo suave, à esquerda de cada linha. */
+/** Ícone simples, sem fundo, à esquerda de cada linha. */
 @Composable
-internal fun RowIcon(icon: ImageVector, tint: Color = MaterialTheme.colorScheme.primary) {
-    Box(
-        Modifier.size(36.dp).clip(CircleShape).background(tint.copy(alpha = 0.14f)),
-        contentAlignment = Alignment.Center,
-    ) {
-        Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
-    }
+internal fun RowIcon(icon: ImageVector, tint: Color = MaterialTheme.colorScheme.onSurfaceVariant) {
+    Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(24.dp))
 }
 
 /**
@@ -102,14 +89,15 @@ internal fun SettingsRow(
     trailing: (@Composable () -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
-    val tint = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary
+    val tint = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
     Row(
         Modifier
             .fillMaxWidth()
             .heightIn(min = 60.dp)
+            .clip(RoundedCornerShape(UiTokens.songItemRadius))
             .then(if (onClick != null && enabled) Modifier.clickable(onClick = onClick) else Modifier)
             .alpha(if (enabled) 1f else 0.45f)
-            .padding(horizontal = UiTokens.space4, vertical = UiTokens.space3),
+            .padding(horizontal = UiTokens.space1, vertical = UiTokens.space3),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         RowIcon(icon, tint)

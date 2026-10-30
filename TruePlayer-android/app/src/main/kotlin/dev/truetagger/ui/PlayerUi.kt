@@ -330,7 +330,19 @@ private fun StatsRangeChips(range: StatsRange, onChange: (StatsRange) -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
     ) {
         StatsRange.entries.forEach { r ->
-            FilterChip(selected = r == range, onClick = { onChange(r) }, label = { Text(rangeLabel(r)) })
+            FilterChip(
+                selected = r == range,
+                onClick = { onChange(r) },
+                label = { Text(rangeLabel(r)) },
+                shape = RoundedCornerShape(UiTokens.buttonRadius),
+                border = null,
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    labelColor = MaterialTheme.colorScheme.onSurface,
+                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                ),
+            )
         }
     }
 }
@@ -990,7 +1002,6 @@ private fun MiniPlayer(
     val context = LocalContext.current
     Surface(
         color = MaterialTheme.colorScheme.surfaceVariant,
-        tonalElevation = 3.dp,
         shape = RoundedCornerShape(topStart = UiTokens.space4, topEnd = UiTokens.space4),
     ) {
         Column(
@@ -1522,7 +1533,7 @@ private fun LibraryListContent(
             }
         } else {
             ActionButtonRow(Modifier.padding(top = UiTokens.sectionSpacing, bottom = UiTokens.space1)) {
-                ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, onPlayAll, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, onPlayAll, Modifier.weight(1f), enabled = shown.isNotEmpty(), emphasized = true)
                 ActionButton(t(R.string.aleatorio), Icons.Rounded.Shuffle, onPlayRandom, Modifier.weight(1f), enabled = shown.isNotEmpty())
             }
             if (shown.isNotEmpty()) {
@@ -1854,8 +1865,7 @@ private fun MostPlayedCategoryCard(
         Card(
             modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
             shape = RoundedCornerShape(UiTokens.songItemRadius),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.55f)),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         ) {
             Column(
                 Modifier.fillMaxWidth().padding(UiTokens.songItemPadding),
@@ -1906,8 +1916,6 @@ private fun MostPlayedRow(rank: Int, title: String, artist: String, album: Strin
         Modifier.fillMaxWidth()
             .heightIn(min = UiTokens.mostPlayedRowHeight)
             .clip(RoundedCornerShape(UiTokens.songItemRadius))
-            .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), RoundedCornerShape(UiTokens.songItemRadius))
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.34f))
             .clickable(onClick = onClick)
             .padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.songItemPadding),
         verticalAlignment = Alignment.CenterVertically,
@@ -1983,15 +1991,14 @@ private fun SongItem(
             .fillMaxWidth()
             .heightIn(min = UiTokens.songItemHeight)
             .clip(RoundedCornerShape(UiTokens.songItemRadius))
-            .border(
-                BorderStroke(1.dp, when {
-                    isCurrent -> MaterialTheme.colorScheme.primary.copy(alpha = 0.65f)
-                    emphasizedBorder -> MaterialTheme.colorScheme.primary.copy(alpha = 0.38f)
-                    else -> MaterialTheme.colorScheme.outlineVariant
-                }),
-                RoundedCornerShape(UiTokens.songItemRadius),
+            // Linha plana, sem borda: só a música atual (e a destacada) ganha um tom suave de fundo.
+            .background(
+                when {
+                    isCurrent -> MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+                    emphasizedBorder -> MaterialTheme.colorScheme.primary.copy(alpha = 0.07f)
+                    else -> Color.Transparent
+                }
             )
-            .background(if (isCurrent) MaterialTheme.colorScheme.primary.copy(alpha = 0.10f) else MaterialTheme.colorScheme.surface.copy(alpha = 0.34f))
             // Ondas passando atrás das informações da música que está tocando.
             .then(if (isCurrent && !selectionMode) Modifier.nowPlayingWaves(nowPlaying, MaterialTheme.colorScheme.primary) else Modifier)
             .clickable(onClick = if (selectionMode) onToggleSelect else onPlay)
@@ -2487,10 +2494,10 @@ private fun AlbumsScreen(tracks: List<AudioTrack>, search: String, onSearchChang
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .clip(RoundedCornerShape(UiTokens.cardRadius))
-                                .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), RoundedCornerShape(UiTokens.cardRadius))
+                                .clip(RoundedCornerShape(UiTokens.songItemRadius))
                                 .clickable { open(item.key) },
-                            shape = RoundedCornerShape(UiTokens.cardRadius),
+                            shape = RoundedCornerShape(UiTokens.songItemRadius),
+                            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
                         ) {
                             PlayerArtworkBox(
                                 item.artwork,
@@ -2676,7 +2683,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                 } else {
                     Spacer(Modifier.height(UiTokens.sectionSpacing))
                     ActionButtonRow {
-                        ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(shown, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                        ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(shown, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty(), emphasized = true)
                         ActionButton(t(R.string.aleatorio), Icons.Rounded.Shuffle, { onPlayRandom(shown) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
                     }
                 }
@@ -2751,7 +2758,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                 }
                 Spacer(Modifier.height(UiTokens.sectionSpacing))
                 ActionButtonRow {
-                    ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(shown, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                    ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(shown, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty(), emphasized = true)
                     ActionButton(t(R.string.aleatorio), Icons.Rounded.Shuffle, { onPlayRandom(shown) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
                 }
                 Spacer(Modifier.height(UiTokens.sectionSpacing))
@@ -2787,7 +2794,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                     }
                     Spacer(Modifier.height(UiTokens.sectionSpacing))
                     ActionButtonRow {
-                        ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(playOrder, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                        ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(playOrder, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty(), emphasized = true)
                         ActionButton(t(R.string.aleatorio), Icons.Rounded.Shuffle, { onPlayRandom(playOrder) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
                     }
                     Spacer(Modifier.height(UiTokens.sectionSpacing))
@@ -2808,7 +2815,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                     if (shown.isNotEmpty()) Text("${tp(R.plurals.n_musicas, shown.size)} • ${formatDuration(duration)}", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     Spacer(Modifier.height(UiTokens.sectionSpacing))
                     ActionButtonRow {
-                        ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(shown, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
+                        ActionButton(t(R.string.tocar), Icons.Rounded.PlayArrow, { onPlay(shown, 0) }, Modifier.weight(1f), enabled = shown.isNotEmpty(), emphasized = true)
                         ActionButton(t(R.string.aleatorio), Icons.Rounded.Shuffle, { onPlayRandom(shown) }, Modifier.weight(1f), enabled = shown.isNotEmpty())
                     }
                     Spacer(Modifier.height(UiTokens.sectionSpacing))

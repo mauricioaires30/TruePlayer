@@ -2,7 +2,7 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
     <!--
         A janela já começa na cor de fundo real do app, para não piscar antes do Compose desenhar:
-        claro aqui (#FBFAFC) e escuro em values-night (#050307). Se o usuário escolher um tema diferente
+        claro aqui (#FBFAFC) e escuro em values-night (#0E0D10). Se o usuário escolher um tema diferente
         do Android, a MainActivity troca o fundo da janela ao abrir.
     -->
     <style name="Theme.TrueTagger" parent="android:style/Theme.Material.Light.NoActionBar">
