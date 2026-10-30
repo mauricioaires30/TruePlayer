@@ -329,8 +329,8 @@ private fun StatsMetricToggle(metric: StatsMetric, onChange: (StatsMetric) -> Un
                 // Sem o visto: o botão selecionado fica claro (invertido) e os outros apagados.
                 icon = {},
                 colors = SegmentedButtonDefaults.colors(
-                    activeContainerColor = MaterialTheme.colorScheme.onSurface,
-                    activeContentColor = MaterialTheme.colorScheme.background,
+                    activeContainerColor = selectedContainerColor(),
+                    activeContentColor = selectedContentColor(),
                     activeBorderColor = Color.Transparent,
                     inactiveContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                     inactiveContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -361,8 +361,8 @@ private fun StatsRangeChips(range: StatsRange, onChange: (StatsRange) -> Unit) {
                 colors = FilterChipDefaults.filterChipColors(
                     containerColor = MaterialTheme.colorScheme.surfaceVariant,
                     labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                    selectedContainerColor = MaterialTheme.colorScheme.onSurface,
-                    selectedLabelColor = MaterialTheme.colorScheme.background,
+                    selectedContainerColor = selectedContainerColor(),
+                    selectedLabelColor = selectedContentColor(),
                 ),
             )
         }

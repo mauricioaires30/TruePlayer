@@ -59,9 +59,9 @@ internal fun PlayControls(enabled: Boolean, onShuffle: () -> Unit, onPlay: () ->
         IconButton(onClick = onShuffle, enabled = enabled, modifier = Modifier.size(48.dp)) {
             Icon(Icons.Rounded.Shuffle, t(R.string.aleatorio), Modifier.size(26.dp))
         }
-        // Só o triângulo na cor de destaque, sem círculo em volta (o círculo roxo cobria o começo da lista).
+        // Só o triângulo, na cor do texto, sem círculo e sem roxo.
         IconButton(onClick = onPlay, enabled = enabled, modifier = Modifier.size(56.dp)) {
-            Icon(Icons.Rounded.PlayArrow, t(R.string.tocar), Modifier.size(48.dp), tint = if (enabled) MaterialTheme.colorScheme.primary else LocalContentColor.current.copy(alpha = 0.38f))
+            Icon(Icons.Rounded.PlayArrow, t(R.string.tocar), Modifier.size(48.dp), tint = if (enabled) MaterialTheme.colorScheme.onSurface else LocalContentColor.current.copy(alpha = 0.38f))
         }
     }
 }

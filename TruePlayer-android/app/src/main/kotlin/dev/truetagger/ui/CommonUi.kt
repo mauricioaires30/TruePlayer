@@ -22,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
@@ -397,6 +398,18 @@ internal fun SelectionToggle(
         }
     }
 }
+
+/**
+ * Cores de um botão/filtro selecionado: no tema escuro fica claro (invertido); no claro, um lilás suave com texto
+ * escuro (um botão todo preto era pesado demais).
+ */
+@Composable
+internal fun selectedContainerColor(): Color =
+    if (MaterialTheme.colorScheme.background.luminance() > 0.5f) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.onSurface
+
+@Composable
+internal fun selectedContentColor(): Color =
+    if (MaterialTheme.colorScheme.background.luminance() > 0.5f) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.background
 
 internal val secondaryTextColor: androidx.compose.ui.graphics.Color
     @Composable get() = MaterialTheme.colorScheme.onSurfaceVariant
