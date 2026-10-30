@@ -144,4 +144,19 @@ class SpotifyTest {
         assertEquals(195, hits[1].durationSec)
         assertEquals("Tate McRae", hits[0].uploader)
     }
+
+    @Test fun detailedEntriesUseThePageUrlAndTheRealTrackName() {
+        val json = """{"entries":[{"id":"FXk4oLgkKL0","title":"Housewife (Official)","track":"Housewife","artist":"Tate McRae","duration":209,
+            "uploader":"Tate McRae","url":"https://rr1.googlevideo.com/audio","webpage_url":"https://www.youtube.com/watch?v=FXk4oLgkKL0"}]}"""
+        val hit = YtDlpJson.parseSearch(json).single()
+        assertEquals("https://www.youtube.com/watch?v=FXk4oLgkKL0", hit.url)
+        assertEquals("Housewife", hit.title)
+        assertEquals("Tate McRae", hit.artist)
+        assertNotNull(TrackMatcher.best(housewife, listOf(hit), MatchSource.YT_MUSIC))
+    }
+
+    @Test fun aCoverWithTheSameNameAndLengthFromAnotherArtistIsRejected() {
+        val cover = SearchHit("u", "Housewife", 208, "Release - Topic", artist = "Xtina Louise, Fran Garro")
+        assertNull(TrackMatcher.best(housewife, listOf(cover), MatchSource.YT_MUSIC))
+    }
 }

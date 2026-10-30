@@ -34,8 +34,8 @@ import java.util.Locale
 /** Resultado de um download: nome salvo em songs/, caminho relativo e se as tags precisam de revisão. */
 data class ImportResult(val fileName: String, val relPath: String, val label: String)
 
-/** Onde a música do Spotify foi achada. [info] já traz o que o yt-dlp sabe dela, para não ler de novo. */
-data class FoundTrack(val url: String, val info: SourceInfo?, val source: MatchSource)
+/** Onde a música do Spotify foi achada. */
+data class FoundTrack(val url: String, val source: MatchSource)
 
 class YoutubeImportManager(private val context: Context) {
     private val prefs get() = context.getSharedPreferences(ShareContract.PREFS, Context.MODE_PRIVATE)
@@ -69,14 +69,13 @@ class YoutubeImportManager(private val context: Context) {
         destinationTree: Uri,
         processId: String,
         hint: TrackHint? = null,
-        knownInfo: SourceInfo? = null,
         onStatus: (ImportStatus) -> Unit,
     ): ImportResult = withContext(Dispatchers.IO) {
         onStatus(ImportStatus(url, t(R.string.dl_preparando_download_2), 0))
         initEngines()
 
         updateEngineIfNeeded(url, onStatus)
-        var info = mergeHint(knownInfo ?: fetchSourceInfo(url, processId, onStatus), hint)
+        var info = mergeHint(fetchSourceInfo(url, processId, onStatus), hint)
         val initialTitle = cleanFeaturingText(info?.title.orEmpty())
         if (initialTitle.isNotBlank()) {
             onStatus(ImportStatus(url, t(R.string.dl_preparando_audio), 0, mediaTitle = initialTitle))
@@ -267,27 +266,24 @@ class YoutubeImportManager(private val context: Context) {
         val url = "spotify:${hint.title}"
         onStatus(ImportStatus(url, t(R.string.dl_procurando_a_musica), 0))
 
-        // 1) YouTube Music: a busca rápida não traz duração, então lê os detalhes dos primeiros resultados.
+        // 1) YouTube Music: a busca rápida não traz duração nem artista, então pede os detalhes dos 3 primeiros
+        //    resultados (o yt-dlp lê os três no mesmo processo).
         val musicSearch = "https://music.youtube.com/search?q=${java.net.URLEncoder.encode(query, "UTF-8")}#songs"
-        for (hit in search(musicSearch, processId, limit = 4).take(3)) {
-            currentCoroutineContext().ensureActive()
-            val info = fetchSourceInfo(hit.url, processId) { } ?: continue
-            val detailed = SearchHit(hit.url, info.track.ifBlank { info.title }, info.durationSec, info.uploader, info.artist)
-            if (TrackMatcher.best(hint, listOf(detailed), MatchSource.YT_MUSIC) != null) return@withContext FoundTrack(hit.url, info, MatchSource.YT_MUSIC)
-        }
-        // 2) YouTube e 3) SoundCloud: a busca já traz duração e canal.
+        TrackMatcher.best(hint, search(musicSearch, processId, limit = 3, detailed = true), MatchSource.YT_MUSIC)
+            ?.let { return@withContext FoundTrack(it.url, MatchSource.YT_MUSIC) }
+        // 2) YouTube e 3) SoundCloud: a busca rápida já traz duração e canal.
         for ((prefix, source) in listOf("ytsearch6:" to MatchSource.YOUTUBE, "scsearch6:" to MatchSource.SOUNDCLOUD)) {
             currentCoroutineContext().ensureActive()
-            val best = TrackMatcher.best(hint, search(prefix + query, processId, limit = 6), source)
-            if (best != null) return@withContext FoundTrack(best.url, null, source)
+            TrackMatcher.best(hint, search(prefix + query, processId, limit = 6), source)
+                ?.let { return@withContext FoundTrack(it.url, source) }
         }
         null
     }
 
-    private fun search(target: String, processId: String, limit: Int): List<SearchHit> = runCatching {
+    private fun search(target: String, processId: String, limit: Int, detailed: Boolean = false): List<SearchHit> = runCatching {
         val request = YoutubeDLRequest(target).apply {
             addOption("-J")
-            addOption("--flat-playlist")
+            if (!detailed) addOption("--flat-playlist")
             addOption("--no-warnings")
             addOption("--playlist-end", limit.toString())
         }

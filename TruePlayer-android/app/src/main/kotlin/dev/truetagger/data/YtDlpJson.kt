@@ -70,11 +70,12 @@ object YtDlpJson {
         val entries = parseObject(text)?.get("entries") as? JsonArray ?: return emptyList()
         return entries.mapNotNull { element ->
             val entry = element as? JsonObject ?: return@mapNotNull null
-            val url = entry["url"].text().ifBlank { entry["webpage_url"].text() }
+            // Nos detalhes completos o "url" é o do áudio em si; a página é o "webpage_url".
+            val url = entry["webpage_url"].text().ifBlank { entry["url"].text() }
             if (url.isBlank()) return@mapNotNull null
             SearchHit(
                 url = url,
-                title = entry["title"].text(),
+                title = entry["track"].text().ifBlank { entry["title"].text() },
                 durationSec = (entry["duration"] as? JsonPrimitive)?.doubleOrNull?.toInt() ?: 0,
                 uploader = entry["uploader"].text().ifBlank { entry["channel"].text() },
                 artist = entry["artist"].text(),

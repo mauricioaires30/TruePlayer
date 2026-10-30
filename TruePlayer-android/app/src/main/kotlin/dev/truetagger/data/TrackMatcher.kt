@@ -85,7 +85,8 @@ object TrackMatcher {
         val artist = artistScore(hint, hit)
         var total = if (duration != null) 0.5 * title + 0.25 * artist + 0.25 * duration else 0.65 * title + 0.35 * artist
         val channel = hit.uploader.trim()
-        if (TOPIC.containsMatchIn(channel) || (channel.isNotEmpty() && hint.artists.any { MatchScorer.normalize(it) == MatchScorer.normalize(channel) })) {
+        // Canal oficial só ajuda quando o artista também confere (um "Topic" de outro artista não vale).
+        if (artist >= 0.85 && (TOPIC.containsMatchIn(channel) || (channel.isNotEmpty() && hint.artists.any { MatchScorer.normalize(it) == MatchScorer.normalize(channel) }))) {
             total += 0.05
         }
         return total.coerceAtMost(1.0)

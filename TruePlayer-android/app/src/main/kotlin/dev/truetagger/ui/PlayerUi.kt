@@ -219,25 +219,25 @@ private suspend fun fetchArtistPhoto(artist: String): Bitmap? = withContext(Disp
     result
 }
 
-private enum class HomeTab(@StringRes val labelRes: Int) {
+private enum class HomeTab(@param:StringRes val labelRes: Int) {
     LIBRARY(R.string.biblioteca), MOST_PLAYED(R.string.playlists), PLAYLISTS(R.string.playlists), ARTISTS(R.string.artistas), ALBUMS(R.string.albuns_2), GENRES(R.string.generos), SETTINGS(R.string.config_short);
     val label: String get() = t(labelRes)
 }
 private enum class PlayerScreen { NONE, FULL, QUEUE }
 private enum class Detail { NONE, ARTIST, ALBUM, GENRE, PLAYLIST }
-private enum class PlayerSortMode(@StringRes val labelRes: Int) {
+private enum class PlayerSortMode(@param:StringRes val labelRes: Int) {
     NAME(R.string.nome), TITLE(R.string.titulo), ARTIST(R.string.artista), ALBUM(R.string.album), DATE(R.string.sort_date), DURATION(R.string.duracao);
     val label: String get() = t(labelRes)
 }
-private enum class PlaylistSortMode(@StringRes val labelRes: Int) {
+private enum class PlaylistSortMode(@param:StringRes val labelRes: Int) {
     MANUAL(R.string.sort_manual), TITLE(R.string.titulo), ARTIST(R.string.artista), ALBUM(R.string.album), DATE(R.string.sort_date), DURATION(R.string.duracao);
     val label: String get() = t(labelRes)
 }
-private enum class AlbumSortMode(@StringRes val labelRes: Int) {
+private enum class AlbumSortMode(@param:StringRes val labelRes: Int) {
     NAME(R.string.nome), ARTIST(R.string.artista), YEAR(R.string.sort_year), DURATION(R.string.duracao), SONGS(R.string.sort_song_count);
     val label: String get() = t(labelRes)
 }
-private enum class MostPlayedMode(@StringRes val labelRes: Int) {
+private enum class MostPlayedMode(@param:StringRes val labelRes: Int) {
     OVERVIEW(R.string.playlists), TRACKS(R.string.songs_title), ALBUMS(R.string.albuns_2), ARTISTS(R.string.artistas), PLAYLISTS(R.string.playlists);
     val label: String get() = t(labelRes)
 }
@@ -1353,7 +1353,7 @@ private fun LibraryPlayerScreen(
         // Android 10 pode devolver uma ação recuperável diretamente.
         if (recoverableAction != null && Build.VERSION.SDK_INT == Build.VERSION_CODES.Q) {
             pendingDeleteIds = remaining
-            deleteLauncher.launch(IntentSenderRequest.Builder(recoverableAction!!).build())
+            deleteLauncher.launch(IntentSenderRequest.Builder(recoverableAction).build())
             return
         }
 
@@ -1740,7 +1740,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                         }
                                         MostPlayedCategoryCard(
                                         title = t(R.string.musicas),
-                                        subtitle = topTrack?.let { "${it.displayTitle()} • ${liveTopTrack?.second?.text(metric).orEmpty()}" },
+                                        subtitle = liveTopTrack?.let { "${it.first.displayTitle()} • ${it.second.text(metric)}" },
                                         artwork = topTrack?.artworkBytes,
                                         artworkUri = topTrack?.id,
                                         modifier = Modifier.weight(1f),
@@ -1748,7 +1748,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                     )
                                     MostPlayedCategoryCard(
                                         title = t(R.string.albuns),
-                                        subtitle = topAlbum?.let { "$it • ${liveTopAlbum?.third?.text(metric).orEmpty()}" },
+                                        subtitle = liveTopAlbum?.let { "${it.first} • ${it.third.text(metric)}" },
                                         artwork = topAlbumTrack?.artworkBytes,
                                         artworkUri = topAlbumTrack?.id,
                                         modifier = Modifier.weight(1f),
@@ -2130,7 +2130,7 @@ private fun InfoRow(label: String, value: String, onClick: (() -> Unit)? = null)
     Row(
         Modifier
             .fillMaxWidth()
-            .then(if (clickable) Modifier.clickable { onClick?.invoke() } else Modifier)
+            .then(if (clickable) Modifier.clickable { onClick() } else Modifier)
             .padding(vertical = 5.dp),
     ) {
         Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(76.dp))

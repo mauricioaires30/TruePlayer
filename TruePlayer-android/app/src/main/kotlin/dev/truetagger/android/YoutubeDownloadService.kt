@@ -116,12 +116,17 @@ class YoutubeDownloadService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
-            ShareContract.ACTION_CANCEL_ITEM -> {
-                cancelItem(intent.getLongExtra(ShareContract.EXTRA_ITEM_ID, -1L))
-                return START_STICKY
-            }
-            ShareContract.ACTION_CANCEL_JOB -> {
-                cancelJob(intent.getStringExtra(ShareContract.EXTRA_JOB).orEmpty())
+            ShareContract.ACTION_CANCEL_ITEM, ShareContract.ACTION_CANCEL_JOB -> {
+                if (intent.action == ShareContract.ACTION_CANCEL_ITEM) {
+                    cancelItem(intent.getLongExtra(ShareContract.EXTRA_ITEM_ID, -1L))
+                } else {
+                    cancelJob(intent.getStringExtra(ShareContract.EXTRA_JOB).orEmpty())
+                }
+                // Notificação antiga de um download que já acabou: não deixa o serviço parado à toa.
+                synchronized(batchLock) {
+                    lastStartId = startId
+                    if (unfinished.get() == 0) stopSelf(startId)
+                }
                 return START_STICKY
             }
         }
@@ -324,7 +329,7 @@ class YoutubeDownloadService : Service() {
                 } ?: throw SongNotFoundException(videoTitle)
             } else null
 
-            importer.downloadAudio(found?.url ?: url, tree, processIdOf(task.id), hint, found?.info) { status ->
+            importer.downloadAudio(found?.url ?: url, tree, processIdOf(task.id), hint) { status ->
                 if (hint == null && status.mediaTitle.isNotBlank()) videoTitle = status.mediaTitle
                 val progress = status.progress?.coerceIn(0, 100)
                 val waiting = queuedDownloads.get()
