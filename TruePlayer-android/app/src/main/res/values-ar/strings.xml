@@ -659,4 +659,6 @@
     <string name="dl_link_nao_suportado">الرابط غير مدعوم. شارك رابط YouTube أو SoundCloud.</string>
     <string name="dl_sem_internet">لا يوجد اتصال بالإنترنت. تحقق منه وحاول مرة أخرى.</string>
     <string name="dl_video_indisponivel">هذا الفيديو غير متاح أو خاص أو مقيّد.</string>
+    <string name="letras">الكلمات</string>
+    <string name="letra_indisponivel">الكلمات غير متاحة</string>
 </resources>

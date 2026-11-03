@@ -599,4 +599,6 @@
     <string name="dl_link_nao_suportado">Lien non pris en charge. Partagez un lien YouTube ou SoundCloud.</string>
     <string name="dl_sem_internet">Pas de connexion internet. Vérifiez-la et réessayez.</string>
     <string name="dl_video_indisponivel">Cette vidéo est indisponible, privée ou restreinte.</string>
+    <string name="letras">Paroles</string>
+    <string name="letra_indisponivel">Paroles indisponibles</string>
 </resources>

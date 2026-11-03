@@ -580,4 +580,6 @@
     <string name="dl_link_nao_suportado">Link not supported. Share a YouTube or SoundCloud link.</string>
     <string name="dl_sem_internet">No internet connection. Check it and try again.</string>
     <string name="dl_video_indisponivel">This video is unavailable, private or restricted.</string>
+    <string name="letras">Lyrics</string>
+    <string name="letra_indisponivel">Lyrics unavailable</string>
 </resources>

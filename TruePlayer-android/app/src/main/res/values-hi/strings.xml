@@ -579,4 +579,6 @@
     <string name="dl_link_nao_suportado">लिंक समर्थित नहीं है। YouTube या SoundCloud का लिंक शेयर करें।</string>
     <string name="dl_sem_internet">इंटरनेट कनेक्शन नहीं है। जाँचकर फिर कोशिश करें।</string>
     <string name="dl_video_indisponivel">यह वीडियो उपलब्ध नहीं है, निजी है या प्रतिबंधित है।</string>
+    <string name="letras">बोल</string>
+    <string name="letra_indisponivel">बोल उपलब्ध नहीं हैं</string>
 </resources>

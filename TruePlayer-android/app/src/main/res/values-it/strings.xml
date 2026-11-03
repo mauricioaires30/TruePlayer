@@ -599,4 +599,6 @@
     <string name="dl_link_nao_suportado">Link non supportato. Condividi un link di YouTube o SoundCloud.</string>
     <string name="dl_sem_internet">Nessuna connessione a internet. Controllala e riprova.</string>
     <string name="dl_video_indisponivel">Questo video non è disponibile, è privato o limitato.</string>
+    <string name="letras">Testo</string>
+    <string name="letra_indisponivel">Testo non disponibile</string>
 </resources>

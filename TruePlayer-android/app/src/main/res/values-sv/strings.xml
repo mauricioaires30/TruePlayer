@@ -579,4 +579,6 @@
     <string name="dl_link_nao_suportado">Länken stöds inte. Dela en YouTube- eller SoundCloud-länk.</string>
     <string name="dl_sem_internet">Ingen internetanslutning. Kontrollera den och försök igen.</string>
     <string name="dl_video_indisponivel">Videon är inte tillgänglig, är privat eller begränsad.</string>
+    <string name="letras">Text</string>
+    <string name="letra_indisponivel">Texten är inte tillgänglig</string>
 </resources>

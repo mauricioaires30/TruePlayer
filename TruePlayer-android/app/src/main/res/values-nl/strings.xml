@@ -579,4 +579,6 @@
     <string name="dl_link_nao_suportado">Link niet ondersteund. Deel een YouTube- of SoundCloud-link.</string>
     <string name="dl_sem_internet">Geen internetverbinding. Controleer die en probeer het opnieuw.</string>
     <string name="dl_video_indisponivel">Deze video is niet beschikbaar, privé of beperkt.</string>
+    <string name="letras">Songtekst</string>
+    <string name="letra_indisponivel">Songtekst niet beschikbaar</string>
 </resources>

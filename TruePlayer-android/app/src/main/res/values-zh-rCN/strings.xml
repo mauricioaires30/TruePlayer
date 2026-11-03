@@ -559,4 +559,6 @@
     <string name="dl_link_nao_suportado">不支持此链接。请分享 YouTube 或 SoundCloud 链接。</string>
     <string name="dl_sem_internet">没有网络连接。请检查后重试。</string>
     <string name="dl_video_indisponivel">此视频不可用、为私享或受限。</string>
+    <string name="letras">歌词</string>
+    <string name="letra_indisponivel">暂无歌词</string>
 </resources>

@@ -559,4 +559,6 @@
     <string name="dl_link_nao_suportado">Liên kết không được hỗ trợ. Hãy chia sẻ liên kết YouTube hoặc SoundCloud.</string>
     <string name="dl_sem_internet">Không có kết nối internet. Hãy kiểm tra rồi thử lại.</string>
     <string name="dl_video_indisponivel">Video này không khả dụng, ở chế độ riêng tư hoặc bị hạn chế.</string>
+    <string name="letras">Lời bài hát</string>
+    <string name="letra_indisponivel">Không có lời bài hát</string>
 </resources>

@@ -75,6 +75,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.ui.draw.BlurredEdgeTreatment
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -1135,6 +1139,8 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
     val tint = rememberCoverTint(s.current?.artworkBytes, s.current?.id)
     val light = MaterialTheme.colorScheme.background.luminance() > 0.5f
     val fallback = MaterialTheme.colorScheme.surfaceVariant
+    var showLyrics by rememberSaveable { mutableStateOf(false) }
+    val lyricsAlpha by animateFloatAsState(if (showLyrics) 1f else 0f, label = "lyricsFade")
     val top by animateColorAsState(
         tint?.let { if (light) lerp(it, Color.White, 0.5f) else lerp(it, Color.Black, 0.30f) } ?: fallback,
         label = "playerTint",
@@ -1158,14 +1164,20 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
                 }
                 // Capa, nomes, barra e botões ficam juntos no meio do espaço que sobra.
                 Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.Center) {
-                    key(s.current?.id) {
-                        PlayerArtworkBox(
-                            s.current?.artworkBytes,
-                            Modifier.fillMaxWidth().weight(1f, fill = false).aspectRatio(1f).shadow(24.dp, RoundedCornerShape(8.dp)),
-                            s.current?.id,
-                            maxDimension = 1024,
-                            corner = 8.dp,
-                        )
+                    Box(Modifier.fillMaxWidth().weight(1f, fill = false).aspectRatio(1f).shadow(24.dp, RoundedCornerShape(8.dp))) {
+                        key(s.current?.id) {
+                            // Com a letra aberta a capa fica desfocada (Android 12+) e a letra aparece escura por cima dela.
+                            PlayerArtworkBox(
+                                s.current?.artworkBytes,
+                                Modifier.fillMaxSize().then(if (showLyrics) Modifier.blur(18.dp, BlurredEdgeTreatment(RoundedCornerShape(8.dp))) else Modifier),
+                                s.current?.id,
+                                maxDimension = 1024,
+                                corner = 8.dp,
+                            )
+                        }
+                        if (lyricsAlpha > 0f) {
+                            LyricsOverlay(s, Modifier.fillMaxSize().graphicsLayer { alpha = lyricsAlpha })
+                        }
                     }
                     Spacer(Modifier.height(UiTokens.space6))
                     ScrollingText(
@@ -1229,8 +1241,16 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
                         IconButton(onClick = { MusicPlaybackService.command(context, MusicPlaybackService.ACTION_REPEAT) }, modifier = Modifier.size(UiTokens.iconButtonSize)) { Icon(painterResource(if (s.repeat == RepeatMode.ONE) dev.truetagger.android.R.drawable.truetagger_repeat_on else dev.truetagger.android.R.drawable.truetagger_repeat_off), t(R.string.repeticao), modifier = Modifier.size(UiTokens.primaryIconSize + 4.dp), tint = if (s.repeat != RepeatMode.OFF) MaterialTheme.colorScheme.primary else LocalContentColor.current) }
                     }
                 }
-                // Fila embaixo, à direita, como no Spotify.
-                Row(Modifier.fillMaxWidth().height(48.dp), horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.CenterVertically) {
+                // Letras embaixo, à esquerda, e fila à direita, como no Spotify.
+                Row(Modifier.fillMaxWidth().height(48.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(
+                        onClick = { showLyrics = !showLyrics },
+                        colors = ButtonDefaults.textButtonColors(contentColor = if (showLyrics) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface),
+                    ) {
+                        Icon(Icons.Rounded.Lyrics, null, Modifier.size(UiTokens.primaryIconSize + 2.dp))
+                        Spacer(Modifier.width(UiTokens.space2))
+                        Text(t(R.string.letras))
+                    }
                     TextButton(onClick = onQueue) {
                         Icon(Icons.AutoMirrored.Rounded.QueueMusic, null, Modifier.size(UiTokens.primaryIconSize + 2.dp))
                         Spacer(Modifier.width(UiTokens.space2))

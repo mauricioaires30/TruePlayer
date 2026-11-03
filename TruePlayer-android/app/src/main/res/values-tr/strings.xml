@@ -579,4 +579,6 @@
     <string name="dl_link_nao_suportado">Bağlantı desteklenmiyor. Bir YouTube veya SoundCloud bağlantısı paylaşın.</string>
     <string name="dl_sem_internet">İnternet bağlantısı yok. Kontrol edip tekrar deneyin.</string>
     <string name="dl_video_indisponivel">Bu video kullanılamıyor, özel veya kısıtlı.</string>
+    <string name="letras">Sözler</string>
+    <string name="letra_indisponivel">Sözler bulunamadı</string>
 </resources>

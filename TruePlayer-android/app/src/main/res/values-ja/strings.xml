@@ -559,4 +559,6 @@
     <string name="dl_link_nao_suportado">このリンクには対応していません。YouTubeまたはSoundCloudのリンクを共有してください。</string>
     <string name="dl_sem_internet">インターネットに接続されていません。確認してもう一度お試しください。</string>
     <string name="dl_video_indisponivel">この動画は利用できないか、非公開または制限されています。</string>
+    <string name="letras">歌詞</string>
+    <string name="letra_indisponivel">歌詞はありません</string>
 </resources>

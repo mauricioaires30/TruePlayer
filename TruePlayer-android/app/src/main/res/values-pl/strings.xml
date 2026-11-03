@@ -619,4 +619,6 @@
     <string name="dl_link_nao_suportado">Link nieobsługiwany. Udostępnij link do YouTube lub SoundCloud.</string>
     <string name="dl_sem_internet">Brak połączenia z internetem. Sprawdź je i spróbuj ponownie.</string>
     <string name="dl_video_indisponivel">Ten film jest niedostępny, prywatny lub ograniczony.</string>
+    <string name="letras">Tekst</string>
+    <string name="letra_indisponivel">Tekst niedostępny</string>
 </resources>

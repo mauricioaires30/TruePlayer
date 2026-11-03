@@ -619,4 +619,6 @@
     <string name="dl_link_nao_suportado">Ссылка не поддерживается. Поделитесь ссылкой на YouTube или SoundCloud.</string>
     <string name="dl_sem_internet">Нет подключения к интернету. Проверьте его и повторите попытку.</string>
     <string name="dl_video_indisponivel">Это видео недоступно, приватное или с ограничениями.</string>
+    <string name="letras">Текст</string>
+    <string name="letra_indisponivel">Текст недоступен</string>
 </resources>

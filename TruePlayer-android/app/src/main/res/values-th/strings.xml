@@ -559,4 +559,6 @@
     <string name="dl_link_nao_suportado">ไม่รองรับลิงก์นี้ แชร์ลิงก์ YouTube หรือ SoundCloud</string>
     <string name="dl_sem_internet">ไม่มีการเชื่อมต่ออินเทอร์เน็ต ตรวจสอบแล้วลองอีกครั้ง</string>
     <string name="dl_video_indisponivel">วิดีโอนี้ไม่พร้อมใช้งาน เป็นส่วนตัว หรือถูกจำกัด</string>
+    <string name="letras">เนื้อเพลง</string>
+    <string name="letra_indisponivel">ไม่มีเนื้อเพลง</string>
 </resources>
