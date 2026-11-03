@@ -14,8 +14,11 @@ import kotlin.math.abs
 /** Uma linha da letra e o instante (em ms) em que ela começa a ser cantada. */
 data class LrcLine(val timeMs: Long, val text: String)
 
-/** Letra de uma música: [synced] tem os tempos de cada linha; sem eles, só o texto corrido em [plain]. */
-data class Lyrics(val synced: List<LrcLine>, val plain: List<String>) {
+/**
+ * Letra de uma música: [synced] tem os tempos de cada linha; sem eles, só o texto corrido em [plain].
+ * [source] é de onde veio (mostrado na tela como crédito).
+ */
+data class Lyrics(val synced: List<LrcLine>, val plain: List<String>, val source: String = "") {
     val isSynced: Boolean get() = synced.isNotEmpty()
     val isEmpty: Boolean get() = synced.isEmpty() && plain.isEmpty()
 }
@@ -140,7 +143,7 @@ object LrcLibParser {
         if (track.instrumental) return null
         val synced = Lrc.parse(track.syncedLyrics)
         val plain = track.plainLyrics.lines().map { it.trim() }
-        val lyrics = Lyrics(synced, if (synced.isEmpty()) plain.dropWhile { it.isEmpty() }.dropLastWhile { it.isEmpty() } else emptyList())
+        val lyrics = Lyrics(synced, if (synced.isEmpty()) plain.dropWhile { it.isEmpty() }.dropLastWhile { it.isEmpty() } else emptyList(), "LRCLIB")
         return if (lyrics.isEmpty) null else lyrics
     }
 }

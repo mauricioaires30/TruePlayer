@@ -164,6 +164,15 @@ private fun LyricsBody(lyrics: Lyrics, s: PlayerSnapshot) {
         // Bordas que somem, como no Spotify.
         Box(Modifier.fillMaxWidth().height(36.dp).align(Alignment.TopCenter).background(Brush.verticalGradient(listOf(Color.Black.copy(alpha = 0.5f), Color.Transparent))))
         Box(Modifier.fillMaxWidth().height(36.dp).align(Alignment.BottomCenter).background(Brush.verticalGradient(listOf(Color.Transparent, Color.Black.copy(alpha = 0.5f)))))
+        // Crédito da fonte da letra, discreto, no canto.
+        if (lyrics.source.isNotBlank()) {
+            Text(
+                lyrics.source,
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.5f),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(end = 12.dp, bottom = 6.dp),
+            )
+        }
     }
 }
 

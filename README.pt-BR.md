@@ -9,7 +9,7 @@ Player de músicas e editor de tags para Android. Sem conta, sem anúncios, sem 
 - **Editor de tags:** título, artista, álbum, capa, ano, faixa e gênero.
 - **Download por link:** YouTube e SoundCloud (música ou playlist). Para o Spotify, converta a playlist para o YouTube antes (por exemplo, com o TuneMyMusic).
 - **Tags automáticas:** preenche tags e capa depois do download.
-- **Letras:** sincronizadas linha por linha na tela Tocando agora, buscadas na internet (via [LRCLIB](https://lrclib.net)). Nada é baixado.
+- **Letras:** na tela Tocando agora, buscadas na internet: sincronizadas linha por linha pelo [LRCLIB](https://lrclib.net) ou em texto simples pelo [Genius](https://genius.com) quando não há versão sincronizada. Nada é baixado.
 - **Estatísticas:** músicas, álbuns e artistas mais ouvidos.
 - **Pasta portátil:** tudo fica na pasta que você escolhe.
 - **Git:** commit e envio da pasta para o GitHub.
