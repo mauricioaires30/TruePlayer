@@ -1,64 +1,127 @@
-## TruePlayer 1.21.0
+## TruePlayer 1.22.0
 
 ### English [en]
-- Adds lyrics to the Now Playing screen, synced line by line (LRCLIB) or plain text from Genius when there is no synced version.
+- Fixes blurry covers in the full player.
+- Fixes the playing icon not covering the whole cover.
+- Shows albums with several discs split by disc, in albums and artists.
+- Shows the playing song in Most played.
 
 ### Português [pt]
-- Adiciona letras na tela Tocando agora, sincronizadas linha por linha (LRCLIB) ou em texto simples do Genius quando não há versão sincronizada.
+- Corrige capas em baixa qualidade no player grande.
+- Corrige o ícone de tocando que não cobria toda a capa.
+- Mostra álbuns com vários discos separados por disco, nos álbuns e nos artistas.
+- Mostra a música tocando em Mais ouvidas.
 
 ### Español [es]
-- Añade la letra en la pantalla Reproduciendo, sincronizada línea por línea (LRCLIB) o en texto simple de Genius cuando no hay versión sincronizada.
+- Corrige las portadas borrosas en el reproductor grande.
+- Corrige el icono de reproducción que no cubría toda la portada.
+- Muestra los álbumes con varios discos separados por disco, en álbumes y artistas.
+- Muestra la canción en reproducción en Más escuchadas.
 
 ### Français [fr]
-- Ajoute les paroles sur l'écran Lecture en cours, synchronisées ligne par ligne (LRCLIB) ou en texte simple depuis Genius quand il n'y a pas de version synchronisée.
+- Corrige les pochettes floues dans le grand lecteur.
+- Corrige l'icône de lecture qui ne couvrait pas toute la pochette.
+- Affiche les albums de plusieurs disques séparés par disque, dans les albums et les artistes.
+- Affiche le morceau en cours dans Les plus écoutés.
 
 ### Deutsch [de]
-- Fügt Songtexte im Bildschirm Wiedergabe hinzu, Zeile für Zeile synchronisiert (LRCLIB) oder als einfacher Text von Genius, wenn es keine synchronisierte Version gibt.
+- Behebt unscharfe Cover im großen Player.
+- Behebt das Wiedergabe-Symbol, das das Cover nicht ganz bedeckte.
+- Zeigt Alben mit mehreren Discs nach Disc getrennt, bei Alben und Künstlern.
+- Zeigt den laufenden Titel in Meistgespielt.
 
 ### Italiano [it]
-- Aggiunge i testi nella schermata In riproduzione, sincronizzati riga per riga (LRCLIB) o in testo semplice da Genius quando non c'è una versione sincronizzata.
+- Corregge le copertine sfocate nel player grande.
+- Corregge l'icona di riproduzione che non copriva tutta la copertina.
+- Mostra gli album con più dischi separati per disco, negli album e negli artisti.
+- Mostra il brano in riproduzione in Più ascoltati.
 
 ### Nederlands [nl]
-- Voegt songteksten toe aan het scherm Nu aan het spelen, regel voor regel gesynchroniseerd (LRCLIB) of als gewone tekst van Genius als er geen gesynchroniseerde versie is.
+- Verhelpt wazige hoezen in de grote speler.
+- Verhelpt het afspeelpictogram dat de hoes niet helemaal bedekte.
+- Toont albums met meerdere schijven gescheiden per schijf, bij albums en artiesten.
+- Toont het huidige nummer in Meest afgespeeld.
 
 ### Svenska [sv]
-- Lägger till låttexter på skärmen Spelas nu, synkade rad för rad (LRCLIB) eller som vanlig text från Genius när det inte finns någon synkad version.
+- Åtgärdar suddiga omslag i den stora spelaren.
+- Åtgärdar uppspelningsikonen som inte täckte hela omslaget.
+- Visar album med flera skivor uppdelade per skiva, bland album och artister.
+- Visar låten som spelas i Mest spelade.
 
 ### Polski [pl]
-- Dodaje teksty na ekranie Teraz odtwarzane, zsynchronizowane wiersz po wierszu (LRCLIB) lub zwykły tekst z Genius, gdy nie ma wersji zsynchronizowanej.
+- Naprawia rozmyte okładki w dużym odtwarzaczu.
+- Naprawia ikonę odtwarzania, która nie zakrywała całej okładki.
+- Pokazuje albumy z wieloma płytami rozdzielone według płyty, w albumach i u wykonawców.
+- Pokazuje odtwarzany utwór w Najczęściej słuchane.
 
 ### Türkçe [tr]
-- Şu an çalıyor ekranına satır satır senkronize (LRCLIB) veya senkronize sürüm yoksa Genius'tan düz metin olarak sözler ekler.
+- Büyük oynatıcıdaki bulanık kapakları düzeltir.
+- Çalıyor simgesinin kapağı tam örtmemesini düzeltir.
+- Birden çok diskli albümleri diske göre ayırarak gösterir, albümlerde ve sanatçılarda.
+- Çalan şarkıyı En çok dinlenenler ekranında gösterir.
 
 ### Русский [ru]
-- Добавляет текст песни на экран «Сейчас играет»: синхронно по строкам (LRCLIB) или обычным текстом с Genius, если синхронной версии нет.
+- Исправляет размытые обложки в большом плеере.
+- Исправляет значок воспроизведения, который не закрывал всю обложку.
+- Показывает альбомы с несколькими дисками раздельно по дискам, в альбомах и у исполнителей.
+- Показывает играющий трек в «Самые прослушиваемые».
 
 ### Українська [uk]
-- Додає текст пісні на екран «Зараз грає»: синхронно по рядках (LRCLIB) або звичайним текстом з Genius, якщо синхронної версії немає.
+- Виправляє розмиті обкладинки у великому плеєрі.
+- Виправляє значок відтворення, який не закривав усю обкладинку.
+- Показує альбоми з кількома дисками окремо по дисках, в альбомах і у виконавців.
+- Показує трек, що грає, у «Найпрослуховуваніші».
 
 ### العربية [ar]
-- يضيف الكلمات إلى شاشة التشغيل الآن، متزامنة سطرًا بسطر (LRCLIB) أو كنص عادي من Genius عند عدم وجود نسخة متزامنة.
+- يصلح الأغلفة الضبابية في المشغل الكبير.
+- يصلح أيقونة التشغيل التي لم تكن تغطي الغلاف كاملاً.
+- يعرض الألبومات متعددة الأقراص منفصلة حسب القرص، في الألبومات والفنانين.
+- يعرض الأغنية قيد التشغيل في الأكثر استماعاً.
 
 ### हिन्दी [hi]
-- अभी चल रहा है स्क्रीन में बोल जोड़ता है, पंक्ति-दर-पंक्ति सिंक (LRCLIB) या सिंक वाला संस्करण न होने पर Genius से सादा टेक्स्ट।
+- बड़े प्लेयर में धुंधले कवर ठीक करता है।
+- चलने का आइकन पूरे कवर को नहीं ढकता था, इसे ठीक करता है।
+- कई डिस्क वाले एल्बम को डिस्क के अनुसार अलग दिखाता है, एल्बम और कलाकारों में।
+- सबसे ज़्यादा सुने गए में चल रहा गाना दिखाता है।
 
 ### Bahasa Indonesia [id]
-- Menambah lirik di layar Sedang diputar, sinkron baris demi baris (LRCLIB) atau teks biasa dari Genius jika tidak ada versi sinkron.
+- Memperbaiki sampul buram di pemutar besar.
+- Memperbaiki ikon sedang diputar yang tidak menutupi seluruh sampul.
+- Menampilkan album berisi beberapa disk terpisah per disk, di album dan artis.
+- Menampilkan lagu yang sedang diputar di Paling sering diputar.
 
 ### Tiếng Việt [vi]
-- Thêm lời bài hát vào màn hình Đang phát, đồng bộ từng dòng (LRCLIB) hoặc văn bản thường từ Genius khi không có bản đồng bộ.
+- Sửa ảnh bìa bị mờ trong trình phát lớn.
+- Sửa biểu tượng đang phát không phủ hết ảnh bìa.
+- Hiển thị album nhiều đĩa tách riêng theo đĩa, trong album và nghệ sĩ.
+- Hiển thị bài đang phát trong Nghe nhiều nhất.
 
 ### ไทย [th]
-- เพิ่มเนื้อเพลงในหน้ากำลังเล่น ซิงก์ทีละบรรทัด (LRCLIB) หรือข้อความธรรมดาจาก Genius เมื่อไม่มีเวอร์ชันซิงก์
+- แก้ปกเบลอในเครื่องเล่นใหญ่
+- แก้ไอคอนกำลังเล่นที่ไม่คลุมปกทั้งหมด
+- แสดงอัลบั้มที่มีหลายแผ่นแยกตามแผ่น ในอัลบั้มและศิลปิน
+- แสดงเพลงที่กำลังเล่นใน เล่นบ่อยที่สุด
 
 ### 日本語 [ja]
-- 再生中画面に歌詞を追加。1行ずつ同期（LRCLIB）、同期版がない場合はGeniusのテキストを表示します。
+- 大きなプレーヤーでカバーがぼやける問題を修正します。
+- 再生中アイコンがカバー全体を覆わない問題を修正します。
+- 複数ディスクのアルバムをディスクごとに分けて表示します（アルバムとアーティスト）。
+- よく聴く曲で再生中の曲を表示します。
 
 ### 한국어 [ko]
-- 지금 재생 중 화면에 가사를 추가합니다. 한 줄씩 동기화(LRCLIB)되며, 동기화 버전이 없으면 Genius의 일반 텍스트를 보여줍니다.
+- 큰 플레이어에서 커버가 흐릿하게 보이는 문제를 수정합니다.
+- 재생 중 아이콘이 커버를 모두 덮지 않던 문제를 수정합니다.
+- 여러 디스크가 있는 앨범을 디스크별로 나눠 보여줍니다(앨범과 아티스트).
+- 가장 많이 들은 곡 화면에 재생 중인 곡을 표시합니다.
 
 ### 简体中文 [zh-CN]
-- 在“正在播放”界面新增歌词，逐行同步（LRCLIB），没有同步版本时显示 Genius 的纯文本。
+- 修复大播放器中封面模糊的问题。
+- 修复播放图标未完全覆盖封面的问题。
+- 多碟专辑按碟分开显示（专辑和艺术家页面）。
+- 在“最常播放”中显示正在播放的歌曲。
 
 ### 繁體中文 [zh-TW]
-- 在「正在播放」畫面新增歌詞，逐行同步（LRCLIB），沒有同步版本時顯示 Genius 的純文字。
+- 修正大播放器中封面模糊的問題。
+- 修正播放圖示未完全覆蓋封面的問題。
+- 多碟專輯依碟分開顯示（專輯與演出者頁面）。
+- 在「最常播放」中顯示正在播放的歌曲。

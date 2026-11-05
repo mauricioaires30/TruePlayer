@@ -938,7 +938,7 @@ fun TrueTaggerPlayerApp(
                             onPlaylistChanged = ::updatePlayingQueueIfNeeded
                         )
                         HomeTab.PLAYLISTS -> CombinedMostPlayedPlaylistHost(
-                            tracks = tracks, playlists = playlists, play = ::play,
+                            tracks = tracks, playlists = playlists, play = ::play, currentTrackId = snapshot.current?.id,
                             onAlbum = { navigateDetail(Detail.ALBUM, it) }, onArtist = { navigateDetail(Detail.ARTIST, it) },
                             onCreate = { name -> store.create(name); reloadPlaylists() },
                             onImport = { launchPlaylistImport() },
@@ -951,7 +951,7 @@ fun TrueTaggerPlayerApp(
                         HomeTab.ALBUMS -> AlbumsScreen(tracks, albumSearch, { albumSearch = it }, albumSortMode, { albumSortMode = it }, albumAscending, { albumAscending = !albumAscending }) { navigateDetail(Detail.ALBUM, it) }
                         HomeTab.GENRES -> GenresScreen(tracks) { navigateDetail(Detail.GENRE, it) }
                         HomeTab.MOST_PLAYED -> CombinedMostPlayedPlaylistHost(
-                            tracks = tracks, playlists = playlists, play = ::play,
+                            tracks = tracks, playlists = playlists, play = ::play, currentTrackId = snapshot.current?.id,
                             onAlbum = { navigateDetail(Detail.ALBUM, it) }, onArtist = { navigateDetail(Detail.ARTIST, it) },
                             onCreate = { name -> store.create(name); reloadPlaylists() },
                             onImport = { launchPlaylistImport() },
@@ -1732,6 +1732,7 @@ private fun CombinedMostPlayedPlaylistHost(
     tracks: List<AudioTrack>,
     playlists: List<PlaylistData>,
     play: (List<AudioTrack>, Int) -> Unit,
+    currentTrackId: String?,
     onAlbum: (String) -> Unit,
     onArtist: (String) -> Unit,
     onCreate: (String) -> Unit,
@@ -1911,6 +1912,7 @@ private fun CombinedMostPlayedPlaylistHost(
                                     value.text(metric),
                                     track.artworkBytes,
                                     track.id,
+                                    isCurrent = track.id == currentTrackId,
                                 ) { play(listOf(track), 0) }
                             }
                         }
@@ -2034,11 +2036,14 @@ private fun EmptyMostPlayed() {
 }
 
 @Composable
-private fun MostPlayedRow(rank: Int, title: String, artist: String, album: String, value: String, artwork: ByteArray?, artworkUri: String? = null, artistImageName: String? = null, onClick: () -> Unit) {
+private fun MostPlayedRow(rank: Int, title: String, artist: String, album: String, value: String, artwork: ByteArray?, artworkUri: String? = null, artistImageName: String? = null, isCurrent: Boolean = false, onClick: () -> Unit) {
+    val nowPlaying = if (isCurrent) PlayerState.playing.collectAsState().value else false
     Row(
         Modifier.fillMaxWidth()
             .heightIn(min = UiTokens.mostPlayedRowHeight)
             .clip(RoundedCornerShape(UiTokens.songItemRadius))
+            .background(if (isCurrent) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f) else Color.Transparent)
+            .then(if (isCurrent) Modifier.nowPlayingWaves(nowPlaying, MaterialTheme.colorScheme.primary) else Modifier)
             .clickable(onClick = onClick)
             .padding(horizontal = UiTokens.cardItemHorizontalPadding, vertical = UiTokens.songItemPadding),
         verticalAlignment = Alignment.CenterVertically,
@@ -2047,14 +2052,21 @@ private fun MostPlayedRow(rank: Int, title: String, artist: String, album: Strin
         if (artistImageName != null) {
             ArtistAvatar(artistImageName, Modifier.size(UiTokens.songItemArtworkSize))
         } else if (artwork != null || artworkUri != null) {
-            PlayerArtworkBox(artwork, Modifier.size(UiTokens.songItemArtworkSize), artworkUri, maxDimension = 192)
+            Box(Modifier.size(UiTokens.songItemArtworkSize), contentAlignment = Alignment.Center) {
+                PlayerArtworkBox(artwork, Modifier.fillMaxSize(), artworkUri, maxDimension = 192)
+                if (isCurrent) {
+                    Box(Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)).background(Color.Black.copy(alpha = 0.55f)), contentAlignment = Alignment.Center) {
+                        EqualizerBars(playing = nowPlaying, color = TruePlayerDarkScheme.primary)
+                    }
+                }
+            }
         } else {
             Box(Modifier.size(UiTokens.songItemArtworkSize), contentAlignment = Alignment.Center) {
                 Icon(Icons.Rounded.Person, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(UiTokens.primaryIconSize))
             }
         }
         Column(Modifier.weight(1f).padding(horizontal = UiTokens.cardItemHorizontalPadding), verticalArrangement = Arrangement.spacedBy(UiTokens.songItemSpacing)) {
-            ScrollingText(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            ScrollingText(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold, color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface)
             subtitleLines(album, artist).forEach { line ->
                 ScrollingText(line, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
@@ -2160,7 +2172,7 @@ private fun SongItem(
             // Música atual: véu escuro e ícone de ondas sobre a capa, além da borda colorida.
             if (isCurrent && !selectionMode) {
                 Box(
-                    Modifier.fillMaxSize().clip(RoundedCornerShape(10.dp)).background(Color.Black.copy(alpha = 0.55f)),
+                    Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)).background(Color.Black.copy(alpha = 0.55f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     EqualizerBars(playing = nowPlaying, color = TruePlayerDarkScheme.primary)
@@ -2687,7 +2699,7 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
         }
         if (playlistAscending || playlistSortMode == PlaylistSortMode.MANUAL) sorted else sorted.asReversed()
     } else base
-    val shown = if (type == Detail.PLAYLIST) playlistShown else base.sortedWith(compareBy({ it.discNumber.toIntOrNull() ?: 0 }, { it.trackNumber.toIntOrNull() ?: Int.MAX_VALUE }, { it.displayTitle().lowercase() }))
+    val shown = if (type == Detail.PLAYLIST) playlistShown else base.sortedWith(compareBy({ discOf(it) },{ it.trackNumber.toIntOrNull() ?: Int.MAX_VALUE }, { it.displayTitle().lowercase() }))
     val duration = shown.sumOf { it.durationMs }
     val state = rememberSaveable(type, key, saver = LazyListState.Saver) { LazyListState() }
     PersistListScroll(state, "detail_${type.name}_$key")
@@ -2921,8 +2933,14 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                         )
                     }
                 }
-                Detail.ALBUM -> items(shown, key = { it.id }) { t ->
-                    SongItem(t, { onPlay(shown, shown.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, null, { onOpenArtist(t.artist) }, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId, showTrackNumber = true)
+                Detail.ALBUM -> {
+                    val discs = discGroups(shown)
+                    discs.forEach { (disc, discTracks) ->
+                        if (discs.size > 1) item(key = "disc-$disc") { DiscHeader(disc) }
+                        items(discTracks, key = { it.id }) { t ->
+                            SongItem(t, { onPlay(shown, shown.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, null, { onOpenArtist(t.artist) }, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId, showTrackNumber = true)
+                        }
+                    }
                 }
                 Detail.ARTIST -> artistAlbums?.forEach { (album, albumTracks) ->
                     item(key = "album-$album") {
@@ -2931,8 +2949,12 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                             Text("${tp(R.plurals.n_musicas, albumTracks.size)} • ${formatDuration(albumTracks.sumOf { it.durationMs })}", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
-                    items(albumTracks, key = { it.id }) { t ->
-                        SongItem(t, { onPlay(playOrder, playOrder.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, { onOpenAlbum(t.album) }, null, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId)
+                    val discs = discGroups(albumTracks)
+                    discs.forEach { (disc, discTracks) ->
+                        if (discs.size > 1) item(key = "disc-$album-$disc") { DiscHeader(disc) }
+                        items(discTracks, key = { it.id }) { t ->
+                            SongItem(t, { onPlay(playOrder, playOrder.indexOfFirst { it.id == t.id }.coerceAtLeast(0)) }, { onEdit(t) }, { onShare(t) }, {}, { onOpenAlbum(t.album) }, null, {}, onRemoveFromPlaylist = null, isCurrent = t.id == currentTrackId)
+                        }
                     }
                 }
                 else -> items(shown, key = { it.id }) { t ->
@@ -2951,6 +2973,24 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
 }
 
 private val DETAIL_COVER = 208.dp
+
+/** Número do disco da faixa ("2", "2/3"); sem tag conta como disco 1. */
+private fun discOf(track: AudioTrack): Int =
+    track.discNumber.substringBefore('/').trim().toIntOrNull()?.takeIf { it > 0 } ?: 1
+
+/** Agrupa as faixas (já ordenadas) por disco, mantendo a ordem. */
+private fun discGroups(tracks: List<AudioTrack>): List<Pair<Int, List<AudioTrack>>> =
+    tracks.groupBy(::discOf).toSortedMap().map { (disc, list) -> disc to list }
+
+@Composable
+private fun DiscHeader(disc: Int) {
+    Text(
+        t(R.string.disco_2, disc.toString(), ""),
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.fillMaxWidth().padding(top = UiTokens.space3, bottom = UiTokens.space1),
+    )
+}
 
 private fun rangeLabel(range: StatsRange): String = when (range) {
     StatsRange.ALL -> t(R.string.range_all)
@@ -3305,7 +3345,8 @@ private fun AudioTrack.toEditableTags() = EditableTags(title = title.ifBlank { d
 @Composable
 private fun rememberArtworkBitmap(bytes: ByteArray?, uri: String?, maxDimension: Int = 512): Bitmap? {
     val context = LocalContext.current
-    val cacheKey = remember(uri, bytes, maxDimension) { uri ?: "bytes:${bytes?.let { System.identityHashCode(it) } ?: 0}:$maxDimension" }
+    // O tamanho entra na chave: antes a miniatura da lista (pequena) era reaproveitada no player grande e aparecia borrada.
+    val cacheKey = remember(uri, bytes, maxDimension) { "${uri ?: "bytes:${bytes?.let { System.identityHashCode(it) } ?: 0}"}:$maxDimension" }
     // O estado é recriado a cada chave: com produceState o bitmap da música anterior ficava e a nova nunca carregava.
     var bitmap by remember(cacheKey) { mutableStateOf<Bitmap?>(artworkCache.get(cacheKey)) }
     LaunchedEffect(cacheKey) {
