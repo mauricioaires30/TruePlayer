@@ -2974,9 +2974,9 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
 
 private val DETAIL_COVER = 208.dp
 
-/** Número do disco da faixa ("2", "2/3"); sem tag conta como disco 1. */
+/** Número do disco da faixa ("2", "2/3"); sem tag conta como disco 0 (separado do disco 1). */
 private fun discOf(track: AudioTrack): Int =
-    track.discNumber.substringBefore('/').trim().toIntOrNull()?.takeIf { it > 0 } ?: 1
+    track.discNumber.substringBefore('/').trim().toIntOrNull()?.takeIf { it > 0 } ?: 0
 
 /** Agrupa as faixas (já ordenadas) por disco, mantendo a ordem. */
 private fun discGroups(tracks: List<AudioTrack>): List<Pair<Int, List<AudioTrack>>> =
