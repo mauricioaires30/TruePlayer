@@ -54,6 +54,7 @@ class AndroidAudioService(private val context: Context) {
                 MediaStore.Audio.Media.ARTIST,
                 MediaStore.Audio.Media.ALBUM,
                 if (hasGenreColumn) MediaStore.Audio.Media.GENRE else null,
+                if (hasGenreColumn) MediaStore.Audio.Media.DISC_NUMBER else null,
                 MediaStore.Audio.Media.TRACK,
                 MediaStore.Audio.Media.YEAR,
                 MediaStore.Audio.Media.DURATION,
@@ -84,6 +85,7 @@ class AndroidAudioService(private val context: Context) {
                 val artist = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST)
                 val album = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.ALBUM)
                 val genre = if (hasGenreColumn) cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.GENRE) else -1
+                val disc = if (hasGenreColumn) cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DISC_NUMBER) else -1
                 val track = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.TRACK)
                 val year = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.YEAR)
                 val duration = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
@@ -99,7 +101,10 @@ class AndroidAudioService(private val context: Context) {
                         mediaPath = cursor.getString(path).orEmpty(),
                         displayName = displayName,
                     )
-                    val trackValue = cursor.getInt(track).takeIf { it > 0 }?.let { raw ->
+                    // O MediaStore guarda a faixa como disco × 1000 + faixa quando o arquivo tem disco.
+                    val rawTrack = cursor.getInt(track)
+                    val discValue = dev.truetagger.data.mediaStoreDisc(if (disc >= 0) cursor.getString(disc) else null, rawTrack)
+                    val trackValue = rawTrack.takeIf { it > 0 }?.let { raw ->
                         if (raw >= 1000) (raw % 1000).toString() else raw.toString()
                     }.orEmpty()
                     tracks += AudioTrack(
@@ -111,6 +116,7 @@ class AndroidAudioService(private val context: Context) {
                         album = cursor.getString(album).orEmpty().takeUnless { it == "<unknown>" }.orEmpty(),
                         genre = if (genre >= 0) cursor.getString(genre).orEmpty().takeUnless { it == "<unknown>" }.orEmpty() else "",
                         trackNumber = trackValue,
+                        discNumber = discValue,
                         year = cursor.getInt(year).takeIf { it > 0 }?.toString().orEmpty(),
                         durationMs = cursor.getLong(duration),
                         modifiedAtSeconds = cursor.getLong(modified),

@@ -1,64 +1,64 @@
-## TruePlayer 1.22.1
+## TruePlayer 1.22.2
 
 ### English [en]
-- Separates songs without a disc number as Disc 0.
+- Fixes discs not being separated in albums and artists.
 
 ### Português [pt]
-- Separa as músicas sem número de disco como Disco 0.
+- Corrige os discos que não apareciam separados nos álbuns e artistas.
 
 ### Español [es]
-- Separa las canciones sin número de disco como Disco 0.
+- Corrige los discos que no aparecían separados en álbumes y artistas.
 
 ### Français [fr]
-- Sépare les morceaux sans numéro de disque en Disque 0.
+- Corrige les disques qui n'étaient pas séparés dans les albums et les artistes.
 
 ### Deutsch [de]
-- Trennt Titel ohne Disc-Nummer als Disc 0.
+- Behebt, dass Discs bei Alben und Künstlern nicht getrennt wurden.
 
 ### Italiano [it]
-- Separa i brani senza numero di disco come Disco 0.
+- Corregge i dischi che non apparivano separati negli album e negli artisti.
 
 ### Nederlands [nl]
-- Scheidt nummers zonder schijfnummer als Schijf 0.
+- Verhelpt dat schijven niet gescheiden werden bij albums en artiesten.
 
 ### Svenska [sv]
-- Separerar låtar utan skivnummer som Skiva 0.
+- Åtgärdar att skivor inte separerades bland album och artister.
 
 ### Polski [pl]
-- Rozdziela utwory bez numeru płyty jako Płyta 0.
+- Naprawia brak rozdzielenia płyt w albumach i u wykonawców.
 
 ### Türkçe [tr]
-- Disk numarası olmayan şarkıları Disk 0 olarak ayırır.
+- Albümlerde ve sanatçılarda disklerin ayrılmamasını düzeltir.
 
 ### Русский [ru]
-- Разделяет треки без номера диска как Диск 0.
+- Исправляет отсутствие разделения по дискам в альбомах и у исполнителей.
 
 ### Українська [uk]
-- Розділяє треки без номера диска як Диск 0.
+- Виправляє відсутність поділу за дисками в альбомах і у виконавців.
 
 ### العربية [ar]
-- يفصل الأغاني بلا رقم قرص باسم قرص 0.
+- يصلح عدم فصل الأقراص في الألبومات والفنانين.
 
 ### हिन्दी [hi]
-- बिना डिस्क नंबर वाले गानों को डिस्क 0 के रूप में अलग करता है।
+- एल्बम और कलाकारों में डिस्क अलग न दिखने की समस्या ठीक करता है।
 
 ### Bahasa Indonesia [id]
-- Memisahkan lagu tanpa nomor disk sebagai Disk 0.
+- Memperbaiki disk yang tidak terpisah di album dan artis.
 
 ### Tiếng Việt [vi]
-- Tách các bài không có số đĩa thành Đĩa 0.
+- Sửa lỗi các đĩa không được tách riêng trong album và nghệ sĩ.
 
 ### ไทย [th]
-- แยกเพลงที่ไม่มีหมายเลขแผ่นเป็นแผ่น 0
+- แก้แผ่นที่ไม่ถูกแยกในอัลบั้มและศิลปิน
 
 ### 日本語 [ja]
-- ディスク番号のない曲を「ディスク 0」として分けて表示します。
+- アルバムとアーティストでディスクが分かれて表示されない問題を修正します。
 
 ### 한국어 [ko]
-- 디스크 번호가 없는 곡을 디스크 0으로 분리합니다.
+- 앨범과 아티스트에서 디스크가 나뉘지 않던 문제를 수정합니다.
 
 ### 简体中文 [zh-CN]
-- 将没有碟号的歌曲单独列为碟 0。
+- 修复专辑和艺术家页面中未按碟分开的问题。
 
 ### 繁體中文 [zh-TW]
-- 將沒有碟號的歌曲單獨列為碟 0。
+- 修正專輯與演出者頁面中未依碟分開的問題。

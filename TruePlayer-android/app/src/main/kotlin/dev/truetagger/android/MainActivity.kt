@@ -88,7 +88,7 @@ class MainActivity : ComponentActivity() {
     private var writeContinuation: CancellableContinuation<Boolean>? = null
     private var mediaRefreshJob: Job? = null
     private var lastLibraryTrackIds: Set<String>? = null
-    /** Tags salvas pelo editor nesta sessão: valem para ano e gênero enquanto o MediaStore não os relê. */
+    /** Tags salvas pelo editor nesta sessão: valem para ano, gênero e disco enquanto o MediaStore não os relê. */
     private val savedTags = HashMap<String, AudioTrack>()
     private var lastRefreshAtMs = 0L
     private var refreshInFlight = false
@@ -396,7 +396,7 @@ class MainActivity : ComponentActivity() {
             // Se a varredura falhar, a biblioteca anterior continua valendo: nada pode parecer "removido".
             val refreshedTracks = (scan.getOrNull() ?: tracks).map { track ->
                 val saved = savedTags[track.id] ?: return@map track
-                track.copy(year = saved.year, genre = saved.genre)
+                track.copy(year = saved.year, genre = saved.genre, discNumber = saved.discNumber)
             }
             val reliable = scan.isSuccess && refreshedTracks.isNotEmpty()
             LibraryIndex.update(refreshedTracks, reliable)
