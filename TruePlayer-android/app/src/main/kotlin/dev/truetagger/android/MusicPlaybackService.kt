@@ -73,6 +73,12 @@ class MusicPlaybackService : android.service.media.MediaBrowserService() {
         const val PREFS_LAST = "truetagger_last_playback"
         private const val BROWSER_ROOT_ID = "truetagger_root"
 
+        /** Ações que o app só manda por startService: não precisam (nem devem) virar primeiro plano. */
+        private val START_SERVICE_ONLY_ACTIONS = setOf(
+            ACTION_RESTORE_LAST, ACTION_RELEASE_FILE_HANDLES, ACTION_REPLACE_QUEUE,
+            ACTION_RECONCILE_DELETED_TRACKS, ACTION_HIDE_NOTIFICATION, ACTION_MEDIA_BUTTON,
+        )
+
         /** Tempo pausado antes de soltar o arquivo aberto. */
         private const val IDLE_RELEASE_DELAY_MS = 45_000L
 
@@ -214,6 +220,37 @@ class MusicPlaybackService : android.service.media.MediaBrowserService() {
             .setOngoing(true)
             .build()
         runCatching { startForeground(NOTIFICATION_ID, placeholder) }
+    }
+
+    /**
+     * Comandos que podem ter chegado por startForegroundService (app, fila, notificação): o Android exige um
+     * startForeground logo em seguida, senão fecha o app. No fim do comando, pausado, ele sai do primeiro plano.
+     */
+    private fun promoteForCommand() {
+        val track = queue.getOrNull(index)
+        if (track == null) {
+            ensureForegroundStarted()
+            return
+        }
+        val position = if (detachedPositionMs >= 0L) detachedPositionMs else runCatching { player?.currentPosition?.toLong() ?: 0L }.getOrDefault(0L)
+        runCatching { startForeground(NOTIFICATION_ID, buildNotification(track, position, track.durationMs, isPlayingNow())) }
+    }
+
+    /**
+     * Tocando (ou prestes a tocar): serviço em primeiro plano. Pausado: a notificação fica, mas o serviço sai do
+     * primeiro plano, como nos players do sistema. Antes ele tentava continuar em primeiro plano pausado; quando o
+     * Android já o tinha rebaixado, o startForeground em segundo plano lançava exceção, o app fechava e a
+     * notificação sumia segundos depois de pausar.
+     */
+    private fun showNotification(notification: Notification, active: Boolean) {
+        val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        if (active) {
+            runCatching { startForeground(NOTIFICATION_ID, notification) }
+                .onFailure { runCatching { manager.notify(NOTIFICATION_ID, notification) } }
+        } else {
+            runCatching { manager.notify(NOTIFICATION_ID, notification) }
+            runCatching { stopForeground(STOP_FOREGROUND_DETACH) }
+        }
     }
 
     private fun handleMediaButton(keyCode: Int) {
@@ -401,6 +438,7 @@ class MusicPlaybackService : android.service.media.MediaBrowserService() {
         if (action != ACTION_HIDE_NOTIFICATION) {
             notificationSuppressed = false
         }
+        if (action != null && action !in START_SERVICE_ONLY_ACTIONS) promoteForCommand()
         when (action) {
             ACTION_PLAY -> {
                 val request = PlaybackRequests.take()
@@ -467,6 +505,8 @@ class MusicPlaybackService : android.service.media.MediaBrowserService() {
             ACTION_HIDE_NOTIFICATION -> hideNotificationNow()
         }
         updateStateAndNotification()
+        // Nada carregado nem a caminho: não deixa a notificação provisória presa.
+        if (queue.isEmpty() && !restoringLastPlayback) runCatching { stopForeground(STOP_FOREGROUND_REMOVE) }
         return START_NOT_STICKY
     }
 
@@ -1038,7 +1078,7 @@ class MusicPlaybackService : android.service.media.MediaBrowserService() {
             if (!notificationSuppressed && (now - notificationLastUpdateMs >= 1000L || !playing)) {
                 notificationLastUpdateMs = now
                 val notification = buildNotification(track, position, safeDuration, playing)
-                startForeground(NOTIFICATION_ID, notification)
+                showNotification(notification, active = playing || pendingPlay)
             }
         }
     }

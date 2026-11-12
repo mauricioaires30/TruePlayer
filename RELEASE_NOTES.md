@@ -1,85 +1,64 @@
-## TruePlayer 1.23.0
+## TruePlayer 1.23.1
 
 ### English [en]
-- Fixes the notification disappearing after pausing outside the app.
-- Adds a ⋮ menu to the Now Playing screen with info, edit tags, add to playlist and share.
+- Fixes the notification disappearing seconds after pausing outside the app.
 
 ### Português [pt]
-- Corrige a notificação que sumia ao pausar fora do app.
-- Adiciona o menu ⋮ na tela Tocando agora, com informações, editar tags, adicionar à playlist e compartilhar.
+- Corrige a notificação que sumia segundos depois de pausar fora do app.
 
 ### Español [es]
-- Corrige la notificación que desaparecía al pausar fuera de la app.
-- Añade el menú ⋮ en la pantalla Reproduciendo, con información, editar etiquetas, añadir a playlist y compartir.
+- Corrige la notificación que desaparecía segundos después de pausar fuera de la app.
 
 ### Français [fr]
-- Corrige la notification qui disparaissait après une pause hors de l'appli.
-- Ajoute le menu ⋮ sur l'écran Lecture en cours, avec infos, modifier les tags, ajouter à une playlist et partager.
+- Corrige la notification qui disparaissait quelques secondes après une pause hors de l'appli.
 
 ### Deutsch [de]
-- Behebt, dass die Benachrichtigung nach dem Pausieren außerhalb der App verschwand.
-- Fügt im Bildschirm Wiedergabe das ⋮-Menü hinzu, mit Infos, Tags bearbeiten, Zur Playlist hinzufügen und Teilen.
+- Behebt, dass die Benachrichtigung Sekunden nach dem Pausieren außerhalb der App verschwand.
 
 ### Italiano [it]
-- Corregge la notifica che spariva mettendo in pausa fuori dall'app.
-- Aggiunge il menu ⋮ nella schermata In riproduzione, con info, modifica tag, aggiungi a playlist e condividi.
+- Corregge la notifica che spariva pochi secondi dopo la pausa fuori dall'app.
 
 ### Nederlands [nl]
-- Verhelpt dat de melding verdween na pauzeren buiten de app.
-- Voegt het ⋮-menu toe aan het scherm Nu aan het spelen, met info, tags bewerken, toevoegen aan playlist en delen.
+- Verhelpt dat de melding seconden na pauzeren buiten de app verdween.
 
 ### Svenska [sv]
-- Åtgärdar att aviseringen försvann efter paus utanför appen.
-- Lägger till ⋮-menyn på skärmen Spelas nu, med info, redigera taggar, lägg till i spellista och dela.
+- Åtgärdar att aviseringen försvann sekunder efter paus utanför appen.
 
 ### Polski [pl]
-- Naprawia znikanie powiadomienia po wstrzymaniu poza aplikacją.
-- Dodaje menu ⋮ na ekranie Teraz odtwarzane: informacje, edycja tagów, dodaj do playlisty i udostępnij.
+- Naprawia znikanie powiadomienia kilka sekund po wstrzymaniu poza aplikacją.
 
 ### Türkçe [tr]
-- Uygulama dışında duraklatınca bildirimin kaybolmasını düzeltir.
-- Şimdi çalıyor ekranına bilgi, etiket düzenleme, çalma listesine ekleme ve paylaşma içeren ⋮ menüsünü ekler.
+- Uygulama dışında duraklattıktan saniyeler sonra bildirimin kaybolmasını düzeltir.
 
 ### Русский [ru]
-- Исправляет исчезновение уведомления после паузы вне приложения.
-- Добавляет меню ⋮ на экран «Сейчас играет»: сведения, изменение тегов, добавление в плейлист и отправка.
+- Исправляет исчезновение уведомления через несколько секунд после паузы вне приложения.
 
 ### Українська [uk]
-- Виправляє зникнення сповіщення після паузи поза застосунком.
-- Додає меню ⋮ на екран «Зараз грає»: відомості, редагування тегів, додавання до плейлиста й надсилання.
+- Виправляє зникнення сповіщення за кілька секунд після паузи поза застосунком.
 
 ### العربية [ar]
-- يصلح اختفاء الإشعار عند الإيقاف المؤقت خارج التطبيق.
-- يضيف قائمة ⋮ في شاشة قيد التشغيل، مع المعلومات وتعديل الوسوم والإضافة إلى قائمة تشغيل والمشاركة.
+- يصلح اختفاء الإشعار بعد ثوانٍ من الإيقاف المؤقت خارج التطبيق.
 
 ### हिन्दी [hi]
-- ऐप के बाहर रोकने पर सूचना गायब होने की समस्या ठीक करता है।
-- अभी चल रहा स्क्रीन में ⋮ मेन्यू जोड़ता है: जानकारी, टैग संपादन, प्लेलिस्ट में जोड़ना और शेयर करना।
+- ऐप के बाहर रोकने के कुछ सेकंड बाद सूचना गायब होने की समस्या ठीक करता है।
 
 ### Bahasa Indonesia [id]
-- Memperbaiki notifikasi yang hilang saat dijeda di luar aplikasi.
-- Menambahkan menu ⋮ di layar Sedang diputar, dengan info, edit tag, tambah ke playlist, dan bagikan.
+- Memperbaiki notifikasi yang hilang beberapa detik setelah dijeda di luar aplikasi.
 
 ### Tiếng Việt [vi]
-- Sửa thông báo bị mất khi tạm dừng bên ngoài ứng dụng.
-- Thêm menu ⋮ ở màn hình Đang phát, gồm thông tin, sửa thẻ, thêm vào playlist và chia sẻ.
+- Sửa thông báo bị mất vài giây sau khi tạm dừng bên ngoài ứng dụng.
 
 ### ไทย [th]
-- แก้การแจ้งเตือนที่หายไปเมื่อหยุดชั่วคราวนอกแอป
-- เพิ่มเมนู ⋮ ในหน้ากำลังเล่น มีข้อมูล แก้แท็ก เพิ่มลงเพลย์ลิสต์ และแชร์
+- แก้การแจ้งเตือนที่หายไปไม่กี่วินาทีหลังหยุดชั่วคราวนอกแอป
 
 ### 日本語 [ja]
-- アプリ外で一時停止すると通知が消える問題を修正します。
-- 再生中画面に ⋮ メニューを追加します（情報、タグ編集、プレイリストに追加、共有）。
+- アプリ外で一時停止した数秒後に通知が消える問題を修正します。
 
 ### 한국어 [ko]
-- 앱 밖에서 일시정지하면 알림이 사라지던 문제를 수정합니다.
-- 지금 재생 중 화면에 ⋮ 메뉴를 추가합니다(정보, 태그 편집, 플레이리스트에 추가, 공유).
+- 앱 밖에서 일시정지하고 몇 초 뒤 알림이 사라지던 문제를 수정합니다.
 
 ### 简体中文 [zh-CN]
-- 修复在应用外暂停后通知消失的问题。
-- 在“正在播放”界面新增 ⋮ 菜单：信息、编辑标签、添加到播放列表和分享。
+- 修复在应用外暂停几秒后通知消失的问题。
 
 ### 繁體中文 [zh-TW]
-- 修正在應用程式外暫停後通知消失的問題。
-- 在「正在播放」畫面新增 ⋮ 選單：資訊、編輯標籤、加入播放清單與分享。
+- 修正在應用程式外暫停幾秒後通知消失的問題。
