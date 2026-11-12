@@ -621,4 +621,5 @@
     <string name="dl_video_indisponivel">Ten film jest niedostępny, prywatny lub ograniczony.</string>
     <string name="letras">Tekst</string>
     <string name="letra_indisponivel">Tekst niedostępny</string>
+    <string name="tirar_da_playlist_confirmar">Usunąć „%1$s” z playlisty „%2$s”?</string>
 </resources>

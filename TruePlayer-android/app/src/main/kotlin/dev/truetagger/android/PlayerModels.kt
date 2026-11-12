@@ -60,6 +60,8 @@ data class PlayerSnapshot(
     val repeat: RepeatMode = RepeatMode.OFF,
     /** Quando [positionMs] foi medida (relógio do aparelho, `SystemClock.elapsedRealtime`); 0 = desconhecido. */
     val updatedAtMs: Long = 0L,
+    /** Nome da playlist de onde a fila veio (null se veio da biblioteca, de um álbum etc.). */
+    val sourcePlaylist: String? = null,
 )
 
 object PlayerState {

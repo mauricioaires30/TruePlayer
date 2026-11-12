@@ -582,4 +582,5 @@
     <string name="dl_video_indisponivel">This video is unavailable, private or restricted.</string>
     <string name="letras">Lyrics</string>
     <string name="letra_indisponivel">Lyrics unavailable</string>
+    <string name="tirar_da_playlist_confirmar">Remove “%1$s” from the playlist “%2$s”?</string>
 </resources>

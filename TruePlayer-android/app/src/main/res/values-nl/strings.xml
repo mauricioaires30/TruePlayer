@@ -581,4 +581,5 @@
     <string name="dl_video_indisponivel">Deze video is niet beschikbaar, privé of beperkt.</string>
     <string name="letras">Songtekst</string>
     <string name="letra_indisponivel">Songtekst niet beschikbaar</string>
+    <string name="tirar_da_playlist_confirmar">“%1$s” uit de playlist “%2$s” verwijderen?</string>
 </resources>

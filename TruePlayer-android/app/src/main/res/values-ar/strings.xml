@@ -661,4 +661,5 @@
     <string name="dl_video_indisponivel">هذا الفيديو غير متاح أو خاص أو مقيّد.</string>
     <string name="letras">الكلمات</string>
     <string name="letra_indisponivel">الكلمات غير متاحة</string>
+    <string name="tirar_da_playlist_confirmar">إزالة ”%1$s“ من قائمة التشغيل ”%2$s“؟</string>
 </resources>

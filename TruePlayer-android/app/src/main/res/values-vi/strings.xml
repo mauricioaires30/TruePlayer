@@ -561,4 +561,5 @@
     <string name="dl_video_indisponivel">Video này không khả dụng, ở chế độ riêng tư hoặc bị hạn chế.</string>
     <string name="letras">Lời bài hát</string>
     <string name="letra_indisponivel">Không có lời bài hát</string>
+    <string name="tirar_da_playlist_confirmar">Xóa “%1$s” khỏi playlist “%2$s”?</string>
 </resources>

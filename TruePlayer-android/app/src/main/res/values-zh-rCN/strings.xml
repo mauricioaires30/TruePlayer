@@ -561,4 +561,5 @@
     <string name="dl_video_indisponivel">此视频不可用、为私享或受限。</string>
     <string name="letras">歌词</string>
     <string name="letra_indisponivel">暂无歌词</string>
+    <string name="tirar_da_playlist_confirmar">要将“%1$s”从播放列表“%2$s”中移除吗？</string>
 </resources>

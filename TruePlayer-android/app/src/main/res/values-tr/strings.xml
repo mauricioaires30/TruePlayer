@@ -581,4 +581,5 @@
     <string name="dl_video_indisponivel">Bu video kullanılamıyor, özel veya kısıtlı.</string>
     <string name="letras">Sözler</string>
     <string name="letra_indisponivel">Sözler bulunamadı</string>
+    <string name="tirar_da_playlist_confirmar">“%1$s” “%2$s” çalma listesinden çıkarılsın mı?</string>
 </resources>

@@ -561,4 +561,5 @@
     <string name="dl_video_indisponivel">この動画は利用できないか、非公開または制限されています。</string>
     <string name="letras">歌詞</string>
     <string name="letra_indisponivel">歌詞はありません</string>
+    <string name="tirar_da_playlist_confirmar">「%1$s」をプレイリスト「%2$s」から外しますか？</string>
 </resources>

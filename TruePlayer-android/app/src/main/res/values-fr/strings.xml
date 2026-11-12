@@ -601,4 +601,5 @@
     <string name="dl_video_indisponivel">Cette vidéo est indisponible, privée ou restreinte.</string>
     <string name="letras">Paroles</string>
     <string name="letra_indisponivel">Paroles indisponibles</string>
+    <string name="tirar_da_playlist_confirmar">Retirer « %1$s » de la playlist « %2$s » ?</string>
 </resources>

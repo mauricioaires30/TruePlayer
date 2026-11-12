@@ -979,6 +979,16 @@ fun TrueTaggerPlayerApp(
                     onEdit = { track -> pushCurrent(); playerScreen = PlayerScreen.NONE; openEditor(track) },
                     onShare = ::share,
                     onPlaylistChanged = { oldIds, newIds -> updatePlayingQueueIfNeeded(oldIds, newIds); reloadPlaylists() },
+                    playingPlaylist = snapshot.sourcePlaylist?.takeIf { name ->
+                        val id = snapshot.current?.id
+                        id != null && playlists.firstOrNull { it.name == name }?.trackIds?.contains(id) == true
+                    },
+                    onRemoveFromPlaylist = { name, track ->
+                        val oldIds = playlists.firstOrNull { it.name == name }?.trackIds.orEmpty()
+                        store.remove(name, track.id)
+                        updatePlayingQueueIfNeeded(oldIds, oldIds.filterNot { it == track.id })
+                        reloadPlaylists()
+                    },
                 )
             }
         }
@@ -1150,11 +1160,14 @@ private fun FullPlayer(
     onEdit: (AudioTrack) -> Unit,
     onShare: (AudioTrack) -> Unit,
     onPlaylistChanged: (List<String>, List<String>) -> Unit,
+    playingPlaylist: String?,
+    onRemoveFromPlaylist: (String, AudioTrack) -> Unit,
 ) {
     val context = LocalContext.current
     var menuOpen by remember { mutableStateOf(false) }
     var infoTrack by remember { mutableStateOf<AudioTrack?>(null) }
     var playlistTrack by remember { mutableStateOf<AudioTrack?>(null) }
+    var removeFrom by remember { mutableStateOf<Pair<String, AudioTrack>?>(null) }
     val tint = rememberCoverTint(s.current?.artworkBytes, s.current?.id)
     val light = MaterialTheme.colorScheme.background.luminance() > 0.5f
     val fallback = MaterialTheme.colorScheme.surfaceVariant
@@ -1190,6 +1203,10 @@ private fun FullPlayer(
                                 DropdownMenuItem({ Text(t(R.string.informacoes)) }, leadingIcon = { Icon(Icons.Rounded.Info, null) }, onClick = { menuOpen = false; infoTrack = current })
                                 DropdownMenuItem({ Text(t(R.string.editar_tags)) }, leadingIcon = { Icon(Icons.Rounded.Edit, null) }, onClick = { menuOpen = false; onEdit(current) })
                                 DropdownMenuItem({ Text(t(R.string.adicionar_a_playlist)) }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, null) }, onClick = { menuOpen = false; playlistTrack = current })
+                                // Só tocando a partir de uma playlist que tem a música: tira dela (e só dela).
+                                playingPlaylist?.let { name ->
+                                    DropdownMenuItem({ Text(t(R.string.tirar_da_playlist)) }, leadingIcon = { Icon(Icons.Rounded.RemoveCircleOutline, null) }, onClick = { menuOpen = false; removeFrom = name to current })
+                                }
                                 DropdownMenuItem({ Text(t(R.string.compartilhar)) }, leadingIcon = { Icon(Icons.Rounded.Share, null) }, onClick = { menuOpen = false; onShare(current) })
                             }
                         }
@@ -1295,6 +1312,9 @@ private fun FullPlayer(
     }
     infoTrack?.let { track -> InfoDialog(track, onArtist = { infoTrack = null; onArtist() }, onAlbum = { infoTrack = null; onAlbum() }) { infoTrack = null } }
     playlistTrack?.let { track -> AddToPlaylistDialog(track, onDismiss = { playlistTrack = null }, onPlaylistChanged = onPlaylistChanged) }
+    removeFrom?.let { (name, track) ->
+        RemoveFromPlaylistConfirm(track, name, onConfirm = { removeFrom = null; onRemoveFromPlaylist(name, track) }, onDismiss = { removeFrom = null })
+    }
 }
 
 /** Nome do álbum ou do artista no player completo: uma linha tocável, com rolagem se for grande. */
@@ -2138,6 +2158,7 @@ private fun SongItem(
     onGenre: () -> Unit,
     onDelete: (() -> Unit)? = null,
     onRemoveFromPlaylist: (() -> Unit)? = null,
+    playlistName: String = "",
     showAddToPlaylist: Boolean = true,
     isCurrent: Boolean = false,
     selectionMode: Boolean = false,
@@ -2154,6 +2175,7 @@ private fun SongItem(
 ) {
     var expanded by remember { mutableStateOf(false) }
     var info by remember { mutableStateOf(false) }
+    var confirmRemove by remember { mutableStateOf(false) }
     // Só a música atual lê o estado de "tocando": animar é só dela, e as outras linhas não recompõem.
     val nowPlaying = if (isCurrent) PlayerState.playing.collectAsState().value else false
     Row(
@@ -2245,7 +2267,7 @@ private fun SongItem(
                 if (showAddToPlaylist) DropdownMenuItem({ Text(t(R.string.adicionar_a_playlist)) }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, null) }, onClick = { expanded = false; onAddToPlaylist() })
                 DropdownMenuItem({ Text(t(R.string.compartilhar)) }, leadingIcon = { Icon(Icons.Rounded.Share, null) }, onClick = { expanded = false; onShare() })
                 onRemoveFromPlaylist?.let { remove ->
-                    DropdownMenuItem({ Text(t(R.string.tirar_da_playlist)) }, leadingIcon = { Icon(Icons.Rounded.RemoveCircleOutline, null) }, onClick = { expanded = false; remove() })
+                    DropdownMenuItem({ Text(t(R.string.tirar_da_playlist)) }, leadingIcon = { Icon(Icons.Rounded.RemoveCircleOutline, null) }, onClick = { expanded = false; confirmRemove = true })
                 }
                 if (onRemoveFromPlaylist == null && onDelete != null) {
                     DropdownMenuItem(
@@ -2258,6 +2280,9 @@ private fun SongItem(
         }
     }
     if (info) InfoDialog(track, onArtist = onArtist, onAlbum = onAlbum) { info = false }
+    if (confirmRemove) onRemoveFromPlaylist?.let { remove ->
+        RemoveFromPlaylistConfirm(track, playlistName, onConfirm = { confirmRemove = false; remove() }, onDismiss = { confirmRemove = false })
+    }
 }
 
 @Composable
@@ -2334,6 +2359,20 @@ private fun AddToPlaylistDialog(track: AudioTrack, onDismiss: () -> Unit, onPlay
             }
         }
     }, confirmButton = { TextButton(onClick = onDismiss) { Text(t(R.string.cancelar)) } })
+}
+
+/** Confirmação antes de tirar uma música de uma playlist (a música continua no celular). */
+@Composable
+private fun RemoveFromPlaylistConfirm(track: AudioTrack, playlistName: String, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    AppDialog(
+        title = t(R.string.tirar_da_playlist),
+        onDismiss = onDismiss,
+        confirmText = t(R.string.tirar_da_playlist),
+        onConfirm = onConfirm,
+        destructive = true,
+    ) {
+        Text(t(R.string.tirar_da_playlist_confirmar, track.displayTitle(), playlistName))
+    }
 }
 
 @Composable
@@ -2953,7 +2992,9 @@ private fun DetailScreen(type: Detail, key: String, tracks: List<AudioTrack>, pl
                             { onEdit(t) },
                             { onShare(t) },
                             {}, { onOpenAlbum(t.album) }, { onOpenArtist(t.artist) }, {},
-                            { onRemoveFromPlaylist(t.id) },
+                            // Nomeado: na posição ele caía em onDelete e o menu mostrava "Excluir do celular" no lugar.
+                            onRemoveFromPlaylist = { onRemoveFromPlaylist(t.id) },
+                            playlistName = key,
                             showAddToPlaylist = false,
                             isCurrent = t.id == currentTrackId,
                             selectionMode = playlistSelectionMode,

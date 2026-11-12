@@ -621,4 +621,5 @@
     <string name="dl_video_indisponivel">Это видео недоступно, приватное или с ограничениями.</string>
     <string name="letras">Текст</string>
     <string name="letra_indisponivel">Текст недоступен</string>
+    <string name="tirar_da_playlist_confirmar">Убрать «%1$s» из плейлиста «%2$s»?</string>
 </resources>

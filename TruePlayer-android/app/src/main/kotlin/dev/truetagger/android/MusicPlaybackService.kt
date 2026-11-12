@@ -524,17 +524,31 @@ class MusicPlaybackService : android.service.media.MediaBrowserService() {
         }
 
         val currentStillExists = currentId != null && normalizedBase.any { it.id == currentId }
+        val oldQueue = queue.toList()
+        val oldIndex = index
+        val newIds = normalizedBase.mapTo(HashSet()) { it.id }
         baseQueue = normalizedBase.toMutableList()
-        queue = if (shuffle) {
-            val current = currentId?.let { id -> normalizedBase.firstOrNull { it.id == id } }
+        queue = if (shuffle && currentStillExists) {
+            val current = normalizedBase.first { it.id == currentId }
             val rest = normalizedBase.filter { it.id != currentId }.shuffled()
-            if (current != null) mutableListOf(current).apply { addAll(rest) } else normalizedBase.toMutableList()
+            mutableListOf(current).apply { addAll(rest) }
+        } else if (shuffle) {
+            // A música atual saiu: mantém a ordem aleatória que já existia, para a próxima ser a esperada.
+            val kept = oldQueue.filter { it.id in newIds }
+            val keptIds = kept.mapTo(HashSet()) { it.id }
+            (kept + normalizedBase.filter { it.id !in keptIds }).toMutableList()
         } else {
             normalizedBase.toMutableList()
         }
 
-        index = if (currentStillExists) queue.indexOfFirst { it.id == currentId }.coerceAtLeast(0) else 0
-        if (shuffle && currentStillExists) index = 0
+        index = if (currentStillExists) {
+            if (shuffle) 0 else queue.indexOfFirst { it.id == currentId }.coerceAtLeast(0)
+        } else {
+            // A música atual saiu da fila (ex.: tirada da playlist que está tocando): segue para a próxima dela.
+            val nextId = oldQueue.drop(oldIndex + 1).firstOrNull { it.id in newIds }?.id
+                ?: oldQueue.take(oldIndex.coerceAtLeast(0)).firstOrNull { it.id in newIds }?.id
+            queue.indexOfFirst { it.id == nextId }.coerceAtLeast(0)
+        }
 
         if (!currentStillExists && player != null && queue.isNotEmpty()) {
             val wasPlaying = pendingPlay || runCatching { player?.isPlaying == true }.getOrDefault(false)
@@ -1040,7 +1054,10 @@ class MusicPlaybackService : android.service.media.MediaBrowserService() {
         val safeDuration = runCatching {
             p?.duration?.toLong()?.takeIf { it > 0 } ?: duration
         }.getOrDefault(duration)
-        PlayerState.snapshot = PlayerSnapshot(track, queue.toList(), index, playing, position, safeDuration, shuffle, repeat, android.os.SystemClock.elapsedRealtime())
+        PlayerState.snapshot = PlayerSnapshot(
+            track, queue.toList(), index, playing, position, safeDuration, shuffle, repeat, android.os.SystemClock.elapsedRealtime(),
+            sourcePlaylist = playbackSourceName.takeIf { playbackSourceType == SOURCE_PLAYLIST && it.isNotBlank() },
+        )
         PlayerState.playing.value = playing
         AppEvents.bump()
         // Tocando, a posição muda todo segundo: gravar a cada 5 s basta (perde no máximo 5 s se o Android matar o app).

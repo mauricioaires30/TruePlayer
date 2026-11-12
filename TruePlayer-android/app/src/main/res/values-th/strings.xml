@@ -561,4 +561,5 @@
     <string name="dl_video_indisponivel">วิดีโอนี้ไม่พร้อมใช้งาน เป็นส่วนตัว หรือถูกจำกัด</string>
     <string name="letras">เนื้อเพลง</string>
     <string name="letra_indisponivel">ไม่มีเนื้อเพลง</string>
+    <string name="tirar_da_playlist_confirmar">เอา “%1$s” ออกจากเพลย์ลิสต์ “%2$s” ไหม</string>
 </resources>
