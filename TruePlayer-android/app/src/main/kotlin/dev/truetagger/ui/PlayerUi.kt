@@ -973,7 +973,13 @@ fun TrueTaggerPlayerApp(
                     snapshot.current?.artist?.takeIf { it.isNotBlank() }?.let { navigateDetail(Detail.ARTIST, it) }
                 }, {
                     snapshot.current?.album?.takeIf { it.isNotBlank() }?.let { navigateDetail(Detail.ALBUM, it) }
-                })
+                },
+                    // A versão da biblioteca tem todas as tags; a do player pode vir só com o básico (retomada).
+                    libraryTrack = { current -> trackById[current.id] ?: current },
+                    onEdit = { track -> pushCurrent(); playerScreen = PlayerScreen.NONE; openEditor(track) },
+                    onShare = ::share,
+                    onPlaylistChanged = { oldIds, newIds -> updatePlayingQueueIfNeeded(oldIds, newIds); reloadPlaylists() },
+                )
             }
         }
         if (playerScreen == PlayerScreen.QUEUE) Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
@@ -1134,8 +1140,21 @@ private val MINI_SMALL_BUTTON = 34.dp
 
 @OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
 @Composable
-private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Unit, onArtist: () -> Unit, onAlbum: () -> Unit) {
+private fun FullPlayer(
+    s: PlayerSnapshot,
+    onClose: () -> Unit,
+    onQueue: () -> Unit,
+    onArtist: () -> Unit,
+    onAlbum: () -> Unit,
+    libraryTrack: (AudioTrack) -> AudioTrack,
+    onEdit: (AudioTrack) -> Unit,
+    onShare: (AudioTrack) -> Unit,
+    onPlaylistChanged: (List<String>, List<String>) -> Unit,
+) {
     val context = LocalContext.current
+    var menuOpen by remember { mutableStateOf(false) }
+    var infoTrack by remember { mutableStateOf<AudioTrack?>(null) }
+    var playlistTrack by remember { mutableStateOf<AudioTrack?>(null) }
     val tint = rememberCoverTint(s.current?.artworkBytes, s.current?.id)
     val light = MaterialTheme.colorScheme.background.luminance() > 0.5f
     val fallback = MaterialTheme.colorScheme.surfaceVariant
@@ -1160,7 +1179,21 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
                         textAlign = TextAlign.Center,
                         modifier = Modifier.weight(1f),
                     )
-                    Spacer(Modifier.size(UiTokens.iconButtonSize))
+                    // Mesmas opções do menu da música nas listas.
+                    Box {
+                        IconButton(onClick = { menuOpen = true }, enabled = s.current != null, modifier = Modifier.size(UiTokens.iconButtonSize)) {
+                            Icon(Icons.Rounded.MoreVert, t(R.string.opcoes), Modifier.size(UiTokens.primaryIconSize))
+                        }
+                        DropdownMenu(menuOpen, { menuOpen = false }) {
+                            val current = s.current?.let(libraryTrack)
+                            if (current != null) {
+                                DropdownMenuItem({ Text(t(R.string.informacoes)) }, leadingIcon = { Icon(Icons.Rounded.Info, null) }, onClick = { menuOpen = false; infoTrack = current })
+                                DropdownMenuItem({ Text(t(R.string.editar_tags)) }, leadingIcon = { Icon(Icons.Rounded.Edit, null) }, onClick = { menuOpen = false; onEdit(current) })
+                                DropdownMenuItem({ Text(t(R.string.adicionar_a_playlist)) }, leadingIcon = { Icon(Icons.AutoMirrored.Rounded.PlaylistAdd, null) }, onClick = { menuOpen = false; playlistTrack = current })
+                                DropdownMenuItem({ Text(t(R.string.compartilhar)) }, leadingIcon = { Icon(Icons.Rounded.Share, null) }, onClick = { menuOpen = false; onShare(current) })
+                            }
+                        }
+                    }
                 }
                 // Capa, nomes, barra e botões ficam juntos no meio do espaço que sobra.
                 Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.Center) {
@@ -1260,6 +1293,8 @@ private fun FullPlayer(s: PlayerSnapshot, onClose: () -> Unit, onQueue: () -> Un
             }
         }
     }
+    infoTrack?.let { track -> InfoDialog(track, onArtist = { infoTrack = null; onArtist() }, onAlbum = { infoTrack = null; onAlbum() }) { infoTrack = null } }
+    playlistTrack?.let { track -> AddToPlaylistDialog(track, onDismiss = { playlistTrack = null }, onPlaylistChanged = onPlaylistChanged) }
 }
 
 /** Nome do álbum ou do artista no player completo: uma linha tocável, com rolagem se for grande. */

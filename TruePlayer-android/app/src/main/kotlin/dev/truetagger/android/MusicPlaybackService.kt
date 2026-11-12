@@ -28,7 +28,12 @@ import android.os.ParcelFileDescriptor
 import android.provider.Settings
 import dev.truetagger.model.AudioTrack
 
-class MusicPlaybackService : Service() {
+/**
+ * Também é um MediaBrowserService: assim o Android oferece a "retomada de mídia". Pausado por alguns minutos,
+ * o sistema esconde o player da notificação; com o browser ele vira um player de retomada e o play continua
+ * funcionando sem abrir o app (inclusive se o Android tiver fechado o processo).
+ */
+class MusicPlaybackService : android.service.media.MediaBrowserService() {
     companion object {
         const val ACTION_PLAY = "dev.truetagger.player.PLAY"
         const val ACTION_TOGGLE = "dev.truetagger.player.TOGGLE"
@@ -66,6 +71,7 @@ class MusicPlaybackService : Service() {
         const val CHANNEL = "truetagger_player_v4"
         const val NOTIFICATION_ID = 301
         const val PREFS_LAST = "truetagger_last_playback"
+        private const val BROWSER_ROOT_ID = "truetagger_root"
 
         /** Tempo pausado antes de soltar o arquivo aberto. */
         private const val IDLE_RELEASE_DELAY_MS = 45_000L
@@ -365,7 +371,12 @@ class MusicPlaybackService : Service() {
                 PendingIntent.FLAG_UPDATE_CURRENT or if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
             ))
             setCallback(object : MediaSession.Callback() {
-                override fun onPlay() { if (queue.isEmpty()) restoreSavedPlaybackState(shouldPlay = true) else resume() }
+                override fun onPlay() {
+                    // Vindo do player de retomada do sistema o serviço só está "ligado" (bound): sem iniciá-lo,
+                    // ele seria destruído quando o sistema desconectasse, parando a música.
+                    runCatching { startService(Intent(this@MusicPlaybackService, MusicPlaybackService::class.java)) }
+                    if (queue.isEmpty()) restoreSavedPlaybackState(shouldPlay = true) else resume()
+                }
                 override fun onPause() { pause() }
                 override fun onSkipToNext() { next() }
                 override fun onSkipToPrevious() { previous() }
@@ -380,6 +391,8 @@ class MusicPlaybackService : Service() {
             })
             isActive = true
         }
+        // Liga a sessão ao browser: é por ela que o player de retomada do sistema manda o play.
+        sessionToken = session.sessionToken
         handler.post(progressRunnable)
     }
 
@@ -1193,7 +1206,34 @@ class MusicPlaybackService : Service() {
         super.onDestroy()
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    /** Só o próprio app e o sistema (player de retomada) podem navegar; outros apps não veem o que você ouve. */
+    override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: android.os.Bundle?): BrowserRoot? {
+        val trusted = clientUid == android.os.Process.myUid() ||
+            clientUid == android.os.Process.SYSTEM_UID ||
+            clientPackageName == "com.android.systemui"
+        if (!trusted) return null
+        val extras = android.os.Bundle()
+        if (rootHints?.getBoolean(BrowserRoot.EXTRA_RECENT) == true) extras.putBoolean(BrowserRoot.EXTRA_RECENT, true)
+        return BrowserRoot(BROWSER_ROOT_ID, extras)
+    }
+
+    /** A música atual (ou a última tocada), que o player de retomada mostra e toca. */
+    override fun onLoadChildren(parentId: String, result: Result<MutableList<android.media.browse.MediaBrowser.MediaItem>>) {
+        val current = queue.getOrNull(index)
+        val prefs = getSharedPreferences(PREFS_LAST, MODE_PRIVATE)
+        val id = current?.id ?: prefs.getString("track_id", "").orEmpty()
+        if (id.isBlank()) {
+            result.sendResult(mutableListOf())
+            return
+        }
+        val description = android.media.MediaDescription.Builder()
+            .setMediaId(id)
+            .setTitle(current?.displayTitle() ?: prefs.getString("track_title", "").orEmpty())
+            .setSubtitle(current?.artist ?: prefs.getString("track_artist", "").orEmpty())
+            .setIconBitmap(if (current != null && notificationArtworkTrackId == current.id) notificationArtwork else null)
+            .build()
+        result.sendResult(mutableListOf(android.media.browse.MediaBrowser.MediaItem(description, android.media.browse.MediaBrowser.MediaItem.FLAG_PLAYABLE)))
+    }
 }
 
 private fun AudioTrack.displayTitle(): String = title.ifBlank { displayName.ifBlank { location.substringAfterLast("/") } }
