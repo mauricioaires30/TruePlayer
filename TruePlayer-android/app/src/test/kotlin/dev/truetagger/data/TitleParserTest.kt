@@ -29,6 +29,14 @@ class TitleParserTest {
         assertEquals("Faixa", TitleParser.parse("Artista - Faixa (feat. Outro)").title)
     }
 
+    @Test fun removesPortugueseOfficialClipNoise() {
+        val parsed = TitleParser.parse("MC Hariel - Ilusão (Cracolândia) (Clipe Oficial)")
+        assertEquals("MC Hariel", parsed.artist)
+        assertEquals("Ilusão (Cracolândia)", parsed.title)
+        assertEquals("Faixa", TitleParser.parse("Artista - Faixa (Videoclipe)").title)
+        assertEquals("Faixa", TitleParser.parse("Artista - Faixa [Áudio Oficial]").title)
+    }
+
     @Test fun titleWithoutDashHasNoArtist() {
         val p = TitleParser.parse("So a faixa")
         assertNull(p.artist)

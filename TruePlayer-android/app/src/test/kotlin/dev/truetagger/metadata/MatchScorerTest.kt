@@ -63,6 +63,63 @@ class MatchScorerTest {
         assertFalse(MatchScorer.isConfident(pick, minMargin = 0.3))
     }
 
+    @Test fun longerMusicVideoStillMatchesTheTrack() {
+        // Clipe de 4:23 de uma faixa de 3:20; um cover com a duração do clipe não pode ganhar.
+        val candidates = listOf(
+            result("Blinding Lights", "The Weeknd", 200),
+            result("Blinding Lights", "Roma Symphony Orchestra", 262),
+            result("Blinding Lights (Major Lazer Remix) [feat. Major Lazer]", "The Weeknd", 197),
+        )
+        val pick = MatchScorer.pick(candidates, "Blinding Lights", "The Weeknd", 263)!!
+        assertEquals("The Weeknd", pick.result.artist)
+        assertEquals("Blinding Lights", pick.result.title)
+        assertTrue(MatchScorer.isConfident(pick))
+    }
+
+    @Test fun sameSongWrittenDifferentlyIsNotACompetitor() {
+        val candidates = listOf(
+            result("death bed (feat. beabadoobee) [coffee for your head]", "Powfu", 173),
+            result("death bed (coffee for your head) [feat. beabadoobee]", "Powfu & beabadoobee", 173),
+            result("Coffee", "beabadoobee", 126),
+        )
+        val pick = MatchScorer.pick(candidates, "death bed (coffee for your head) ft. beabadoobee", "Powfu", 173)!!
+        assertEquals("Powfu", MatchScorer.primaryArtist(pick.result.artist).let { if (it == "powfu") "Powfu" else it })
+        assertTrue(MatchScorer.isConfident(pick))
+    }
+
+    @Test fun differentArtistWithSameTitleIsNotConfident() {
+        val pick = MatchScorer.pick(listOf(result("Blinding Lights", "Roma Symphony Orchestra", 263)), "Blinding Lights", "The Weeknd", 263)
+        assertFalse(MatchScorer.isConfident(pick))
+    }
+
+    @Test fun shorterVideoIsStillAnotherEdit() {
+        // Vídeo bem mais curto que a faixa (versão editada/acelerada): não é a mesma gravação.
+        val score = MatchScorer.score("Faixa", "Artista", 120, result("Faixa", "Artista", 200))
+        assertTrue(score < MatchScorer.DEFAULT_THRESHOLD)
+    }
+
+    @Test fun liveInOneCityIsNotLiveInAnother() {
+        val pick = MatchScorer.pick(
+            listOf(result("Viva la Vida (Live In Buenos Aires)", "Coldplay", 280)),
+            "Viva La Vida (Live in São Paulo)", "Coldplay", 280,
+        )
+        assertFalse(MatchScorer.isConfident(pick))
+    }
+
+    @Test fun studioSongDoesNotMatchAoVivo() {
+        val pick = MatchScorer.pick(listOf(result("Oceano (Ao Vivo)", "Djavan", 290)), "Oceano", "Djavan", 290)
+        assertFalse(MatchScorer.isConfident(pick))
+        val live = MatchScorer.pick(listOf(result("Oceano (Ao Vivo)", "Djavan", 290)), "Oceano (Live)", "Djavan", 290)
+        assertTrue(live!!.score > pick!!.score)
+    }
+
+    @Test fun coreTitleAndPrimaryArtist() {
+        assertEquals("death bed", MatchScorer.coreTitle("death bed (feat. beabadoobee) [coffee for your head]"))
+        assertEquals("song", MatchScorer.coreTitle("Song ft. Someone"))
+        assertEquals("powfu", MatchScorer.primaryArtist("Powfu & beabadoobee"))
+        assertEquals("the weeknd", MatchScorer.primaryArtist("The Weeknd, Daft Punk"))
+    }
+
     @Test fun noCandidatesMeansNoPick() {
         assertNull(MatchScorer.pick(emptyList(), "x", null, 0))
         assertFalse(MatchScorer.isConfident(null))

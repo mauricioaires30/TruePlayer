@@ -10,9 +10,12 @@ data class ParsedTitle(
 
 object TitleParser {
     private val NOISE_GROUP = Regex(
-        "(?i)[(\\[{]\\s*(?:official(?:\\s+(?:music|lyric|lyrics))?(?:\\s+(?:video|audio|visuali[sz]er))?|" +
+        // (?iu): sem o "u" o Java só ignora maiúsculas sem acento, e "[Áudio Oficial]" ficava no título.
+        "(?iu)[(\\[{]\\s*(?:official(?:\\s+(?:music|lyric|lyrics))?(?:\\s+(?:video|audio|visuali[sz]er))?|" +
             "(?:music|lyric|lyrics|audio|video|visuali[sz]er|hd|4k|hq|lq|cdq|explicit|clean|full\\s+song|" +
             "out\\s+now|new|nova\\s+m[uú]sica|letra|legendado|tradu[cç][aã]o)(?:\\s+video)?|" +
+            // Títulos em português/francês: "(Clipe Oficial)", "(Videoclipe)", "(Áudio Oficial)", "(Clip Officiel)".
+            "(?:video\\s*)?clipe(?:\\s+oficial)?|v[ií]deo\\s+oficial|[aá]udio\\s+oficial|visuali[sz]er\\s+oficial|clip\\s+officiel|" +
             "prod\\.?[^)\\]}]*|produced\\s+by[^)\\]}]*|dir\\.?[^)\\]}]*)\\s*[)\\]}]",
     )
     private val FEAT_GROUP = Regex("(?i)\\s*[(\\[]\\s*(?:ft|feat|featuring)\\.?\\s+[^)\\]]*[)\\]]")

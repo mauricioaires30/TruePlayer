@@ -19,6 +19,18 @@ object MatchScorer {
         "remix", "live", "acoustic", "instrumental", "karaoke", "cover", "sped up", "slowed", "reverb", "remaster", "edit",
     )
 
+    private val BRACKETED = Regex("[(\\[{][^)\\]}]*[)\\]}]")
+    private val FEAT_TAIL = Regex("(?i)\\s+(?:ft|feat|featuring)\\.?\\s+.*$")
+    private val ARTIST_SPLIT = Regex("(?i)\\s*(?:,|&|\\+|\\s+x\\s+|\\s+and\\s+|\\s+e\\s+|\\s+(?:ft|feat|featuring)\\.?\\s+)\\s*")
+
+    /** Título sem partes entre parênteses/colchetes nem "feat. X": "death bed (feat. Y) [coffee]" -> "death bed". */
+    fun coreTitle(value: String): String =
+        normalize(value.replace(BRACKETED, " ").replace(FEAT_TAIL, "")).ifBlank { normalize(value) }
+
+    /** Primeiro artista: "Powfu & beabadoobee" -> "powfu". */
+    fun primaryArtist(value: String): String =
+        normalize(value.split(ARTIST_SPLIT).firstOrNull { it.isNotBlank() } ?: value).ifBlank { normalize(value) }
+
     fun normalize(value: String): String {
         val decomposed = Normalizer.normalize(value, Normalizer.Form.NFD).replace(Regex("\\p{M}+"), "")
         return decomposed.lowercase()
@@ -53,9 +65,16 @@ object MatchScorer {
         return previous[b.length]
     }
 
+    /** Mesma versão escrita em outras línguas: "Ao Vivo" é "live", "Acústico" é "acoustic". */
+    private val VARIANT_SYNONYMS = mapOf(
+        "ao vivo" to "live", "en vivo" to "live", "en directo" to "live",
+        "acustico" to "acoustic", "acustica" to "acoustic", "acelerada" to "sped up", "acelerado" to "sped up",
+    )
+
     private fun variantsIn(value: String): Set<String> {
         val text = " ${normalize(value)} "
-        return VARIANTS.filter { text.contains(" $it ") }.toSet()
+        return VARIANTS.filter { text.contains(" $it ") }.toSet() +
+            VARIANT_SYNONYMS.filterKeys { text.contains(" $it ") }.values
     }
 
     private fun durationScore(expectedSec: Int, actualSec: Int): Double? {
@@ -70,9 +89,20 @@ object MatchScorer {
     }
 
     fun score(expectedTitle: String, expectedArtist: String?, expectedDurationSec: Int, candidate: MetadataResult): Double {
-        val titleScore = similarity(expectedTitle, candidate.title)
-        val artistScore = expectedArtist?.takeIf { it.isNotBlank() }?.let { similarity(it, candidate.artist) }
-        val duration = durationScore(expectedDurationSec, candidate.durationSec)
+        // Compara também o "miolo" (sem parênteses e feat.): os catálogos escrevem a mesma faixa de jeitos diferentes.
+        // Remix/ao vivo continuam diferentes: a penalidade de versão olha o título inteiro.
+        // Com versão no título ("Live in São Paulo") o que está entre parênteses importa: compara o título inteiro.
+        val fullTitle = similarity(expectedTitle, candidate.title)
+        val titleScore = if (variantsIn(expectedTitle).isEmpty()) maxOf(fullTitle, similarity(coreTitle(expectedTitle), coreTitle(candidate.title))) else fullTitle
+        val artistScore = expectedArtist?.takeIf { it.isNotBlank() }?.let {
+            maxOf(similarity(it, candidate.artist), similarity(primaryArtist(it), primaryArtist(candidate.artist)))
+        }
+        // Clipe oficial costuma ser mais longo que a faixa (introdução, cenas no fim). Com título e artista
+        // batendo, um vídeo mais longo não desclassifica; um vídeo mais curto continua sendo outra edição.
+        val videoLonger = expectedDurationSec > 0 && candidate.durationSec > 0 &&
+            expectedDurationSec - candidate.durationSec > 3 && expectedDurationSec <= candidate.durationSec * 2
+        val strongText = titleScore >= 0.95 && artistScore != null && artistScore >= 0.95
+        val duration = if (strongText && videoLonger) null else durationScore(expectedDurationSec, candidate.durationSec)
 
         var total = when {
             artistScore != null && duration != null -> 0.55 * titleScore + 0.30 * artistScore + 0.15 * duration
@@ -102,5 +132,6 @@ object MatchScorer {
     fun isConfident(pick: Pick?, threshold: Double = DEFAULT_THRESHOLD, minMargin: Double = DEFAULT_MARGIN): Boolean =
         pick != null && pick.score >= threshold && pick.margin >= minMargin
 
-    private fun songKey(r: MetadataResult) = normalize(r.title) + "|" + normalize(r.artist)
+    /** A mesma música escrita de jeitos diferentes ("Powfu" / "Powfu & beabadoobee") não conta como concorrente. */
+    private fun songKey(r: MetadataResult) = coreTitle(r.title) + "|" + primaryArtist(r.artist)
 }
