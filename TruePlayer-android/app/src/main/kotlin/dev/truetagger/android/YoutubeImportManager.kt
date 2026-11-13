@@ -182,15 +182,27 @@ class YoutubeImportManager(private val context: Context) {
                 info = info,
                 fallbackTitle = mediaTitle.ifBlank { output.nameWithoutExtension },
             )
-            // Sem uma correspondência confiável o arquivo fica exatamente como o yt-dlp entregou.
             var tags = outcome?.tags
-            if (outcome != null && outcome.useThumbnail && embedThumbnail) {
-                downloadThumbnail(info?.thumbnail.orEmpty())?.let { tags = tags?.copy(artworkBytes = it) }
+            if (tags != null) {
+                // Capa baixada aqui (com tempo limite): a do álbum e, se ela falhar, a imagem do vídeo.
+                // Antes uma capa de álbum que não baixava deixava a música sem foto nenhuma.
+                val cover = tags.artworkUrl.takeIf { it.isNotBlank() }?.let(::downloadThumbnail)
+                    ?: if (embedThumbnail) downloadThumbnail(info?.thumbnail.orEmpty()) else null
+                tags = tags.copy(artworkBytes = cover, artworkUrl = "")
             }
             tags?.let { found ->
                 runCatching { FileTagWriter.write(context, output, found) }
+                    .onFailure { android.util.Log.w("TruePlayer", "Falha ao gravar as tags do download", it) }
                 label = listOf(found.artist, found.title).filter { it.isNotBlank() }.joinToString(" - ").ifBlank { mediaTitle }
                 if (found.artist.isNotBlank() && found.title.isNotBlank()) baseName = label
+            }
+            // Sem correspondência confiável as tags ficam como o yt-dlp gravou (título, canal), mas com a imagem
+            // do vídeo como capa: antes a música ficava sem foto.
+            if (tags == null && embedThumbnail) {
+                downloadThumbnail(info?.thumbnail.orEmpty())?.let { thumb ->
+                    runCatching { FileTagWriter.writeArtwork(context, output, thumb) }
+                        .onFailure { android.util.Log.w("TruePlayer", "Falha ao gravar a capa do vídeo", it) }
+                }
             }
         } else if (info != null) {
             onStatus(ImportStatus(url, t(R.string.dl_aplicando_informacoes_do_video), 100, mediaTitle = mediaTitle))
@@ -221,12 +233,17 @@ class YoutubeImportManager(private val context: Context) {
                 connection.disconnect()
             }
             val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
+            // JPEG válido vai como veio (recomprimir só perderia qualidade); WebP/PNG viram JPEG.
+            if (bytes.size > 2 && bytes[0] == 0xFF.toByte() && bytes[1] == 0xD8.toByte()) {
+                bitmap.recycle()
+                return bytes
+            }
             try {
                 java.io.ByteArrayOutputStream().also { bitmap.compress(Bitmap.CompressFormat.JPEG, 92, it) }.toByteArray()
             } finally {
                 bitmap.recycle()
             }
-        }.getOrNull()
+        }.onFailure { android.util.Log.w("TruePlayer", "Falha ao baixar a capa: $url", it) }.getOrNull()
     }
 
     /** Tags simples (quando o ajuste automático está desligado): título, canal, ano e capa do vídeo. */

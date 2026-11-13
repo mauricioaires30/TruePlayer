@@ -36,17 +36,28 @@ object FileTagWriter {
             runCatching { URL(url).openStream().use { it.readBytes() } }.getOrNull()
         }
         if (artwork != null && artwork.isNotEmpty()) {
-            runCatching {
-                val cover = File.createTempFile("truetagger-cover-", ".jpg", context.cacheDir)
-                try {
-                    cover.writeBytes(artwork)
-                    tag.deleteArtworkField()
-                    tag.setField(ArtworkFactory.createArtworkFromFile(cover))
-                } finally {
-                    cover.delete()
-                }
-            }
+            runCatching { setArtwork(context, tag, artwork) }
+                .onFailure { android.util.Log.w("TruePlayer", "Falha ao gravar a capa", it) }
         }
         audio.commit()
+    }
+
+    /** Grava só a capa, sem mexer nas outras tags (que o yt-dlp já preencheu). */
+    fun writeArtwork(context: Context, file: File, artwork: ByteArray) {
+        if (artwork.isEmpty()) return
+        val audio = AudioFileIO.read(file)
+        setArtwork(context, audio.tagOrCreateAndSetDefault, artwork)
+        audio.commit()
+    }
+
+    private fun setArtwork(context: Context, tag: org.jaudiotagger.tag.Tag, artwork: ByteArray) {
+        val cover = File.createTempFile("truetagger-cover-", ".jpg", context.cacheDir)
+        try {
+            cover.writeBytes(artwork)
+            tag.deleteArtworkField()
+            tag.setField(ArtworkFactory.createArtworkFromFile(cover))
+        } finally {
+            cover.delete()
+        }
     }
 }

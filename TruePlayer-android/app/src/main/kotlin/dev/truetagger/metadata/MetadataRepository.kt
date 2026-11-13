@@ -39,7 +39,10 @@ class MetadataRepository(
     private suspend fun searchProviders(providers: List<MetadataProvider>, query: String): List<MetadataResult> {
         val all = mutableListOf<MetadataResult>()
         providers.forEach { provider ->
-            runCatching { provider.search(query) }.onSuccess(all::addAll)
+            runCatching { provider.search(query) }
+                .onSuccess(all::addAll)
+                // Sem log uma busca quebrada (rede, resposta nova) só aparecia como "música sem tags".
+                .onFailure { android.util.Log.w("TruePlayer", "Busca de tags falhou em ${provider.name}", it) }
         }
         return all
     }
